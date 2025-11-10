@@ -24,7 +24,6 @@ const taskConfigSchema = z.object({
 export const customerPromptTask = schedules.task({
   id: "customer-prompt-task",
   run: async (payload: TaskPayload, { ctx }) => {
-    logger.log("maxDuration", { maxDuration: ctx.run.maxDuration });
     const rawTask = await fetchTask(payload.externalId);
 
     // Validate task config if it exists
