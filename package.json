@@ -1,5 +1,6 @@
 {
 	"scripts": {
+		"dev": "pnpm dlx trigger.dev@latest dev",
 		"deploy:trigger-prod": "trigger deploy"
 	},
 	"dependencies": {

@@ -1,6 +1,6 @@
 import { logger, schedules } from "@trigger.dev/sdk/v3";
 import { z } from "zod";
-import { fetchJob, type CustomerConfig } from "./recoup/fetchJob";
+import { fetchTask, type TaskConfig } from "./recoup/fetchTask";
 import { generateChat } from "./recoup/generateChat";
 
 type TaskPayload = {
@@ -12,8 +12,8 @@ type TaskPayload = {
   externalId?: string;
 };
 
-// Zod schema for validating customer config (for runtime validation after fetch)
-const customerConfigSchema = z.object({
+// Zod schema for validating task config (for runtime validation after fetch)
+const taskConfigSchema = z.object({
   prompt: z.string().min(1).optional(),
   accountId: z.string().min(1).optional(),
   roomId: z.string().min(1).optional(),
@@ -23,36 +23,35 @@ const customerConfigSchema = z.object({
 
 export const customerPromptTask = schedules.task({
   id: "customer-prompt-task",
-  // No cron here — schedules are created dynamically with schedules.create()
-  maxDuration: 300,
-  run: async (payload: TaskPayload) => {
-    const rawCustomer = await fetchJob(payload.externalId);
+  run: async (payload: TaskPayload, { ctx }) => {
+    logger.log("maxDuration", { maxDuration: ctx.run.maxDuration });
+    const rawTask = await fetchTask(payload.externalId);
 
-    // Validate customer config if it exists
-    let customer: CustomerConfig | undefined;
-    if (rawCustomer) {
-      const validationResult = customerConfigSchema.safeParse(rawCustomer);
+    // Validate task config if it exists
+    let taskConfig: TaskConfig | undefined;
+    if (rawTask) {
+      const validationResult = taskConfigSchema.safeParse(rawTask);
       if (!validationResult.success) {
-        logger.error("Invalid customer config from Recoup Jobs API", {
+        logger.error("Invalid task config from Recoup Tasks API", {
           externalId: payload.externalId,
           errors: validationResult.error.issues,
-          rawCustomer,
+          rawTask,
         });
         // Continue with fallback to env vars
       } else {
-        customer = validationResult.data;
+        taskConfig = validationResult.data;
       }
     }
 
-    const accountId = customer?.accountId;
+    const accountId = taskConfig?.accountId;
     const roomId = "ceb9d9fc-7934-47d5-9021-124202cc1e70";
-    const artistId = customer?.artistId;
+    const artistId = taskConfig?.artistId;
     const prompt =
-      customer?.prompt ??
+      taskConfig?.prompt ??
       "Draft a friendly check-in message for our customers.";
 
     if (!accountId) {
-      logger.error("Missing required accountId from job");
+      logger.error("Missing required accountId from task");
       return;
     }
 
