@@ -45,6 +45,7 @@ export async function generateChat(
     messages,
     roomId: params.roomId,
     accountId: params.accountId,
+    excludeTools: ["create_task"],
   };
 
   if (params.artistId) {
