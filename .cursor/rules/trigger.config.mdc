@@ -39,7 +39,7 @@ export default defineConfig({
   },
 
   // Global lifecycle hooks
-  onStart: async ({ payload, ctx }) => {
+  onStartAttempt: async ({ payload, ctx }) => {
     console.log("Global task start");
   },
   onSuccess: async ({ payload, output, ctx }) => {

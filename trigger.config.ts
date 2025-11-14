@@ -8,6 +8,7 @@ export default defineConfig({
   // You can override this on an individual task.
   // See https://trigger.dev/docs/runs/max-duration
   maxDuration: 3600,
+  machine: "micro",
   retries: {
     enabledInDev: true,
     default: {

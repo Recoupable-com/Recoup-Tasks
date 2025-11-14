@@ -1,7 +1,7 @@
 import { logger, schedules } from "@trigger.dev/sdk/v3";
 import { z } from "zod";
-import { fetchTask, type TaskConfig } from "./recoup/fetchTask";
-import { generateChat } from "./recoup/generateChat";
+import { fetchTask, type TaskConfig } from "../recoup/fetchTask";
+import { generateChat } from "../recoup/generateChat";
 
 type TaskPayload = {
   // Provided automatically by Trigger.dev schedules
@@ -23,7 +23,7 @@ const taskConfigSchema = z.object({
 
 export const customerPromptTask = schedules.task({
   id: "customer-prompt-task",
-  run: async (payload: TaskPayload, { ctx }) => {
+  run: async (payload: TaskPayload) => {
     const rawTask = await fetchTask(payload.externalId);
 
     // Validate task config if it exists
