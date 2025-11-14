@@ -3,7 +3,11 @@ import { scrapeArtistSocials } from "../recoup/scrapeArtistSocials";
 import { getArtistSocials } from "../recoup/getArtistSocials";
 import { pollScraperResults } from "../polling/pollScraperResults";
 import { generateChat } from "../recoup/generateChat";
-import { chatSchema, type ChatConfig } from "../schemas/chatSchema";
+import {
+  chatSchema,
+  type ChatConfig,
+  DEFAULT_ROOM_ID,
+} from "../schemas/chatSchema";
 
 type ArtistSocialProfilesPayload = ChatConfig;
 
@@ -91,7 +95,7 @@ export const artistSocialProfilesScrape = task({
       : {};
 
     const accountId = taskConfig.accountId;
-    const roomId = taskConfig.roomId ?? "ceb9d9fc-7934-47d5-9021-124202cc1e70";
+    const roomId = taskConfig.roomId ?? DEFAULT_ROOM_ID;
     const prompt =
       taskConfig.prompt ??
       "Summarize the updated artist social profiles that were just scraped.";

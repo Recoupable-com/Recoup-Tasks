@@ -1,6 +1,11 @@
 import { z } from "zod";
 
 /**
+ * Default room ID used as fallback when roomId is not provided in the chat config.
+ */
+export const DEFAULT_ROOM_ID = "ceb9d9fc-7934-47d5-9021-124202cc1e70";
+
+/**
  * Shared schema for chat configuration parameters.
  * Used across multiple tasks to ensure consistency.
  */

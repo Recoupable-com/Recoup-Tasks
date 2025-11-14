@@ -1,7 +1,11 @@
 import { logger, schedules } from "@trigger.dev/sdk/v3";
 import { fetchTask } from "../recoup/fetchTask";
 import { generateChat } from "../recoup/generateChat";
-import { chatSchema, type ChatConfig } from "../schemas/chatSchema";
+import {
+  chatSchema,
+  type ChatConfig,
+  DEFAULT_ROOM_ID,
+} from "../schemas/chatSchema";
 
 type TaskPayload = {
   // Provided automatically by Trigger.dev schedules
@@ -34,7 +38,7 @@ export const customerPromptTask = schedules.task({
     }
 
     const accountId = taskConfig?.accountId;
-    const roomId = "ceb9d9fc-7934-47d5-9021-124202cc1e70";
+    const roomId = taskConfig?.roomId ?? DEFAULT_ROOM_ID;
     const artistId = taskConfig?.artistId;
     const prompt =
       taskConfig?.prompt ??
