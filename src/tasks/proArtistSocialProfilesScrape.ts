@@ -11,8 +11,8 @@ import {
 
 type ArtistSocialProfilesPayload = ChatConfig;
 
-export const artistSocialProfilesScrape = task({
-  id: "artist-social-profiles-scrape",
+export const proArtistSocialProfilesScrape = task({
+  id: "pro-artist-social-profiles-scrape",
   maxDuration: 22 * 60,
   run: async (payload: ArtistSocialProfilesPayload) => {
     const taskConfigValidation = chatSchema.safeParse(payload);
@@ -22,10 +22,10 @@ export const artistSocialProfilesScrape = task({
     const artistId = taskConfig.artistId;
     const accountId = taskConfig.accountId;
 
-    logger.log("artistSocialProfilesScrape", { artistId });
+    logger.log("proArtistSocialProfilesScrape", { artistId });
     if (!artistId || !accountId) {
       throw new Error(
-        "artist-social-profiles-scrape requires an artistId and accountId payload"
+        "pro-artist-social-profiles-scrape requires an artistId and accountId payload"
       );
     }
 
@@ -124,3 +124,4 @@ export const artistSocialProfilesScrape = task({
     };
   },
 });
+
