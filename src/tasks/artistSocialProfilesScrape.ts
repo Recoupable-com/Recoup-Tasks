@@ -105,6 +105,7 @@ export const artistSocialProfilesScrape = task({
         artistId,
         accountId,
         roomId,
+        prompt,
       });
 
       await generateChat({
