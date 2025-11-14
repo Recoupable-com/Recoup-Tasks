@@ -9,6 +9,7 @@ type ArtistSocialProfilesPayload = {
 
 export const artistSocialProfilesScrape = task({
   id: "artist-social-profiles-scrape",
+  maxDuration: 22 * 60,
   run: async (payload: ArtistSocialProfilesPayload) => {
     const artistAccountId = payload.artist_account_id;
     logger.log("artistSocialProfilesScrape", { artistAccountId });
