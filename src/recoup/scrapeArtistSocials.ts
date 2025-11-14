@@ -3,8 +3,8 @@ import { z } from "zod";
 
 const scrapeResponseSchema = z.array(
   z.object({
-    runId: z.string(),
-    datasetId: z.string(),
+    runId: z.string().nullable(),
+    datasetId: z.string().nullable(),
     error: z.string().nullable(),
   })
 );
@@ -57,7 +57,9 @@ export async function scrapeArtistSocials(
       return undefined;
     }
 
-    return validation.data;
+    return validation.data.filter(
+      (item) => item.runId !== null && item.datasetId !== null
+    );
   } catch (error) {
     logger.error("Failed to scrape artist socials from Recoup API", {
       artistAccountId,
@@ -66,4 +68,3 @@ export async function scrapeArtistSocials(
     return undefined;
   }
 }
-
