@@ -9,7 +9,7 @@ const artistSocialsResponseSchema = z.object({
       social_id: z.string(),
       username: z.string(),
       profile_url: z.string().min(1),
-      avatar: z.string().url().nullable(),
+      avatar: z.url().nullable(),
       bio: z.string().nullable(),
       follower_count: z.number().nullable(),
       following_count: z.number().nullable(),
