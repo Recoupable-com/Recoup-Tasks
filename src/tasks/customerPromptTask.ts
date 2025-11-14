@@ -1,7 +1,11 @@
 import { logger, schedules } from "@trigger.dev/sdk/v3";
-import { z } from "zod";
-import { fetchTask, type TaskConfig } from "../recoup/fetchTask";
+import { fetchTask } from "../recoup/fetchTask";
 import { generateChat } from "../recoup/generateChat";
+import {
+  chatSchema,
+  type ChatConfig,
+  DEFAULT_ROOM_ID,
+} from "../schemas/chatSchema";
 
 type TaskPayload = {
   // Provided automatically by Trigger.dev schedules
@@ -12,24 +16,15 @@ type TaskPayload = {
   externalId?: string;
 };
 
-// Zod schema for validating task config (for runtime validation after fetch)
-const taskConfigSchema = z.object({
-  prompt: z.string().min(1).optional(),
-  accountId: z.string().min(1).optional(),
-  roomId: z.string().min(1).optional(),
-  artistId: z.string().optional(),
-  model: z.string().optional(),
-});
-
 export const customerPromptTask = schedules.task({
   id: "customer-prompt-task",
   run: async (payload: TaskPayload) => {
     const rawTask = await fetchTask(payload.externalId);
 
     // Validate task config if it exists
-    let taskConfig: TaskConfig | undefined;
+    let taskConfig: ChatConfig | undefined;
     if (rawTask) {
-      const validationResult = taskConfigSchema.safeParse(rawTask);
+      const validationResult = chatSchema.safeParse(rawTask);
       if (!validationResult.success) {
         logger.error("Invalid task config from Recoup Tasks API", {
           externalId: payload.externalId,
@@ -43,7 +38,7 @@ export const customerPromptTask = schedules.task({
     }
 
     const accountId = taskConfig?.accountId;
-    const roomId = "ceb9d9fc-7934-47d5-9021-124202cc1e70";
+    const roomId = taskConfig?.roomId ?? DEFAULT_ROOM_ID;
     const artistId = taskConfig?.artistId;
     const prompt =
       taskConfig?.prompt ??
@@ -54,14 +49,11 @@ export const customerPromptTask = schedules.task({
       return;
     }
 
-    await generateChat(
-      {
-        prompt,
-        accountId,
-        roomId,
-        artistId,
-      },
-      payload.externalId
-    );
+    await generateChat({
+      prompt,
+      accountId,
+      roomId,
+      artistId,
+    });
   },
 });

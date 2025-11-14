@@ -1,5 +1,6 @@
 import { logger } from "@trigger.dev/sdk/v3";
 import { z } from "zod";
+import { type ChatConfig } from "../schemas/chatSchema";
 
 // Zod schema for validating task response from Recoup Tasks API
 const taskResponseSchema = z.object({
@@ -17,20 +18,9 @@ const taskResponseSchema = z.object({
   ),
 });
 
-// Zod schema for validating task configuration
-const taskConfigSchema = z.object({
-  prompt: z.string().min(1).optional(),
-  accountId: z.string().min(1).optional(),
-  roomId: z.string().min(1).optional(),
-  artistId: z.string().optional(),
-  model: z.string().optional(),
-});
-
-export type TaskConfig = z.infer<typeof taskConfigSchema>;
-
 /**
  * Fetches a task from the Recoup Tasks API using the externalId (task ID).
- * Returns the task data mapped to TaskConfig format, or undefined if:
+ * Returns the task data mapped to ChatConfig format, or undefined if:
  * - No externalId provided
  * - Task not found
  * - Task is disabled
@@ -38,7 +28,7 @@ export type TaskConfig = z.infer<typeof taskConfigSchema>;
  */
 export async function fetchTask(
   externalId?: string
-): Promise<TaskConfig | undefined> {
+): Promise<ChatConfig | undefined> {
   if (!externalId) {
     return undefined;
   }

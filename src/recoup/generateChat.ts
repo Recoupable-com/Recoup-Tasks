@@ -19,12 +19,10 @@ type ChatGenerateResponse = {
  * Generates a chat response using the Recoup Chat Generate API.
  *
  * @param params - Chat generation parameters
- * @param externalId - Optional external ID for logging purposes
  * @returns Promise that resolves to the parsed response, or undefined on error
  */
 export async function generateChat(
-  params: ChatGenerateParams,
-  externalId?: string
+  params: ChatGenerateParams
 ): Promise<ChatGenerateResponse | undefined> {
   const apiUrl = "https://chat.recoupable.com/api/chat/generate";
 
@@ -66,7 +64,6 @@ export async function generateChat(
       logger.error("Recoup Chat API error", {
         status: response.status,
         errorText,
-        externalId,
       });
       return undefined;
     }
@@ -83,12 +80,11 @@ export async function generateChat(
       usage: json.usage,
       reasoningText: json.reasoningText,
       textPreview: combinedText.slice(0, 500),
-      externalId,
     });
 
     return json;
   } catch (error) {
-    logger.error("Failed to call Recoup Chat API", { error, externalId });
+    logger.error("Failed to call Recoup Chat API", { error });
     return undefined;
   }
 }

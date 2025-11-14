@@ -2,29 +2,39 @@ import { logger, task, wait } from "@trigger.dev/sdk/v3";
 import { scrapeArtistSocials } from "../recoup/scrapeArtistSocials";
 import { getArtistSocials } from "../recoup/getArtistSocials";
 import { pollScraperResults } from "../polling/pollScraperResults";
+import { generateChat } from "../recoup/generateChat";
+import {
+  chatSchema,
+  type ChatConfig,
+  DEFAULT_ROOM_ID,
+} from "../schemas/chatSchema";
 
-type ArtistSocialProfilesPayload = {
-  artist_account_id?: string;
-};
+type ArtistSocialProfilesPayload = ChatConfig;
 
 export const artistSocialProfilesScrape = task({
   id: "artist-social-profiles-scrape",
   maxDuration: 22 * 60,
   run: async (payload: ArtistSocialProfilesPayload) => {
-    const artistAccountId = payload.artist_account_id;
-    logger.log("artistSocialProfilesScrape", { artistAccountId });
-    if (!artistAccountId) {
+    const taskConfigValidation = chatSchema.safeParse(payload);
+    const taskConfig = taskConfigValidation.success
+      ? taskConfigValidation.data
+      : {};
+    const artistId = taskConfig.artistId;
+    const accountId = taskConfig.accountId;
+
+    logger.log("artistSocialProfilesScrape", { artistId });
+    if (!artistId || !accountId) {
       throw new Error(
-        "artist-social-profiles-scrape requires an artist_account_id payload"
+        "artist-social-profiles-scrape requires an artistId and accountId payload"
       );
     }
 
     // Step 1: Kick off scraping jobs for all social profiles
     logger.log("Starting scrape for artist social profiles", {
-      artist_account_id: artistAccountId,
+      artistId,
     });
 
-    const scrapeResponses = await scrapeArtistSocials(artistAccountId);
+    const scrapeResponses = await scrapeArtistSocials(artistId);
 
     if (!scrapeResponses) {
       throw new Error("Failed to start artist social scrape");
@@ -62,30 +72,50 @@ export const artistSocialProfilesScrape = task({
     // Step 3: Fetch updated artist socials after scraping is complete
     // Wait 10 seconds to ensure webhooks finish firing to update the data
     logger.log("Waiting 10 seconds for webhooks to complete", {
-      artist_account_id: artistAccountId,
+      artistId,
     });
     await wait.for({ seconds: 10 });
 
     logger.log("Fetching updated artist socials", {
-      artist_account_id: artistAccountId,
+      artistId,
     });
 
-    const updatedSocials = await getArtistSocials(artistAccountId);
+    const updatedSocials = await getArtistSocials(artistId);
 
     if (!updatedSocials) {
       logger.warn("Failed to fetch updated artist socials", {
-        artist_account_id: artistAccountId,
+        artistId,
       });
     } else {
       logger.log("Fetched updated artist socials", {
-        artist_account_id: artistAccountId,
+        artistId,
         total: updatedSocials.length,
         socials: updatedSocials,
       });
     }
 
+    // Step 4: Generate chat response if task config is provided
+    const roomId = taskConfig.roomId ?? DEFAULT_ROOM_ID;
+    const prompt =
+      taskConfig.prompt ??
+      "Summarize the updated artist social profiles that were just scraped.";
+
+    logger.log("Generating chat response", {
+      artistId,
+      accountId,
+      roomId,
+      prompt,
+    });
+
+    await generateChat({
+      prompt,
+      accountId,
+      roomId,
+      artistId,
+    });
+
     return {
-      artist_account_id: artistAccountId,
+      artistId,
       totalRuns: results.length,
       succeeded: results.filter((r) => r.status === "SUCCEEDED").length,
       failed: results.filter((r) => r.status === "FAILED").length,
