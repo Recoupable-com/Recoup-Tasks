@@ -15,11 +15,17 @@ export const artistSocialProfilesScrape = task({
   id: "artist-social-profiles-scrape",
   maxDuration: 22 * 60,
   run: async (payload: ArtistSocialProfilesPayload) => {
-    const artistId = payload.artistId;
+    const taskConfigValidation = chatSchema.safeParse(payload);
+    const taskConfig = taskConfigValidation.success
+      ? taskConfigValidation.data
+      : {};
+    const artistId = taskConfig.artistId;
+    const accountId = taskConfig.accountId;
+
     logger.log("artistSocialProfilesScrape", { artistId });
-    if (!artistId) {
+    if (!artistId || !accountId) {
       throw new Error(
-        "artist-social-profiles-scrape requires an artistId payload"
+        "artist-social-profiles-scrape requires an artistId and accountId payload"
       );
     }
 
@@ -89,36 +95,24 @@ export const artistSocialProfilesScrape = task({
     }
 
     // Step 4: Generate chat response if task config is provided
-    const taskConfigValidation = chatSchema.safeParse(payload);
-    const taskConfig = taskConfigValidation.success
-      ? taskConfigValidation.data
-      : {};
-
-    const accountId = taskConfig.accountId;
     const roomId = taskConfig.roomId ?? DEFAULT_ROOM_ID;
     const prompt =
       taskConfig.prompt ??
       "Summarize the updated artist social profiles that were just scraped.";
 
-    if (accountId) {
-      logger.log("Generating chat response", {
-        artistId,
-        accountId,
-        roomId,
-        prompt,
-      });
+    logger.log("Generating chat response", {
+      artistId,
+      accountId,
+      roomId,
+      prompt,
+    });
 
-      await generateChat({
-        prompt,
-        accountId,
-        roomId,
-        artistId,
-      });
-    } else {
-      logger.log("Skipping chat generation - no accountId provided", {
-        artistId,
-      });
-    }
+    await generateChat({
+      prompt,
+      accountId,
+      roomId,
+      artistId,
+    });
 
     return {
       artistId,
