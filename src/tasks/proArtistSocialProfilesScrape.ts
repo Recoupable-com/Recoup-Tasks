@@ -10,7 +10,10 @@ export const proArtistSocialProfilesScrape = schedules.task({
     pattern: "0 0 * * *", // Daily at midnight
     timezone: "America/New_York", // Eastern Time (handles DST automatically)
   },
-  maxDuration: 60 * 60,
+  maxDuration: 60 * 60, // 1 hour
+  retry: {
+    maxAttempts: 1, // Do not retry
+  },
   run: async () => {
     // Fetch pro artists
     const allArtistIds = await getProArtists();
