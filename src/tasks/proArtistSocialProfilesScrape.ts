@@ -12,7 +12,7 @@ export const proArtistSocialProfilesScrape = schedules.task({
   },
   maxDuration: 60 * 60,
   run: async () => {
-    // Step 1: Fetch pro artists
+    // Fetch pro artists
     const allArtistIds = await getProArtists();
 
     if (!allArtistIds || allArtistIds.length === 0) {
@@ -27,10 +27,10 @@ export const proArtistSocialProfilesScrape = schedules.task({
       artistIds,
     });
 
-    // Step 2: Get all socials for all artists
+    // Get all socials for all artists
     const artistSocialsMap = await getBatchArtistSocials(artistIds);
 
-    // Step 2b: Log artists missing socials for visibility
+    // Log artists missing socials for visibility
     artistIds
       .filter(
         (artistId) =>
@@ -41,7 +41,7 @@ export const proArtistSocialProfilesScrape = schedules.task({
         logger.warn("No socials found for artist", { artistId });
       });
 
-    // Step 3: Filter scrapable socials
+    // Filter scrapable socials
     const allSocials = filterScrapableSocials(artistIds, artistSocialsMap);
 
     logger.log("Total socials to scrape", {
@@ -49,7 +49,7 @@ export const proArtistSocialProfilesScrape = schedules.task({
       allSocials,
     });
 
-    // Step 4: Scrape and poll all socials in batches
+    // Scrape and poll all socials in batches
     const allResults = await scrapeAndPollSocials(allSocials);
 
     if (allResults.length === 0) {
