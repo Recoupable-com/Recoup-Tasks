@@ -34,11 +34,6 @@ export async function pollScraperResults(
         return null;
       }
 
-      logger.log("Scraper status check", {
-        runId: run.runId,
-        status: result.status,
-      });
-
       if (result.status === "SUCCEEDED") {
         const completedResult = result as {
           status: string;
