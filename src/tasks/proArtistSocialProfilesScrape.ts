@@ -1,11 +1,15 @@
-import { logger, task } from "@trigger.dev/sdk/v3";
+import { logger, schedules } from "@trigger.dev/sdk/v3";
 import { getProArtists } from "../recoup/getProArtists";
 import { getBatchArtistSocials } from "../artists/getBatchArtistSocials";
 import { filterScrapableSocials } from "../socials/filterScrapableSocials";
 import { scrapeAndPollSocials } from "../socials/scrapeAndPollSocials";
 
-export const proArtistSocialProfilesScrape = task({
+export const proArtistSocialProfilesScrape = schedules.task({
   id: "pro-artist-social-profiles-scrape",
+  cron: {
+    pattern: "0 0 * * *", // Daily at midnight
+    timezone: "America/New_York", // Eastern Time (handles DST automatically)
+  },
   maxDuration: 60 * 60,
   run: async () => {
     // Step 1: Fetch pro artists
@@ -15,8 +19,7 @@ export const proArtistSocialProfilesScrape = task({
       throw new Error("Failed to fetch pro artists or no artists found");
     }
 
-    // Limit to first 22 for testing
-    const artistIds = allArtistIds; //.slice(0, 20);
+    const artistIds = allArtistIds;
 
     logger.log("Fetched pro artists", {
       total: allArtistIds.length,
