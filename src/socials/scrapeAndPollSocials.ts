@@ -21,12 +21,6 @@ export async function scrapeAndPollSocials(
     const batchNumber = Math.floor(i / batchSize) + 1;
     const totalBatches = Math.ceil(socials.length / batchSize);
 
-    logger.log(`Scraping batch ${batchNumber} of ${totalBatches}`, {
-      batchStart: i + 1,
-      batchEnd: Math.min(i + batchSize, socials.length),
-      batchSize: socialBatch.length,
-    });
-
     // Start scrapes for this batch
     const scrapeResults = await Promise.all(
       socialBatch.map((social) => scrapeSocial(social.socialId))
@@ -81,10 +75,13 @@ export async function scrapeAndPollSocials(
 
     // Log all successfully started scrapes for this batch
     if (startedScrapes.length > 0) {
-      logger.log(`Started scrapes for batch ${batchNumber}`, {
-        count: startedScrapes.length,
-        scrapes: startedScrapes,
-      });
+      logger.log(
+        `Started scrapes for batch ${batchNumber} of ${totalBatches}`,
+        {
+          count: startedScrapes.length,
+          scrapes: startedScrapes,
+        }
+      );
     }
 
     // Poll this batch to completion before moving to next batch

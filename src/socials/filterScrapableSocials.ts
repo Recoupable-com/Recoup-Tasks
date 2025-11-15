@@ -21,6 +21,12 @@ export function filterScrapableSocials(
   >
 ): ScrapableSocial[] {
   const scrapableSocials: ScrapableSocial[] = [];
+  const nonScrapableSocials: Array<{
+    artistId: string;
+    socialId: string;
+    username: string;
+    profile_url: string;
+  }> = [];
 
   for (const artistId of artistIds) {
     const socials = artistSocialsMap.get(artistId);
@@ -29,7 +35,7 @@ export function filterScrapableSocials(
     for (const social of socials) {
       // Filter out non-scrapable socials (e.g., Spotify)
       if (!isScrapableSocial(social)) {
-        logger.log("Skipping non-scrapable social", {
+        nonScrapableSocials.push({
           artistId,
           socialId: social.social_id,
           username: social.username,
@@ -45,6 +51,14 @@ export function filterScrapableSocials(
         profile_url: social.profile_url,
       });
     }
+  }
+
+  // Log all non-scrapable socials in a single log
+  if (nonScrapableSocials.length > 0) {
+    logger.log("Skipping non-scrapable socials", {
+      count: nonScrapableSocials.length,
+      socials: nonScrapableSocials,
+    });
   }
 
   return scrapableSocials;

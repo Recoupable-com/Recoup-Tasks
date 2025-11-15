@@ -16,7 +16,7 @@ export const proArtistSocialProfilesScrape = task({
     }
 
     // Limit to first 22 for testing
-    const artistIds = allArtistIds.slice(0, 20);
+    const artistIds = allArtistIds; //.slice(0, 20);
 
     logger.log("Fetched pro artists", {
       total: allArtistIds.length,
@@ -24,9 +24,8 @@ export const proArtistSocialProfilesScrape = task({
       artistIds,
     });
 
-    // Step 2: Get all socials for all artists (in batches)
-    const BATCH_SIZE = 10;
-    const artistSocialsMap = await getBatchArtistSocials(artistIds, BATCH_SIZE);
+    // Step 2: Get all socials for all artists
+    const artistSocialsMap = await getBatchArtistSocials(artistIds);
 
     // Step 2b: Log artists missing socials for visibility
     artistIds
