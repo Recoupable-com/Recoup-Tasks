@@ -40,6 +40,7 @@ export const customerPromptTask = schedules.task({
     const accountId = taskConfig?.accountId;
     const roomId = taskConfig?.roomId ?? DEFAULT_ROOM_ID;
     const artistId = taskConfig?.artistId;
+    const model = taskConfig?.model;
     const prompt =
       taskConfig?.prompt ??
       "Draft a friendly check-in message for our customers.";
@@ -54,6 +55,7 @@ export const customerPromptTask = schedules.task({
       accountId,
       roomId,
       artistId,
+      model,
     });
   },
 });

@@ -6,6 +6,7 @@ type ChatGenerateParams = {
   accountId: string;
   roomId: string;
   artistId?: string;
+  model?: string;
 };
 
 type ChatGenerateResponse = {
@@ -48,6 +49,10 @@ export async function generateChat(
 
   if (params.artistId) {
     body.artistId = params.artistId;
+  }
+
+  if (params.model) {
+    body.model = params.model;
   }
 
   try {
