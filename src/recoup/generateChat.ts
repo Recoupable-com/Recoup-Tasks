@@ -55,6 +55,13 @@ export async function generateChat(
     body.model = params.model;
   }
 
+  logger.log("Calling Recoup Chat API", {
+    roomId: params.roomId,
+    accountId: params.accountId,
+    artistId: params.artistId,
+    model: params.model,
+  });
+
   try {
     const response = await fetch(apiUrl, {
       method: "POST",
