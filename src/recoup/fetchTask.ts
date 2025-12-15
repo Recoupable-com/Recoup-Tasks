@@ -14,6 +14,7 @@ const taskResponseSchema = z.object({
       account_id: z.string(),
       artist_account_id: z.string(),
       enabled: z.boolean().nullable(),
+      model: z.string().optional(),
     })
   ),
 });
@@ -76,6 +77,7 @@ export async function fetchTask(
       prompt: task.prompt,
       accountId: task.account_id,
       artistId: task.artist_account_id,
+      model: task.model,
     };
   } catch (error) {
     logger.error("Failed to fetch task from Recoup Tasks API", {
