@@ -1,6 +1,6 @@
 import { logger } from "@trigger.dev/sdk/v3";
 import { NEW_API_BASE_URL, RECOUP_API_KEY } from "../consts";
-import type { Database } from "../../types/database.types";
+import type { Database } from "@/types/database.types";
 
 type Room = Database["public"]["Tables"]["rooms"]["Row"];
 
