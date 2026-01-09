@@ -1,5 +1,4 @@
 import { logger } from "@trigger.dev/sdk/v3";
-import { RECOUP_API_KEY } from "../consts";
 import { createChat } from "../recoup/createChat";
 
 type GetTaskRoomIdParams = {
@@ -21,13 +20,7 @@ export async function getTaskRoomId(
     return params.roomId;
   }
 
-  if (!RECOUP_API_KEY) {
-    logger.error("Missing RECOUP_API_KEY environment variable");
-    return undefined;
-  }
-
   const chat = await createChat({
-    apiKey: RECOUP_API_KEY,
     artistId: params.artistId,
   });
 
