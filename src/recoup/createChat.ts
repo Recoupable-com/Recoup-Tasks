@@ -1,4 +1,7 @@
 import { logger } from "@trigger.dev/sdk/v3";
+import type { Database } from "../../types/database.types";
+
+type Room = Database["public"]["Tables"]["rooms"]["Row"];
 
 type CreateChatParams = {
   apiKey: string;
@@ -6,17 +9,9 @@ type CreateChatParams = {
   chatId?: string;
 };
 
-type Chat = {
-  id: string;
-  account_id: string | null;
-  artist_id: string | null;
-  topic: string | null;
-  updated_at: string;
-};
-
 type CreateChatResponse = {
   status: "success" | "error";
-  chat?: Chat;
+  chat?: Room;
   message?: string;
 };
 
@@ -28,7 +23,7 @@ type CreateChatResponse = {
  */
 export async function createChat(
   params: CreateChatParams
-): Promise<Chat | undefined> {
+): Promise<Room | undefined> {
   const apiUrl = "https://recoup-api.vercel.app/api/chats";
 
   const body: Record<string, unknown> = {};
