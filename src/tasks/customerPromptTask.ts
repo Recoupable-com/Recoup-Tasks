@@ -1,6 +1,5 @@
 import { logger, schedules } from "@trigger.dev/sdk/v3";
-import { RECOUP_API_KEY } from "../consts";
-import { createChat } from "../recoup/createChat";
+import { getTaskRoomId } from "../chats/getTaskRoomId";
 import { fetchTask } from "../recoup/fetchTask";
 import { generateChat } from "../recoup/generateChat";
 import { chatSchema, type ChatConfig } from "../schemas/chatSchema";
@@ -47,25 +46,13 @@ export const customerPromptTask = schedules.task({
       return;
     }
 
-    let roomId = taskConfig?.roomId;
+    const roomId = await getTaskRoomId({
+      roomId: taskConfig?.roomId,
+      artistId,
+    });
 
     if (!roomId) {
-      if (!RECOUP_API_KEY) {
-        logger.error("Missing RECOUP_API_KEY environment variable");
-        return;
-      }
-
-      const chat = await createChat({
-        apiKey: RECOUP_API_KEY,
-        artistId,
-      });
-
-      if (!chat) {
-        logger.error("Failed to create chat room");
-        return;
-      }
-
-      roomId = chat.id;
+      return;
     }
 
     await generateChat({
