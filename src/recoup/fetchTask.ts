@@ -1,6 +1,6 @@
 import { logger } from "@trigger.dev/sdk/v3";
 import { z } from "zod";
-import { TASKS_API_BASE_URL } from "../consts";
+import { NEW_API_BASE_URL } from "../consts";
 import { type ChatConfig } from "../schemas/chatSchema";
 
 // Zod schema for validating task response from Recoup Tasks API
@@ -35,7 +35,7 @@ export async function fetchTask(
     return undefined;
   }
 
-  const tasksApiUrl = `${TASKS_API_BASE_URL}/api/tasks`;
+  const tasksApiUrl = `${NEW_API_BASE_URL}/api/tasks`;
 
   try {
     const response = await fetch(`${tasksApiUrl}?id=${externalId}`, {
