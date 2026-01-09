@@ -32,6 +32,7 @@ export async function fetchTask(
   externalId?: string
 ): Promise<ChatConfig | undefined> {
   if (!externalId) {
+    logger.warn("No externalId provided, skipping task fetch");
     return undefined;
   }
 

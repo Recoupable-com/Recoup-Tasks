@@ -17,6 +17,7 @@ export async function getTaskRoomId(
   params: GetTaskRoomIdParams
 ): Promise<string | undefined> {
   if (params.roomId) {
+    logger.log("Using existing roomId", { roomId: params.roomId });
     return params.roomId;
   }
 

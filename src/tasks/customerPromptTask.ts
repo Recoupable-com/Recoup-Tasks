@@ -16,7 +16,18 @@ type TaskPayload = {
 export const customerPromptTask = schedules.task({
   id: "customer-prompt-task",
   run: async (payload: TaskPayload) => {
+    logger.log("Starting customer prompt task", {
+      externalId: payload.externalId,
+      timestamp: payload.timestamp,
+    });
+
     const rawTask = await fetchTask(payload.externalId);
+
+    if (!rawTask) {
+      logger.warn("No task config returned from fetchTask", {
+        externalId: payload.externalId,
+      });
+    }
 
     // Validate task config if it exists
     let taskConfig: ChatConfig | undefined;
@@ -52,6 +63,7 @@ export const customerPromptTask = schedules.task({
     });
 
     if (!roomId) {
+      logger.error("Failed to get roomId, aborting task");
       return;
     }
 
