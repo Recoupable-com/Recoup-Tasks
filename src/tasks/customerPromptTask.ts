@@ -1,11 +1,8 @@
 import { logger, schedules } from "@trigger.dev/sdk/v3";
+import { getTaskRoomId } from "../chats/getTaskRoomId";
 import { fetchTask } from "../recoup/fetchTask";
 import { generateChat } from "../recoup/generateChat";
-import {
-  chatSchema,
-  type ChatConfig,
-  DEFAULT_ROOM_ID,
-} from "../schemas/chatSchema";
+import { chatSchema, type ChatConfig } from "../schemas/chatSchema";
 
 type TaskPayload = {
   // Provided automatically by Trigger.dev schedules
@@ -19,7 +16,18 @@ type TaskPayload = {
 export const customerPromptTask = schedules.task({
   id: "customer-prompt-task",
   run: async (payload: TaskPayload) => {
+    logger.log("Starting customer prompt task", {
+      externalId: payload.externalId,
+      timestamp: payload.timestamp,
+    });
+
     const rawTask = await fetchTask(payload.externalId);
+
+    if (!rawTask) {
+      logger.warn("No task config returned from fetchTask", {
+        externalId: payload.externalId,
+      });
+    }
 
     // Validate task config if it exists
     let taskConfig: ChatConfig | undefined;
@@ -38,7 +46,6 @@ export const customerPromptTask = schedules.task({
     }
 
     const accountId = taskConfig?.accountId;
-    const roomId = taskConfig?.roomId ?? DEFAULT_ROOM_ID;
     const artistId = taskConfig?.artistId;
     const model = taskConfig?.model;
     const prompt =
@@ -47,6 +54,16 @@ export const customerPromptTask = schedules.task({
 
     if (!accountId) {
       logger.error("Missing required accountId from task");
+      return;
+    }
+
+    const roomId = await getTaskRoomId({
+      roomId: taskConfig?.roomId,
+      artistId,
+    });
+
+    if (!roomId) {
+      logger.error("Failed to get roomId, aborting task");
       return;
     }
 

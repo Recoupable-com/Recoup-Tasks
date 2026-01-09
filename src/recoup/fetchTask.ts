@@ -1,5 +1,6 @@
 import { logger } from "@trigger.dev/sdk/v3";
 import { z } from "zod";
+import { NEW_API_BASE_URL } from "../consts";
 import { type ChatConfig } from "../schemas/chatSchema";
 
 // Zod schema for validating task response from Recoup Tasks API
@@ -14,7 +15,7 @@ const taskResponseSchema = z.object({
       account_id: z.string(),
       artist_account_id: z.string(),
       enabled: z.boolean().nullable(),
-      model: z.string().optional(),
+      model: z.string().nullish(),
     })
   ),
 });
@@ -31,10 +32,11 @@ export async function fetchTask(
   externalId?: string
 ): Promise<ChatConfig | undefined> {
   if (!externalId) {
+    logger.warn("No externalId provided, skipping task fetch");
     return undefined;
   }
 
-  const tasksApiUrl = "https://api.recoupable.com/api/tasks";
+  const tasksApiUrl = `${NEW_API_BASE_URL}/api/tasks`;
 
   try {
     const response = await fetch(`${tasksApiUrl}?id=${externalId}`, {
@@ -77,7 +79,7 @@ export async function fetchTask(
       prompt: task.prompt,
       accountId: task.account_id,
       artistId: task.artist_account_id,
-      model: task.model,
+      model: task.model ?? undefined,
     };
   } catch (error) {
     logger.error("Failed to fetch task from Recoup Tasks API", {
