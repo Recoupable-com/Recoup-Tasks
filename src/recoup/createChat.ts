@@ -1,4 +1,5 @@
 import { logger } from "@trigger.dev/sdk/v3";
+import { NEW_API_BASE_URL } from "../consts";
 import type { Database } from "../../types/database.types";
 
 type Room = Database["public"]["Tables"]["rooms"]["Row"];
@@ -24,7 +25,7 @@ type CreateChatResponse = {
 export async function createChat(
   params: CreateChatParams
 ): Promise<Room | undefined> {
-  const apiUrl = "https://recoup-api.vercel.app/api/chats";
+  const apiUrl = `${NEW_API_BASE_URL}/api/chats`;
 
   const body: Record<string, unknown> = {};
 
