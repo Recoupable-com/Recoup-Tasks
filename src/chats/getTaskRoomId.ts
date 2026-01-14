@@ -4,6 +4,7 @@ import { createChat } from "../recoup/createChat";
 type GetTaskRoomIdParams = {
   roomId?: string;
   artistId?: string;
+  accountId?: string;
 };
 
 /**
@@ -22,6 +23,7 @@ export async function getTaskRoomId(
 
   const chat = await createChat({
     artistId: params.artistId,
+    accountId: params.accountId,
   });
 
   if (!chat) {

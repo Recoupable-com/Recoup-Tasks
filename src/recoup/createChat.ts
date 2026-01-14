@@ -7,6 +7,7 @@ type Room = Database["public"]["Tables"]["rooms"]["Row"];
 type CreateChatParams = {
   artistId?: string;
   chatId?: string;
+  accountId?: string;
 };
 
 type CreateChatResponse = {
@@ -41,8 +42,13 @@ export async function createChat(
     body.chatId = params.chatId;
   }
 
+  if (params?.accountId) {
+    body.accountId = params.accountId;
+  }
+
   logger.log("Creating new chat via Recoup API", {
     artistId: params?.artistId,
+    accountId: params?.accountId,
   });
 
   try {
