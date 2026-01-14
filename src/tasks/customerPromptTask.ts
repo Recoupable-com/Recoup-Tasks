@@ -60,6 +60,7 @@ export const customerPromptTask = schedules.task({
     const roomId = await getTaskRoomId({
       roomId: taskConfig?.roomId,
       artistId,
+      accountId,
     });
 
     if (!roomId) {
