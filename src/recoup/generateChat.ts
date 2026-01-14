@@ -29,7 +29,7 @@ export async function generateChat(
 
   const messages: UIMessage[] = [
     {
-      id: `msg-${Date.now()}`,
+      id: crypto.randomUUID(),
       role: "user",
       parts: [
         {
