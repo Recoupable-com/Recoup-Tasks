@@ -34,27 +34,45 @@ export const sendPulsesTask = schedules.task({
     for (const pulse of activePulses) {
       const accountId = pulse.account_id;
 
-      logger.log("Processing pulse for account", { accountId });
-
-      const roomId = await getTaskRoomId({ accountId });
-
-      if (!roomId) {
-        logger.error("Failed to get roomId for pulse", { accountId });
-        failed++;
-        continue;
-      }
-
-      const result = await generateChat({
-        prompt: DEFAULT_PULSE_PROMPT,
+      logger.log("Processing pulse for account", {
         accountId,
-        roomId,
+        pulseId: pulse.id,
+        active: pulse.active,
       });
 
-      if (result) {
-        logger.log("Pulse sent successfully", { accountId, roomId });
-        sent++;
-      } else {
-        logger.error("Failed to send pulse", { accountId, roomId });
+      try {
+        const roomId = await getTaskRoomId({ accountId });
+
+        if (!roomId) {
+          logger.error("Failed to get roomId for pulse", { accountId });
+          failed++;
+          continue;
+        }
+
+        logger.log("Got roomId, calling generateChat", { accountId, roomId });
+
+        const result = await generateChat({
+          prompt: DEFAULT_PULSE_PROMPT,
+          accountId,
+          roomId,
+        });
+
+        if (result) {
+          logger.log("Pulse sent successfully", {
+            accountId,
+            roomId,
+            finishReason: result.finishReason,
+          });
+          sent++;
+        } else {
+          logger.error("Failed to send pulse - generateChat returned undefined", { accountId, roomId });
+          failed++;
+        }
+      } catch (error) {
+        logger.error("Exception while processing pulse", {
+          accountId,
+          error: error instanceof Error ? error.message : String(error),
+        });
         failed++;
       }
     }

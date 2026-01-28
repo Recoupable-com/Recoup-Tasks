@@ -56,11 +56,18 @@ export async function fetchActivePulses(): Promise<Pulse[]> {
       return [];
     }
 
+    const pulses = validationResult.data.pulses;
+
     logger.log("Fetched active pulses", {
-      count: validationResult.data.pulses.length,
+      count: pulses.length,
+      pulses: pulses.map((p) => ({
+        id: p.id,
+        account_id: p.account_id,
+        active: p.active,
+      })),
     });
 
-    return validationResult.data.pulses;
+    return pulses;
   } catch (error) {
     logger.error("Failed to fetch active pulses from Recoup API", { error });
     return [];
