@@ -4,7 +4,7 @@ import { getTaskRoomId } from "../chats/getTaskRoomId";
 import { generateChat } from "../recoup/generateChat";
 
 const DEFAULT_PULSE_PROMPT =
-  "send an email with the text 'this is a pulse hello world'";
+  "send me an email with the text 'this is a pulse hello world'";
 
 /**
  * Scheduled task that sends pulses to all accounts with active pulse subscriptions.
