@@ -72,9 +72,6 @@ export async function generateChat(
   });
 
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout
-
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
@@ -82,10 +79,7 @@ export async function generateChat(
         "x-api-key": RECOUP_API_KEY,
       },
       body: JSON.stringify(body),
-      signal: controller.signal,
     });
-
-    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => "<no body>");
