@@ -1,5 +1,6 @@
 import { logger } from "@trigger.dev/sdk/v3";
 import type { UIMessage } from "ai";
+import { RECOUP_API_KEY } from "../consts";
 
 type ChatGenerateParams = {
   prompt: string;
@@ -25,6 +26,11 @@ type ChatGenerateResponse = {
 export async function generateChat(
   params: ChatGenerateParams
 ): Promise<ChatGenerateResponse | undefined> {
+  if (!RECOUP_API_KEY) {
+    logger.error("Missing RECOUP_API_KEY environment variable");
+    return undefined;
+  }
+
   const apiUrl = "https://chat.recoupable.com/api/chat/generate";
 
   const messages: UIMessage[] = [
@@ -56,10 +62,12 @@ export async function generateChat(
   }
 
   logger.log("Calling Recoup Chat API", {
+    url: apiUrl,
     roomId: params.roomId,
     accountId: params.accountId,
     artistId: params.artistId,
     model: params.model,
+    prompt: params.prompt,
   });
 
   try {
@@ -67,6 +75,7 @@ export async function generateChat(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "x-api-key": RECOUP_API_KEY,
       },
       body: JSON.stringify(body),
     });
@@ -75,7 +84,11 @@ export async function generateChat(
       const errorText = await response.text().catch(() => "<no body>");
       logger.error("Recoup Chat API error", {
         status: response.status,
-        errorText,
+        statusText: response.statusText,
+        errorText: errorText.slice(0, 1000),
+        url: apiUrl,
+        accountId: params.accountId,
+        roomId: params.roomId,
       });
       return undefined;
     }
