@@ -11,10 +11,11 @@ type ChatGenerateParams = {
 };
 
 type ChatGenerateResponse = {
-  text?: Array<{ type: string; text?: string }>;
+  text?: string;
   reasoningText?: string;
   finishReason?: string;
   usage?: Record<string, unknown>;
+  roomId?: string;
 };
 
 /**
@@ -86,38 +87,20 @@ export async function generateChat(
 
     clearTimeout(timeoutId);
 
-    logger.log("Recoup Chat API response received", {
-      status: response.status,
-      statusText: response.statusText,
-    });
-
     if (!response.ok) {
       const errorText = await response.text().catch(() => "<no body>");
       logger.error("Recoup Chat API error", {
         status: response.status,
-        statusText: response.statusText,
-        errorText: errorText.slice(0, 1000),
-        url: apiUrl,
-        accountId: params.accountId,
-        roomId: params.roomId,
+        errorText: errorText.slice(0, 500),
       });
       return undefined;
     }
 
-    logger.log("Parsing response JSON...");
     const json = (await response.json()) as ChatGenerateResponse;
-    logger.log("Response JSON parsed successfully");
 
-    const combinedText = (json.text ?? [])
-      .filter((part) => part.type === "text" && typeof part.text === "string")
-      .map((part) => part.text as string)
-      .join("\n\n");
-
-    logger.log("Recoup Chat API response", {
+    logger.log("Recoup Chat API success", {
       finishReason: json.finishReason,
-      usage: json.usage,
-      reasoningText: json.reasoningText,
-      textPreview: combinedText.slice(0, 500),
+      textPreview: json.text?.slice(0, 200),
     });
 
     return json;
