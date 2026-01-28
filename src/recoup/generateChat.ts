@@ -1,5 +1,6 @@
 import { logger } from "@trigger.dev/sdk/v3";
 import type { UIMessage } from "ai";
+import { NEW_API_BASE_URL, RECOUP_API_KEY } from "../consts";
 
 type ChatGenerateParams = {
   prompt: string;
@@ -10,10 +11,11 @@ type ChatGenerateParams = {
 };
 
 type ChatGenerateResponse = {
-  text?: Array<{ type: string; text?: string }>;
+  text?: string;
   reasoningText?: string;
   finishReason?: string;
   usage?: Record<string, unknown>;
+  roomId?: string;
 };
 
 /**
@@ -25,7 +27,12 @@ type ChatGenerateResponse = {
 export async function generateChat(
   params: ChatGenerateParams
 ): Promise<ChatGenerateResponse | undefined> {
-  const apiUrl = "https://chat.recoupable.com/api/chat/generate";
+  if (!RECOUP_API_KEY) {
+    logger.error("Missing RECOUP_API_KEY environment variable");
+    return undefined;
+  }
+
+  const apiUrl = `${NEW_API_BASE_URL}/api/chat/generate`;
 
   const messages: UIMessage[] = [
     {
@@ -56,10 +63,12 @@ export async function generateChat(
   }
 
   logger.log("Calling Recoup Chat API", {
+    url: apiUrl,
     roomId: params.roomId,
     accountId: params.accountId,
     artistId: params.artistId,
     model: params.model,
+    prompt: params.prompt,
   });
 
   try {
@@ -67,6 +76,7 @@ export async function generateChat(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "x-api-key": RECOUP_API_KEY,
       },
       body: JSON.stringify(body),
     });
@@ -75,23 +85,18 @@ export async function generateChat(
       const errorText = await response.text().catch(() => "<no body>");
       logger.error("Recoup Chat API error", {
         status: response.status,
-        errorText,
+        errorText: errorText.slice(0, 500),
       });
       return undefined;
     }
 
     const json = (await response.json()) as ChatGenerateResponse;
 
-    const combinedText = (json.text ?? [])
-      .filter((part) => part.type === "text" && typeof part.text === "string")
-      .map((part) => part.text as string)
-      .join("\n\n");
-
     logger.log("Recoup Chat API response", {
       finishReason: json.finishReason,
       usage: json.usage,
       reasoningText: json.reasoningText,
-      textPreview: combinedText.slice(0, 500),
+      textPreview: json.text?.slice(0, 500),
     });
 
     return json;

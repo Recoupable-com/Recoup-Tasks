@@ -46,11 +46,6 @@ export async function createChat(
     body.accountId = params.accountId;
   }
 
-  logger.log("Creating new chat via Recoup API", {
-    artistId: params?.artistId,
-    accountId: params?.accountId,
-  });
-
   try {
     const response = await fetch(apiUrl, {
       method: "POST",
@@ -78,11 +73,6 @@ export async function createChat(
       });
       return undefined;
     }
-
-    logger.log("Created new chat", {
-      chatId: json.chat.id,
-      artistId: json.chat.artist_id,
-    });
 
     return json.chat;
   } catch (error) {
