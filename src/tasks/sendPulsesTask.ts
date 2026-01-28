@@ -3,7 +3,8 @@ import { fetchActivePulses } from "../recoup/fetchActivePulses";
 import { getTaskRoomId } from "../chats/getTaskRoomId";
 import { generateChat } from "../recoup/generateChat";
 
-const DEFAULT_PULSE_PROMPT = "Send a hello world pulse message to this user.";
+const DEFAULT_PULSE_PROMPT =
+  "send an email with the text 'this is a pulse hello world'";
 
 /**
  * Scheduled task that sends pulses to all accounts with active pulse subscriptions.
