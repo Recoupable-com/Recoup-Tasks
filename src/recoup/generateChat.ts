@@ -92,9 +92,11 @@ export async function generateChat(
 
     const json = (await response.json()) as ChatGenerateResponse;
 
-    logger.log("Recoup Chat API success", {
+    logger.log("Recoup Chat API response", {
       finishReason: json.finishReason,
-      textPreview: json.text?.slice(0, 200),
+      usage: json.usage,
+      reasoningText: json.reasoningText,
+      textPreview: json.text?.slice(0, 500),
     });
 
     return json;
