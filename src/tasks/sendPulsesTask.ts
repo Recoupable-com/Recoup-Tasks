@@ -49,8 +49,6 @@ export const sendPulsesTask = schedules.task({
           continue;
         }
 
-        logger.log("Got roomId, calling generateChat", { accountId, roomId });
-
         const result = await generateChat({
           prompt: DEFAULT_PULSE_PROMPT,
           accountId,
@@ -58,11 +56,6 @@ export const sendPulsesTask = schedules.task({
         });
 
         if (result) {
-          logger.log("Pulse sent successfully", {
-            accountId,
-            roomId,
-            finishReason: result.finishReason,
-          });
           sent++;
         } else {
           logger.error("Failed to send pulse - generateChat returned undefined", { accountId, roomId });
