@@ -1,6 +1,6 @@
 import { logger } from "@trigger.dev/sdk/v3";
 import type { UIMessage } from "ai";
-import { RECOUP_API_KEY } from "../consts";
+import { NEW_API_BASE_URL, RECOUP_API_KEY } from "../consts";
 
 type ChatGenerateParams = {
   prompt: string;
@@ -31,7 +31,7 @@ export async function generateChat(
     return undefined;
   }
 
-  const apiUrl = "https://chat.recoupable.com/api/chat/generate";
+  const apiUrl = `${NEW_API_BASE_URL}/api/chat/generate`;
 
   const messages: UIMessage[] = [
     {
