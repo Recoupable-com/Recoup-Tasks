@@ -9,7 +9,9 @@ const DEFAULT_PULSE_PROMPT = `Review my latest conversations and compile a conci
 2. Key insights or patterns you've noticed in my work
 3. Actionable suggestions to help me achieve my goals building my record label
 
-Keep it focused and actionable - I want to start my day with clarity on where I left off and what I should prioritize next.`;
+Keep it focused and actionable - I want to start my day with clarity on where I left off and what I should prioritize next.
+
+Send this to me in an email.`;
 
 /**
  * Scheduled task that sends pulses to all accounts with active pulse subscriptions.
