@@ -3,12 +3,12 @@ import { fetchActivePulses } from "../recoup/fetchActivePulses";
 import { getTaskRoomId } from "../chats/getTaskRoomId";
 import { generateChat } from "../recoup/generateChat";
 
-const DEFAULT_PULSE_PROMPT = `Review my latest conversations to understand what I'm actively working on building my record label. Send me a concise email with:
+const DEFAULT_PULSE_PROMPT = `Review my conversations from the past 7 days. Send me a concise email with:
 
-1. A quick recap of where I left off (so I know you understand my current focus)
-2. A 90-minute morning plan with prioritized next steps to help me build momentum
+1. The 3 most important conversations I should follow up on (include links so I can pick up where I left off)
+2. A quick prioritized action for each to help me build momentum this morning
 
-Keep it short and actionable - help me hit the ground running.`;
+Keep it grounded in actual conversations - no fluff.`;
 
 /**
  * Scheduled task that sends pulses to all accounts with active pulse subscriptions.
