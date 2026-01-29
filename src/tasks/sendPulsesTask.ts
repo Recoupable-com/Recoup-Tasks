@@ -3,8 +3,13 @@ import { fetchActivePulses } from "../recoup/fetchActivePulses";
 import { getTaskRoomId } from "../chats/getTaskRoomId";
 import { generateChat } from "../recoup/generateChat";
 
-const DEFAULT_PULSE_PROMPT =
-  "send me an email with the text 'this is a pulse hello world'";
+const DEFAULT_PULSE_PROMPT = `Review my latest conversations and compile a concise summary of what I've been working on. Based on this context, send me an email with:
+
+1. A brief recap of my recent activity and progress
+2. Key insights or patterns you've noticed in my work
+3. Actionable suggestions to help me achieve my goals building my record label
+
+Keep it focused and actionable - I want to start my day with clarity on where I left off and what I should prioritize next.`;
 
 /**
  * Scheduled task that sends pulses to all accounts with active pulse subscriptions.
