@@ -8,8 +8,6 @@ const DEFAULT_PULSE_PROMPT = `Review my conversations from the past 7 days. Send
 1. The 3 most important conversations I should follow up on - include the full chat link (e.g. https://chat.recoupable.com/chat/72fff9d2-ab80-43c3-b38c-4176c1633ec8) so I can pick up where I left off
 2. A quick prioritized action for each to help me build momentum this morning
 
-Skip trivial conversations (greetings, system activations, pulse setup, etc.) - only include conversations with real substance that need decisions or follow-through.
-
 Keep it grounded in actual conversations - no fluff.`;
 
 /**
