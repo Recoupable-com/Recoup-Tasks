@@ -3,8 +3,12 @@ import { fetchActivePulses } from "../recoup/fetchActivePulses";
 import { getTaskRoomId } from "../chats/getTaskRoomId";
 import { generateChat } from "../recoup/generateChat";
 
-const DEFAULT_PULSE_PROMPT =
-  "send me an email with the text 'this is a pulse hello world'";
+const DEFAULT_PULSE_PROMPT = `Review my conversations from the past 7 days. Send me a concise email with:
+
+1. The 3 most important conversations I should follow up on - include the full chat link (e.g. https://chat.recoupable.com/chat/72fff9d2-ab80-43c3-b38c-4176c1633ec8) so I can pick up where I left off
+2. A quick prioritized action for each to help me build momentum this morning
+
+Keep it grounded in actual conversations - no fluff.`;
 
 /**
  * Scheduled task that sends pulses to all accounts with active pulse subscriptions.
