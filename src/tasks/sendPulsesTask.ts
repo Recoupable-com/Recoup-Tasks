@@ -12,7 +12,7 @@ const DEFAULT_PULSE_PROMPT =
  */
 export const sendPulsesTask = schedules.task({
   id: "send-pulses-task",
-  cron: "0 9 * * *", // Run daily at 9 AM UTC
+  cron: { pattern: "0 9 * * *", timezone: "America/New_York" }, // Run daily at 9 AM ET
   run: async (payload) => {
     logger.log("Starting send pulses task", {
       timestamp: payload.timestamp,
