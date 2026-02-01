@@ -35,7 +35,8 @@ For each priority item, do ONE of:
 a) Report on real data (streaming stats, social metrics) - only if you have actual numbers
 b) Complete unfinished work from a conversation (research, draft, analysis)
 c) Surface a specific, actionable insight
-d) If nothing actionable exists → Send brief "All quiet today" message
+
+FALLBACK: If no priority artists or conversations exist, search for recent music industry news (search_web) relevant to the user's genre or market. Always deliver something valuable - never send an empty or "all quiet" email.
 
 STEP 5: FORMAT THE EMAIL
 
