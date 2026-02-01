@@ -8,6 +8,7 @@ const DEFAULT_PULSE_PROMPT = `You are sending a daily Pulse email. Your job is t
 STEP 1: GATHER INITIAL CONTEXT
 - Get conversations from the past 7 days (get_chats)
 - Get the user's artists list (get_artists)
+- Check what connections the user has (COMPOSIO_SEARCH_TOOLS) - e.g., Google Drive, Docs, Sheets
 
 STEP 2: DETERMINE PRIORITY ARTISTS
 Review the data you just gathered. An artist is HIGH PRIORITY if:
@@ -29,6 +30,15 @@ Now that you know which 1-3 artists matter most, get deeper data:
 - Search for a relevant image of the priority artist (google_images) to include in the email
 
 DON'T get stats for every artist - only the priority ones.
+
+STEP 3B: CHECK CONNECTED SERVICES (if available)
+If the user has Google Drive/Docs/Sheets connected:
+- Use COMPOSIO_MULTI_EXECUTE_TOOL to check their most recent documents
+- Look for documents related to their priority artists (e.g., marketing plans, release schedules, strategy docs)
+- ONLY surface insights if the document is RELEVANT to current priorities
+- Don't just list documents - extract specific, actionable insights from them
+
+Example: If they have a "Q1 Release Schedule" doc and an artist has an upcoming release, mention it.
 
 STEP 4: ACT ON TOP 1-3 PRIORITIES
 For each priority item, do ONE of:
