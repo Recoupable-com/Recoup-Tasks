@@ -3,12 +3,88 @@ import { fetchActivePulses } from "../recoup/fetchActivePulses";
 import { getTaskRoomId } from "../chats/getTaskRoomId";
 import { generateChat } from "../recoup/generateChat";
 
-const DEFAULT_PULSE_PROMPT = `Review my conversations from the past 7 days. Send me a concise email with:
+const DEFAULT_PULSE_PROMPT = `You are sending a daily Pulse email. Your job is to surface what's MOST RELEVANT RIGHT NOW and deliver genuine value.
 
-1. The 3 most important conversations I should follow up on - include the full chat link (e.g. https://chat.recoupable.com/chat/72fff9d2-ab80-43c3-b38c-4176c1633ec8) so I can pick up where I left off
-2. A quick prioritized action for each to help me build momentum this morning
+STEP 1: GATHER INITIAL CONTEXT
+- Get conversations from the past 7 days (get_chats)
+- Get the user's artists list (get_artists)
 
-Keep it grounded in actual conversations - no fluff.`;
+STEP 2: DETERMINE PRIORITY ARTISTS
+Review the data you just gathered. An artist is HIGH PRIORITY if:
+
+FROM CONVERSATIONS:
+- They were discussed in recent conversations
+- There was unfinished work mentioned about them
+- The user asked questions about them or mentioned deadlines
+
+FROM ARTIST DATA:
+- They have a recent release (check release dates in artist data)
+
+HIGHEST PRIORITY = Artist appears in BOTH recent conversations AND has recent activity.
+
+STEP 3: GET DETAILS FOR PRIORITY ARTISTS ONLY
+Now that you know which 1-3 artists matter most, get deeper data:
+- Get their social stats (get_artist_socials) for those specific artists
+- Look for any metric changes worth mentioning
+- Search for a relevant image of the priority artist (google_images) to include in the email
+
+DON'T get stats for every artist - only the priority ones.
+
+STEP 4: ACT ON TOP 1-3 PRIORITIES
+For each priority item, do ONE of:
+a) Report on real data (streaming stats, social metrics) - only if you have actual numbers
+b) Complete unfinished work from a conversation (research, draft, analysis)
+c) Surface a specific, actionable insight
+d) If nothing actionable exists → Send brief "All quiet today" message
+
+STEP 5: FORMAT THE EMAIL
+
+Use this HTML structure for consistency. Include an artist image when available to make the email more engaging:
+
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; color: #1a1a1a;">
+  
+  <p style="font-size: 16px; line-height: 1.6; margin-bottom: 24px;">
+    [Personal greeting using their name if available. One sentence context setter.]
+  </p>
+
+  <!-- Artist image (if you found one via google_images) -->
+  <img src="[artist_image_url]" alt="[Artist Name]" style="width: 100%; max-width: 600px; height: auto; border-radius: 8px; margin-bottom: 24px;" />
+
+  <div style="background: #f8f9fa; border-left: 4px solid #345A5D; padding: 16px 20px; margin-bottom: 24px;">
+    <h3 style="margin: 0 0 12px 0; font-size: 14px; text-transform: uppercase; color: #345A5D; letter-spacing: 0.5px;">
+      [Section Title - e.g., "Release Update" or "From Your Conversations"]
+    </h3>
+    <p style="margin: 0; font-size: 15px; line-height: 1.5;">
+      [Specific insight or update. Include numbers if you have them. Link to chat if relevant.]
+    </p>
+    <a href="[chat_link]" style="display: inline-block; margin-top: 12px; color: #345A5D; font-size: 14px;">
+      Continue this conversation →
+    </a>
+  </div>
+
+  <!-- Repeat section block for additional items (max 3) -->
+
+  <p style="font-size: 14px; color: #666; margin-top: 32px;">
+    — Recoup
+  </p>
+
+</div>
+
+SUBJECT LINE:
+- Be specific to content, not generic
+- Good: "Luna's release is up 23% this week"
+- Good: "Following up on your playlist strategy"
+- Bad: "Your Daily Pulse"
+- Bad: "Updates from Recoup"
+
+NEVER DO THIS:
+- List every artist or every conversation
+- Generic summaries with no specific insight
+- Vague phrases like "stay on top of" or "keep momentum"
+- Pretend to have data you don't have
+- Send walls of text - keep it scannable
+
+Use send_email with the html parameter to deliver.`;
 
 /**
  * Scheduled task that sends pulses to all accounts with active pulse subscriptions.
