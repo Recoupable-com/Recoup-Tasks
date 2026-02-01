@@ -50,7 +50,7 @@ FALLBACK: If no priority artists or conversations exist, search for recent music
 
 STEP 5: FORMAT THE EMAIL
 
-Use this HTML structure for consistency. Include an artist image when available to make the email more engaging:
+Use this HTML structure for consistency. IMPORTANT: Only include elements when you have real data for them.
 
 <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; color: #1a1a1a;">
   
@@ -58,17 +58,20 @@ Use this HTML structure for consistency. Include an artist image when available 
     [Personal greeting using their name if available. One sentence context setter.]
   </p>
 
-  <!-- Artist image (if you found one via google_images) -->
-  <img src="[artist_image_url]" alt="[Artist Name]" style="width: 100%; max-width: 600px; height: auto; border-radius: 8px; margin-bottom: 24px;" />
+  <!-- ONLY include this image block if you successfully found an artist image via google_images. 
+       If no image was found, OMIT this entire img tag - do not include placeholder or broken images. -->
+  <img src="[ACTUAL_IMAGE_URL]" alt="[Artist Name]" style="width: 100%; max-width: 600px; height: auto; border-radius: 8px; margin-bottom: 24px;" />
 
   <div style="background: #f8f9fa; border-left: 4px solid #345A5D; padding: 16px 20px; margin-bottom: 24px;">
     <h3 style="margin: 0 0 12px 0; font-size: 14px; text-transform: uppercase; color: #345A5D; letter-spacing: 0.5px;">
       [Section Title - e.g., "Release Update" or "From Your Conversations"]
     </h3>
     <p style="margin: 0; font-size: 15px; line-height: 1.5;">
-      [Specific insight or update. Include numbers if you have them. Link to chat if relevant.]
+      [Specific insight or update. Include numbers if you have them.]
     </p>
-    <a href="[chat_link]" style="display: inline-block; margin-top: 12px; color: #345A5D; font-size: 14px;">
+    <!-- ONLY include this link if there's a relevant chat to link to.
+         If no chat_link exists for this section, OMIT this entire anchor tag. -->
+    <a href="[ACTUAL_CHAT_URL]" style="display: inline-block; margin-top: 12px; color: #345A5D; font-size: 14px;">
       Continue this conversation →
     </a>
   </div>
@@ -80,6 +83,11 @@ Use this HTML structure for consistency. Include an artist image when available 
   </p>
 
 </div>
+
+CONDITIONAL ELEMENTS RULE:
+- Image block: ONLY include if you have a real image URL from google_images. No placeholders.
+- Chat link: ONLY include if the insight came from a specific conversation you can link to. No dead links.
+- If you don't have the data, simply omit the element entirely - don't render empty containers.
 
 SUBJECT LINE:
 - Be specific to content, not generic
