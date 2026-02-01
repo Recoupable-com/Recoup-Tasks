@@ -144,6 +144,7 @@ export const sendPulsesTask = schedules.task({
           prompt: DEFAULT_PULSE_PROMPT,
           accountId,
           roomId,
+          model: "google/gemini-3-pro-preview",
         });
 
         if (result) {
