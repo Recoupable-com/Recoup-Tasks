@@ -7,6 +7,10 @@ import {
   type SandboxResult,
 } from "../schemas/sandboxSchema";
 
+const VERCEL_TOKEN = process.env.VERCEL_TOKEN;
+const VERCEL_TEAM_ID = process.env.VERCEL_TEAM_ID;
+const VERCEL_PROJECT_ID = process.env.VERCEL_PROJECT_ID;
+
 /**
  * Background task that connects to an existing Vercel Sandbox, installs Claude Code,
  * and executes a prompt. The sandbox is created by the API which returns immediately,
@@ -22,12 +26,23 @@ export const runSandboxCommandTask = schemaTask({
   run: async (payload): Promise<SandboxResult> => {
     const { prompt, sandboxId } = payload;
 
+    if (!VERCEL_TOKEN || !VERCEL_TEAM_ID || !VERCEL_PROJECT_ID) {
+      throw new Error(
+        "Missing Vercel credentials. Set VERCEL_TOKEN, VERCEL_TEAM_ID, and VERCEL_PROJECT_ID environment variables."
+      );
+    }
+
     logger.log("Starting sandbox command execution", {
       sandboxId,
       promptLength: prompt.length,
     });
 
-    const sandbox = await Sandbox.get({ sandboxId });
+    const sandbox = await Sandbox.get({
+      sandboxId,
+      token: VERCEL_TOKEN,
+      teamId: VERCEL_TEAM_ID,
+      projectId: VERCEL_PROJECT_ID,
+    });
 
     logger.log("Connected to sandbox", {
       sandboxId: sandbox.sandboxId,
