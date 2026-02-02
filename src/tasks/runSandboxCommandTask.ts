@@ -1,8 +1,8 @@
 import { logger, schemaTask } from "@trigger.dev/sdk/v3";
 import { Sandbox } from "@vercel/sandbox";
 import ms from "ms";
-import { installClaudeCode } from "../sandbox/installClaudeCode";
-import { runClaudeCode } from "../sandbox/runClaudeCode";
+import { installClaudeCode } from "../sandboxes/installClaudeCode";
+import { runClaudeCode } from "../sandboxes/runClaudeCode";
 import {
   runSandboxCommandPayloadSchema,
   type SandboxResult,
