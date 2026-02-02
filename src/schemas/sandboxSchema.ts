@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const runSandboxCommandPayloadSchema = z.object({
   prompt: z.string().min(1, "prompt is required"),
-  accountId: z.string().uuid("accountId must be a valid UUID"),
+  sandboxId: z.string().min(1, "sandboxId is required"),
 });
 
 export type RunSandboxCommandPayload = z.infer<
