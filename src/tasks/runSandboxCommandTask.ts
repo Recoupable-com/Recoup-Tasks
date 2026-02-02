@@ -24,12 +24,22 @@ export const runSandboxCommandTask = schemaTask({
   run: async (payload): Promise<SandboxResult> => {
     const { prompt, sandboxId } = payload;
 
+    const token = process.env.VERCEL_TOKEN;
+    const teamId = process.env.VERCEL_TEAM_ID;
+    const projectId = process.env.VERCEL_PROJECT_ID;
+
+    if (!token || !teamId || !projectId) {
+      throw new Error(
+        "Missing Vercel credentials. Set VERCEL_TOKEN, VERCEL_TEAM_ID, and VERCEL_PROJECT_ID."
+      );
+    }
+
     logger.log("Starting sandbox command execution", {
       sandboxId,
       promptLength: prompt.length,
     });
 
-    const sandbox = await Sandbox.get({ sandboxId });
+    const sandbox = await Sandbox.get({ sandboxId, token, teamId, projectId });
 
     logger.log("Connected to sandbox", {
       sandboxId: sandbox.sandboxId,
