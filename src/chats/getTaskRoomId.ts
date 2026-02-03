@@ -5,6 +5,7 @@ type GetTaskRoomIdParams = {
   roomId?: string;
   artistId?: string;
   accountId?: string;
+  topic?: string;
 };
 
 /**
@@ -24,6 +25,7 @@ export async function getTaskRoomId(
   const chat = await createChat({
     artistId: params.artistId,
     accountId: params.accountId,
+    topic: params.topic,
   });
 
   if (!chat) {
