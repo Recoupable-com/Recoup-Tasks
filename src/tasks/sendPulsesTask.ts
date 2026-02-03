@@ -117,28 +117,33 @@ export const sendPulsesTask = schedules.task({
     logger.log("Starting send pulses task", {
       timestamp: payload.timestamp,
       timezone: payload.timezone,
+      externalId: payload.externalId,
     });
 
-    const activePulses = await fetchActivePulses();
+    // If externalId is provided, only process that specific account (for testing)
+    // Otherwise, fetch all active pulses
+    let accountIds: string[];
 
-    if (activePulses.length === 0) {
-      logger.log("No active pulses found, skipping");
-      return { sent: 0, failed: 0 };
+    if (payload.externalId) {
+      logger.log("Test mode: processing single account", { accountId: payload.externalId });
+      accountIds = [payload.externalId];
+    } else {
+      const activePulses = await fetchActivePulses();
+
+      if (activePulses.length === 0) {
+        logger.log("No active pulses found, skipping");
+        return { sent: 0, failed: 0 };
+      }
+
+      logger.log("Processing active pulses", { count: activePulses.length });
+      accountIds = activePulses.map((pulse) => pulse.account_id);
     }
-
-    logger.log("Processing active pulses", { count: activePulses.length });
 
     let sent = 0;
     let failed = 0;
 
-    for (const pulse of activePulses) {
-      const accountId = pulse.account_id;
-
-      logger.log("Processing pulse for account", {
-        accountId,
-        pulseId: pulse.id,
-        active: pulse.active,
-      });
+    for (const accountId of accountIds) {
+      logger.log("Processing pulse for account", { accountId });
 
       try {
         const pulseTopic = `Pulse ${formatPulseDate()}`;
