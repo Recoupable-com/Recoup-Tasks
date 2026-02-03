@@ -2,6 +2,7 @@ import { logger, schedules } from "@trigger.dev/sdk/v3";
 import { fetchActivePulses } from "../recoup/fetchActivePulses";
 import { getTaskRoomId } from "../chats/getTaskRoomId";
 import { generateChat } from "../recoup/generateChat";
+import { formatPulseDate } from "../pulse/formatPulseDate";
 
 const DEFAULT_PULSE_PROMPT = `You are sending a daily Pulse email. Your job is to surface what's MOST RELEVANT RIGHT NOW and deliver genuine value.
 
@@ -140,7 +141,8 @@ export const sendPulsesTask = schedules.task({
       });
 
       try {
-        const roomId = await getTaskRoomId({ accountId });
+        const pulseTopic = `Pulse ${formatPulseDate()}`;
+        const roomId = await getTaskRoomId({ accountId, topic: pulseTopic });
 
         if (!roomId) {
           logger.error("Failed to get roomId for pulse", { accountId });

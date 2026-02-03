@@ -8,6 +8,7 @@ type CreateChatParams = {
   artistId?: string;
   chatId?: string;
   accountId?: string;
+  topic?: string;
 };
 
 type CreateChatResponse = {
@@ -44,6 +45,10 @@ export async function createChat(
 
   if (params?.accountId) {
     body.accountId = params.accountId;
+  }
+
+  if (params?.topic) {
+    body.topic = params.topic;
   }
 
   try {
