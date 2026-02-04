@@ -22,9 +22,8 @@ export async function updateAccountSnapshot(
       headers: {
         "Content-Type": "application/json",
         "x-api-key": RECOUP_API_KEY || "",
-        "x-account-id": accountId,
       },
-      body: JSON.stringify({ snapshotId }),
+      body: JSON.stringify({ snapshotId, account_id: accountId }),
     });
 
     if (!response.ok) {
