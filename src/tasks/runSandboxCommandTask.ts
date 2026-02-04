@@ -62,8 +62,8 @@ export const runSandboxCommandTask = schemaTask({
         cwd,
       });
 
-      const stdout = commandResult.stdout || "";
-      const stderr = commandResult.stderr || "";
+      const stdout = (await commandResult.stdout()) || "";
+      const stderr = (await commandResult.stderr()) || "";
       const exitCode = commandResult.exitCode;
 
       logger.log("Command execution completed", {
