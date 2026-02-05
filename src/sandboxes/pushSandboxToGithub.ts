@@ -73,21 +73,33 @@ export async function pushSandboxToGithub(
     args: ["diff", "--cached", "--quiet"],
   });
 
-  if (diffResult.exitCode === 0) {
-    logger.log("No changes to commit, skipping push");
+  if (diffResult.exitCode !== 0) {
+    // There are staged changes — commit them
+    if (
+      !(await runGitCommand(
+        sandbox,
+        ["commit", "-m", "Update sandbox files"],
+        "commit changes"
+      ))
+    ) {
+      return false;
+    }
+  }
+
+  // Check for unpushed commits (handles previously committed but unpushed work)
+  const logResult = await sandbox.runCommand({
+    cmd: "git",
+    args: ["log", "origin/main..HEAD", "--oneline"],
+  });
+
+  const unpushed = ((await logResult.stdout()) || "").trim();
+
+  if (!unpushed) {
+    logger.log("No changes to push, skipping");
     return true;
   }
 
-  // Commit changes
-  if (
-    !(await runGitCommand(
-      sandbox,
-      ["commit", "-m", "Update sandbox files"],
-      "commit changes"
-    ))
-  ) {
-    return false;
-  }
+  logger.log("Pushing commits to remote", { unpushed });
 
   // Push to remote
   if (
