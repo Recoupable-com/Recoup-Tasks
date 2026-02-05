@@ -2,6 +2,7 @@ import { logger, schemaTask } from "@trigger.dev/sdk/v3";
 import { Sandbox } from "@vercel/sandbox";
 import { installClaudeCode } from "../sandboxes/installClaudeCode";
 import { ensureGithubRepo } from "../sandboxes/ensureGithubRepo";
+import { writeReadme } from "../sandboxes/writeReadme";
 import { pushSandboxToGithub } from "../sandboxes/pushSandboxToGithub";
 import { updateAccountSnapshot } from "../recoup/updateAccountSnapshot";
 import {
@@ -56,7 +57,10 @@ export const runSandboxCommandTask = schemaTask({
       await installClaudeCode(sandbox);
 
       // Ensure GitHub repo exists and is cloned in sandbox
-      await ensureGithubRepo(sandbox, accountId);
+      const githubRepo = await ensureGithubRepo(sandbox, accountId);
+
+      // Write README.md with sandbox details
+      await writeReadme(sandbox, sandboxId, accountId, githubRepo ?? undefined);
 
       // Run the command with args
       logger.log("Running command", { command, args, cwd });
