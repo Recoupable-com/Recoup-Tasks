@@ -11,11 +11,12 @@ const GITHUB_ORG = "Recoupable-Com";
  * @returns A valid GitHub repo name
  */
 export function sanitizeRepoName(name: string): string {
-  return name
+  const sanitized = name
     .toLowerCase()
     .replace(/[^a-z0-9-]/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "");
+  return sanitized || "account";
 }
 
 /**

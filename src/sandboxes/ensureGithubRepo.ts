@@ -3,6 +3,7 @@ import { logger } from "@trigger.dev/sdk/v3";
 import { getAccountSandboxes } from "../recoup/getAccountSandboxes";
 import { getAccount } from "../recoup/getAccount";
 import { createGithubRepo } from "../github/createGithubRepo";
+import { updateAccountGithubRepo } from "../recoup/updateAccountGithubRepo";
 
 /**
  * Runs a git command in the sandbox and logs stderr on failure.
@@ -76,6 +77,9 @@ export async function ensureGithubRepo(
       logger.error("Failed to create GitHub repo", { accountId });
       return undefined;
     }
+
+    // Persist the new github_repo to the account via PATCH /api/sandboxes
+    await updateAccountGithubRepo(accountId, newRepo);
 
     githubRepo = newRepo;
   }
