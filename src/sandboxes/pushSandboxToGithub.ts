@@ -91,7 +91,7 @@ export async function pushSandboxToGithub(
   if (
     !(await runGitCommand(
       sandbox,
-      ["pull", "--rebase", "origin", "main"],
+      ["pull", "--rebase", "-X", "theirs", "origin", "main"],
       "pull remote changes"
     ))
   ) {
