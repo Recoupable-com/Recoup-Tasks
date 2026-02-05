@@ -86,7 +86,19 @@ export async function pushSandboxToGithub(
     }
   }
 
-  // Always push — git returns 0 when already up-to-date
+  // Pull remote changes before pushing (handles snapshot-restored sandboxes
+  // that are behind the remote, e.g. auto_init commit)
+  if (
+    !(await runGitCommand(
+      sandbox,
+      ["pull", "--rebase", "origin", "main"],
+      "pull remote changes"
+    ))
+  ) {
+    return false;
+  }
+
+  // Push to remote — git returns 0 when already up-to-date
   if (
     !(await runGitCommand(
       sandbox,
