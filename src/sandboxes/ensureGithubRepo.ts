@@ -70,7 +70,7 @@ export async function ensureGithubRepo(
       return undefined;
     }
 
-    const newRepo = await createGithubRepo(account.name, account.id);
+    const newRepo = await createGithubRepo(account.name, accountId);
 
     if (!newRepo) {
       logger.error("Failed to create GitHub repo", { accountId });
