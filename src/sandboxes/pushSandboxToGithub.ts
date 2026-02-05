@@ -86,23 +86,14 @@ export async function pushSandboxToGithub(
     }
   }
 
-  // Pull remote changes before pushing (handles snapshot-restored sandboxes
-  // that are behind the remote, e.g. auto_init commit)
-  if (
-    !(await runGitCommand(
-      sandbox,
-      ["pull", "--rebase", "-X", "theirs", "origin", "main"],
-      "pull remote changes"
-    ))
-  ) {
-    return false;
-  }
+  // Clean up any stale rebase state from previous failed runs
+  await sandbox.runCommand({ cmd: "git", args: ["rebase", "--abort"] });
 
-  // Push to remote — git returns 0 when already up-to-date
+  // Force push — sandbox files are the source of truth
   if (
     !(await runGitCommand(
       sandbox,
-      ["push", "origin", "HEAD:main"],
+      ["push", "--force", "origin", "HEAD:main"],
       "push to remote"
     ))
   ) {

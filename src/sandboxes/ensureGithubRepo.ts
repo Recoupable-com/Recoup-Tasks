@@ -119,21 +119,37 @@ export async function ensureGithubRepo(
     return undefined;
   }
 
-  if (!(await runGitCommand(sandbox, ["fetch", "origin"], "fetch from remote"))) {
-    return undefined;
+  // Fetch and checkout only if the remote has content
+  const fetchResult = await sandbox.runCommand({
+    cmd: "git",
+    args: ["fetch", "origin"],
+  });
+
+  if (fetchResult.exitCode === 0) {
+    // Check if origin/main exists (won't for empty repos)
+    const refCheck = await sandbox.runCommand({
+      cmd: "git",
+      args: ["rev-parse", "--verify", "origin/main"],
+    });
+
+    if (refCheck.exitCode === 0) {
+      if (
+        !(await runGitCommand(
+          sandbox,
+          ["checkout", "-B", "main", "origin/main"],
+          "checkout main branch"
+        ))
+      ) {
+        return undefined;
+      }
+    } else {
+      logger.log("Empty remote repo, skipping checkout");
+    }
+  } else {
+    logger.log("Fetch failed or empty remote, skipping checkout");
   }
 
-  if (
-    !(await runGitCommand(
-      sandbox,
-      ["checkout", "-B", "main", "origin/main"],
-      "checkout main branch"
-    ))
-  ) {
-    return undefined;
-  }
-
-  logger.log("GitHub repo cloned successfully into sandbox root", {
+  logger.log("GitHub repo initialized in sandbox root", {
     githubRepo,
   });
 

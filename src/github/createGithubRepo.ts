@@ -59,7 +59,6 @@ export async function createGithubRepo(
         body: JSON.stringify({
           name: repoName,
           private: true,
-          auto_init: true,
         }),
       }
     );
