@@ -126,7 +126,7 @@ export async function ensureGithubRepo(
   if (
     !(await runGitCommand(
       sandbox,
-      ["checkout", "-f", "main"],
+      ["checkout", "-B", "main", "origin/main"],
       "checkout main branch"
     ))
   ) {

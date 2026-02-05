@@ -93,7 +93,7 @@ export async function pushSandboxToGithub(
   if (
     !(await runGitCommand(
       sandbox,
-      ["push", "origin", "main"],
+      ["push", "origin", "HEAD:main"],
       "push to remote"
     ))
   ) {
