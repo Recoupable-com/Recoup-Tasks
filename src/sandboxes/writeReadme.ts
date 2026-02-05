@@ -4,7 +4,8 @@ import { logger } from "@trigger.dev/sdk/v3";
 /**
  * Writes a README.md to the sandbox root with details about the sandbox environment.
  *
- * Only writes the file if README.md does not already exist.
+ * Skips if the README already contains sandbox details (i.e. was previously written).
+ * Overwrites the default empty README created by GitHub's auto_init.
  *
  * @param sandbox - The Vercel Sandbox instance
  * @param sandboxId - The sandbox identifier
@@ -17,14 +18,14 @@ export async function writeReadme(
   accountId: string,
   githubRepo?: string
 ): Promise<void> {
-  // Skip if README.md already exists
+  // Skip if README.md already has our content
   const check = await sandbox.runCommand({
-    cmd: "test",
-    args: ["-f", "README.md"],
+    cmd: "grep",
+    args: ["-q", "Recoup Sandbox", "README.md"],
   });
 
   if (check.exitCode === 0) {
-    logger.log("README.md already exists, skipping");
+    logger.log("README.md already has sandbox details, skipping");
     return;
   }
 
