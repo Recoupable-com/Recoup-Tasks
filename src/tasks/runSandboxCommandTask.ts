@@ -2,6 +2,7 @@ import { logger, schemaTask } from "@trigger.dev/sdk/v3";
 import { Sandbox } from "@vercel/sandbox";
 import { installClaudeCode } from "../sandboxes/installClaudeCode";
 import { ensureGithubRepo } from "../sandboxes/ensureGithubRepo";
+import { pushSandboxToGithub } from "../sandboxes/pushSandboxToGithub";
 import { updateAccountSnapshot } from "../recoup/updateAccountSnapshot";
 import {
   runSandboxCommandPayloadSchema,
@@ -75,6 +76,9 @@ export const runSandboxCommandTask = schemaTask({
         stdoutLength: stdout.length,
         stderrLength: stderr.length,
       });
+
+      // Push sandbox files to GitHub repo
+      await pushSandboxToGithub(sandbox);
 
       // Take a snapshot
       logger.log("Taking sandbox snapshot");
