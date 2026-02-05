@@ -5,6 +5,32 @@ import { getAccount } from "../recoup/getAccount";
 import { createGithubRepo } from "../github/createGithubRepo";
 
 /**
+ * Runs a git command in the sandbox and logs stderr on failure.
+ *
+ * @returns true if the command succeeded, false otherwise
+ */
+async function runGitCommand(
+  sandbox: Sandbox,
+  args: string[],
+  description: string
+): Promise<boolean> {
+  const result = await sandbox.runCommand({ cmd: "git", args });
+
+  if (result.exitCode !== 0) {
+    const stderr = (await result.stderr()) || "";
+    const stdout = (await result.stdout()) || "";
+    logger.error(`Failed to ${description}`, {
+      exitCode: result.exitCode,
+      stderr,
+      stdout,
+    });
+    return false;
+  }
+
+  return true;
+}
+
+/**
  * Ensures a GitHub repository exists for the account and is cloned in the sandbox.
  *
  * 1. Checks if the account already has a github_repo configured
@@ -75,51 +101,31 @@ export async function ensureGithubRepo(
     `https://x-access-token:${githubToken}@github.com/`
   );
 
-  const initResult = await sandbox.runCommand({
-    cmd: "git",
-    args: ["init"],
-  });
-
-  if (initResult.exitCode !== 0) {
-    logger.error("Failed to initialize git", {
-      exitCode: initResult.exitCode,
-    });
+  if (!(await runGitCommand(sandbox, ["init"], "initialize git"))) {
     return undefined;
   }
 
-  const remoteResult = await sandbox.runCommand({
-    cmd: "git",
-    args: ["remote", "add", "origin", repoUrl],
-  });
-
-  if (remoteResult.exitCode !== 0) {
-    logger.error("Failed to add remote", {
-      exitCode: remoteResult.exitCode,
-    });
+  if (
+    !(await runGitCommand(
+      sandbox,
+      ["remote", "add", "origin", repoUrl],
+      "add remote"
+    ))
+  ) {
     return undefined;
   }
 
-  const fetchResult = await sandbox.runCommand({
-    cmd: "git",
-    args: ["fetch", "origin"],
-  });
-
-  if (fetchResult.exitCode !== 0) {
-    logger.error("Failed to fetch from remote", {
-      exitCode: fetchResult.exitCode,
-    });
+  if (!(await runGitCommand(sandbox, ["fetch", "origin"], "fetch from remote"))) {
     return undefined;
   }
 
-  const checkoutResult = await sandbox.runCommand({
-    cmd: "git",
-    args: ["checkout", "-f", "main"],
-  });
-
-  if (checkoutResult.exitCode !== 0) {
-    logger.error("Failed to checkout main branch", {
-      exitCode: checkoutResult.exitCode,
-    });
+  if (
+    !(await runGitCommand(
+      sandbox,
+      ["checkout", "-f", "main"],
+      "checkout main branch"
+    ))
+  ) {
     return undefined;
   }
 

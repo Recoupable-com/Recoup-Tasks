@@ -17,8 +17,12 @@ export async function installClaudeCode(sandbox: Sandbox): Promise<void> {
   });
 
   if (installCLI.exitCode !== 0) {
+    const stdout = (await installCLI.stdout()) || "";
+    const stderr = (await installCLI.stderr()) || "";
     logger.error("Failed to install Claude Code CLI", {
       exitCode: installCLI.exitCode,
+      stdout,
+      stderr,
     });
     throw new Error("Failed to install Claude Code CLI");
   }
@@ -31,8 +35,12 @@ export async function installClaudeCode(sandbox: Sandbox): Promise<void> {
   });
 
   if (installSDK.exitCode !== 0) {
+    const stdout = (await installSDK.stdout()) || "";
+    const stderr = (await installSDK.stderr()) || "";
     logger.error("Failed to install Anthropic SDK", {
       exitCode: installSDK.exitCode,
+      stdout,
+      stderr,
     });
     throw new Error("Failed to install Anthropic SDK");
   }
