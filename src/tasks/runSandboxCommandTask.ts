@@ -93,8 +93,8 @@ export const runSandboxCommandTask = schemaTask({
         expiresAt: snapshotResult.expiresAt,
       });
 
-      // Update account snapshot via API
-      await updateAccountSnapshot(accountId, snapshotResult.snapshotId);
+      // Update account snapshot (and github_repo if newly created) via API
+      await updateAccountSnapshot(accountId, snapshotResult.snapshotId, githubRepo ?? undefined);
 
       const result: SandboxResult = {
         stdout,
