@@ -1,6 +1,7 @@
 import { logger, schemaTask } from "@trigger.dev/sdk/v3";
 import { Sandbox } from "@vercel/sandbox";
 import { installClaudeCode } from "../sandboxes/installClaudeCode";
+import { ensureGithubRepo } from "../sandboxes/ensureGithubRepo";
 import { updateAccountSnapshot } from "../recoup/updateAccountSnapshot";
 import {
   runSandboxCommandPayloadSchema,
@@ -52,6 +53,9 @@ export const runSandboxCommandTask = schemaTask({
     try {
       // Ensure Claude Code is installed
       await installClaudeCode(sandbox);
+
+      // Ensure GitHub repo exists and is cloned in sandbox
+      await ensureGithubRepo(sandbox, accountId);
 
       // Run the command with args
       logger.log("Running command", { command, args, cwd });
