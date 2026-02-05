@@ -86,22 +86,7 @@ export async function pushSandboxToGithub(
     }
   }
 
-  // Check for unpushed commits (handles previously committed but unpushed work)
-  const logResult = await sandbox.runCommand({
-    cmd: "git",
-    args: ["log", "origin/main..HEAD", "--oneline"],
-  });
-
-  const unpushed = ((await logResult.stdout()) || "").trim();
-
-  if (!unpushed) {
-    logger.log("No changes to push, skipping");
-    return true;
-  }
-
-  logger.log("Pushing commits to remote", { unpushed });
-
-  // Push to remote
+  // Always push — git returns 0 when already up-to-date
   if (
     !(await runGitCommand(
       sandbox,
