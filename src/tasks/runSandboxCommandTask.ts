@@ -1,6 +1,9 @@
 import { logger, schemaTask } from "@trigger.dev/sdk/v3";
 import { Sandbox } from "@vercel/sandbox";
 import { installClaudeCode } from "../sandboxes/installClaudeCode";
+import { ensureGithubRepo } from "../sandboxes/ensureGithubRepo";
+import { writeReadme } from "../sandboxes/writeReadme";
+import { pushSandboxToGithub } from "../sandboxes/pushSandboxToGithub";
 import { updateAccountSnapshot } from "../recoup/updateAccountSnapshot";
 import {
   runSandboxCommandPayloadSchema,
@@ -53,6 +56,12 @@ export const runSandboxCommandTask = schemaTask({
       // Ensure Claude Code is installed
       await installClaudeCode(sandbox);
 
+      // Ensure GitHub repo exists and is cloned in sandbox
+      const githubRepo = await ensureGithubRepo(sandbox, accountId);
+
+      // Write README.md with sandbox details
+      await writeReadme(sandbox, sandboxId, accountId, githubRepo ?? undefined);
+
       // Run the command with args
       logger.log("Running command", { command, args, cwd });
 
@@ -72,6 +81,9 @@ export const runSandboxCommandTask = schemaTask({
         stderrLength: stderr.length,
       });
 
+      // Push sandbox files to GitHub repo
+      await pushSandboxToGithub(sandbox);
+
       // Take a snapshot
       logger.log("Taking sandbox snapshot");
       const snapshotResult = await sandbox.snapshot();
@@ -81,8 +93,8 @@ export const runSandboxCommandTask = schemaTask({
         expiresAt: snapshotResult.expiresAt,
       });
 
-      // Update account snapshot via API
-      await updateAccountSnapshot(accountId, snapshotResult.snapshotId);
+      // Update account snapshot (and github_repo if newly created) via API
+      await updateAccountSnapshot(accountId, snapshotResult.snapshotId, githubRepo ?? undefined);
 
       const result: SandboxResult = {
         stdout,
