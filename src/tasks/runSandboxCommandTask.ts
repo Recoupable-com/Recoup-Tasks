@@ -1,6 +1,7 @@
 import { logger, schemaTask } from "@trigger.dev/sdk/v3";
 import { Sandbox } from "@vercel/sandbox";
-import { installClaudeCode } from "../sandboxes/installClaudeCode";
+import { installOpenCode } from "../sandboxes/installOpenCode";
+import { writeOpenCodeConfig } from "../sandboxes/writeOpenCodeConfig";
 import { ensureGithubRepo } from "../sandboxes/ensureGithubRepo";
 import { writeReadme } from "../sandboxes/writeReadme";
 import { pushSandboxToGithub } from "../sandboxes/pushSandboxToGithub";
@@ -11,11 +12,12 @@ import {
 } from "../schemas/sandboxSchema";
 
 /**
- * Background task that connects to an existing Vercel Sandbox, ensures Claude Code
- * is installed, runs a command with arguments, captures output, takes a snapshot,
- * and updates the account's snapshot ID.
+ * Background task that connects to an existing Vercel Sandbox, ensures OpenCode
+ * is installed with Vercel AI Gateway, runs a command with arguments, captures
+ * output, takes a snapshot, and updates the account's snapshot ID.
  *
- * Requires VERCEL_TOKEN, VERCEL_TEAM_ID, and VERCEL_PROJECT_ID environment variables.
+ * Requires VERCEL_TOKEN, VERCEL_TEAM_ID, VERCEL_PROJECT_ID, and
+ * VERCEL_AI_GATEWAY_API_KEY environment variables.
  */
 export const runSandboxCommandTask = schemaTask({
   id: "run-sandbox-command",
@@ -53,8 +55,9 @@ export const runSandboxCommandTask = schemaTask({
     });
 
     try {
-      // Ensure Claude Code is installed
-      await installClaudeCode(sandbox);
+      // Ensure OpenCode is installed and configured with Vercel AI Gateway
+      await installOpenCode(sandbox);
+      await writeOpenCodeConfig(sandbox);
 
       // Ensure GitHub repo exists and is cloned in sandbox
       const githubRepo = await ensureGithubRepo(sandbox, accountId);
