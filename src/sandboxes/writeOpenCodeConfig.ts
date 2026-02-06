@@ -16,11 +16,11 @@ export async function writeOpenCodeConfig(sandbox: Sandbox): Promise<void> {
           apiKey: process.env.VERCEL_AI_GATEWAY_API_KEY,
         },
         models: {
-          "anthropic/claude-sonnet-4": {},
+          "google/gemini-3-pro-preview": {},
         },
       },
     },
-    model: "vercel/anthropic/claude-sonnet-4",
+    model: "vercel/google/gemini-3-pro-preview",
   };
 
   logger.log("Writing opencode.json config to sandbox");
