@@ -52,15 +52,8 @@ export async function ensureGithubRepo(
     }
 
     // Persist the repo URL via PATCH /api/sandboxes
-    // Use a dummy snapshot ID since we only need to persist github_repo
-    const snapshotId = sandboxesInfo?.snapshotId;
-    if (snapshotId) {
-      await updateAccountSnapshot(accountId, snapshotId, repoUrl);
-    } else {
-      // If no snapshot exists yet, persist via updateAccountSnapshot with empty snapshot
-      // The PATCH endpoint will handle persisting github_repo
-      await updateAccountSnapshot(accountId, "", repoUrl);
-    }
+    const snapshotId = sandboxesInfo?.snapshotId ?? undefined;
+    await updateAccountSnapshot(accountId, snapshotId, repoUrl);
 
     githubRepo = repoUrl;
   }

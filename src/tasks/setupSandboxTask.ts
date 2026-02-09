@@ -15,7 +15,7 @@ export const setupSandboxTask = schemaTask({
   schema: setupSandboxPayloadSchema,
   maxDuration: 60 * 5, // 5 minutes max
   retry: {
-    maxAttempts: 3, // Idempotent — safe to retry
+    maxAttempts: 1, // No retries — run once
   },
   run: async (payload) => {
     const { sandboxId, accountId } = payload;
