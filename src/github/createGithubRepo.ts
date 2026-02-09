@@ -48,6 +48,41 @@ export async function createGithubRepo(
     );
 
     if (!response.ok) {
+      // 422 means repo already exists — fetch existing URL
+      if (response.status === 422) {
+        logger.log("GitHub repo already exists, fetching existing URL", {
+          org: GITHUB_ORG,
+          repoName,
+        });
+
+        const existingResponse = await fetch(
+          `https://api.github.com/repos/${GITHUB_ORG}/${repoName}`,
+          {
+            headers: {
+              Accept: "application/vnd.github+json",
+              Authorization: `Bearer ${token}`,
+              "X-GitHub-Api-Version": "2022-11-28",
+            },
+          }
+        );
+
+        if (existingResponse.ok) {
+          const existingData = (await existingResponse.json()) as {
+            html_url: string;
+          };
+          logger.log("Found existing GitHub repo", {
+            repoName,
+            url: existingData.html_url,
+          });
+          return existingData.html_url;
+        }
+
+        logger.error("Failed to fetch existing GitHub repo", {
+          status: existingResponse.status,
+        });
+        return undefined;
+      }
+
       const errorText = await response.text();
       logger.error("Failed to create GitHub repo", {
         status: response.status,

@@ -1,15 +1,18 @@
 import type { Sandbox } from "@vercel/sandbox";
 import { logger } from "@trigger.dev/sdk/v3";
 import { getAccountSandboxes } from "../recoup/getAccountSandboxes";
+import { getAccount } from "../recoup/getAccount";
+import { createGithubRepo } from "../github/createGithubRepo";
+import { updateAccountSnapshot } from "../recoup/updateAccountSnapshot";
 import { runGitCommand } from "./runGitCommand";
 
 /**
- * Ensures a GitHub repository is cloned in the sandbox.
+ * Ensures a GitHub repository exists for the account, is persisted, and
+ * is cloned into the sandbox.
  *
- * The API now handles repo creation during POST /api/sandboxes.
- * This function only needs to:
- * 1. Fetch the github_repo URL from the API
- * 2. Clone it into the sandbox if not already cloned
+ * 1. Fetch `github_repo` from GET /api/sandboxes
+ * 2. If missing → get account name → create repo → persist via PATCH /api/sandboxes
+ * 3. Clone into sandbox (idempotent — skips if .git already present)
  *
  * @param sandbox - The Vercel Sandbox instance
  * @param accountId - The account ID
@@ -26,13 +29,40 @@ export async function ensureGithubRepo(
     return undefined;
   }
 
-  // Fetch github_repo from the API (created during POST /api/sandboxes)
+  // Fetch github_repo from the API
   const sandboxesInfo = await getAccountSandboxes(accountId);
-  const githubRepo = sandboxesInfo?.githubRepo ?? null;
+  let githubRepo = sandboxesInfo?.githubRepo ?? null;
 
+  // If no repo exists, create one
   if (!githubRepo) {
-    logger.warn("No GitHub repo configured for account", { accountId });
-    return undefined;
+    logger.log("No GitHub repo found, creating one", { accountId });
+
+    const account = await getAccount(accountId);
+
+    if (!account) {
+      logger.error("Account not found for repo creation", { accountId });
+      return undefined;
+    }
+
+    const repoUrl = await createGithubRepo(account.name, accountId);
+
+    if (!repoUrl) {
+      logger.error("Failed to create GitHub repo", { accountId });
+      return undefined;
+    }
+
+    // Persist the repo URL via PATCH /api/sandboxes
+    // Use a dummy snapshot ID since we only need to persist github_repo
+    const snapshotId = sandboxesInfo?.snapshotId;
+    if (snapshotId) {
+      await updateAccountSnapshot(accountId, snapshotId, repoUrl);
+    } else {
+      // If no snapshot exists yet, persist via updateAccountSnapshot with empty snapshot
+      // The PATCH endpoint will handle persisting github_repo
+      await updateAccountSnapshot(accountId, "", repoUrl);
+    }
+
+    githubRepo = repoUrl;
   }
 
   // Check if repo is already cloned in the sandbox
