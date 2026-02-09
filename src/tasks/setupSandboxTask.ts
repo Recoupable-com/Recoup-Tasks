@@ -2,6 +2,7 @@ import { logger, schemaTask } from "@trigger.dev/sdk/v3";
 import { Sandbox } from "@vercel/sandbox";
 import { ensureGithubRepo } from "../sandboxes/ensureGithubRepo";
 import { getVercelSandboxCredentials } from "../sandboxes/getVercelSandboxCredentials";
+import { updateAccountSnapshot } from "../recoup/updateAccountSnapshot";
 import { setupSandboxPayloadSchema } from "../schemas/setupSandboxSchema";
 
 /**
@@ -30,11 +31,31 @@ export const setupSandboxTask = schemaTask({
 
     const githubRepo = await ensureGithubRepo(sandbox, accountId);
 
+    // Snapshot the sandbox so the cloned repo state persists
+    logger.log("Taking sandbox snapshot");
+    const snapshotResult = await sandbox.snapshot();
+
+    logger.log("Snapshot created", {
+      snapshotId: snapshotResult.snapshotId,
+      expiresAt: snapshotResult.expiresAt,
+    });
+
+    // Persist snapshot and github_repo via API
+    await updateAccountSnapshot(
+      accountId,
+      snapshotResult.snapshotId,
+      githubRepo ?? undefined
+    );
+
     logger.log("Sandbox setup complete", {
       sandboxId: sandbox.sandboxId,
       githubRepo: githubRepo ?? null,
+      snapshotId: snapshotResult.snapshotId,
     });
 
-    return { githubRepo: githubRepo ?? null };
+    return {
+      githubRepo: githubRepo ?? null,
+      snapshotId: snapshotResult.snapshotId,
+    };
   },
 });
