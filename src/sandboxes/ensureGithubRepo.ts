@@ -1,21 +1,19 @@
 import type { Sandbox } from "@vercel/sandbox";
 import { logger } from "@trigger.dev/sdk/v3";
 import { getAccountSandboxes } from "../recoup/getAccountSandboxes";
-import { getAccount } from "../recoup/getAccount";
-import { createGithubRepo } from "../github/createGithubRepo";
 import { runGitCommand } from "./runGitCommand";
 
 /**
- * Ensures a GitHub repository exists for the account and is cloned in the sandbox.
+ * Ensures a GitHub repository is cloned in the sandbox.
  *
- * 1. Checks if the account already has a github_repo configured
- * 2. If not, fetches the account name and creates a new private repo
- * 3. Checks if the repo is already cloned in the sandbox (via .git directory)
- * 4. If not cloned, initializes git and pulls the repo into the sandbox root
+ * The API now handles repo creation during POST /api/sandboxes.
+ * This function only needs to:
+ * 1. Fetch the github_repo URL from the API
+ * 2. Clone it into the sandbox if not already cloned
  *
  * @param sandbox - The Vercel Sandbox instance
  * @param accountId - The account ID
- * @returns The github repo URL, or undefined if setup failed
+ * @returns The github repo URL, or undefined if not configured or setup failed
  */
 export async function ensureGithubRepo(
   sandbox: Sandbox,
@@ -28,36 +26,16 @@ export async function ensureGithubRepo(
     return undefined;
   }
 
-  // Step 1: Check if github_repo is already configured
+  // Fetch github_repo from the API (created during POST /api/sandboxes)
   const sandboxesInfo = await getAccountSandboxes(accountId);
-  let githubRepo = sandboxesInfo?.githubRepo ?? null;
+  const githubRepo = sandboxesInfo?.githubRepo ?? null;
 
-  // Step 2: If no github_repo, create one
   if (!githubRepo) {
-    logger.log("No GitHub repo configured, creating one", { accountId });
-
-    const account = await getAccount(accountId);
-
-    if (!account) {
-      logger.error("Failed to fetch account info for repo creation", {
-        accountId,
-      });
-      return undefined;
-    }
-
-    const newRepo = await createGithubRepo(account.name, accountId);
-
-    if (!newRepo) {
-      logger.error("Failed to create GitHub repo", { accountId });
-      return undefined;
-    }
-
-    githubRepo = newRepo;
+    logger.warn("No GitHub repo configured for account", { accountId });
+    return undefined;
   }
 
-  // Step 3: Check if repo is already cloned in the sandbox
-  logger.log("Checking if repo is cloned in sandbox");
-
+  // Check if repo is already cloned in the sandbox
   const gitCheck = await sandbox.runCommand({
     cmd: "test",
     args: ["-d", ".git"],
@@ -68,7 +46,7 @@ export async function ensureGithubRepo(
     return githubRepo;
   }
 
-  // Step 4: Clone the repo into the sandbox root
+  // Clone the repo into the sandbox root
   logger.log("Cloning GitHub repo into sandbox root", { githubRepo });
 
   const repoUrl = githubRepo.replace(

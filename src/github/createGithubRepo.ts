@@ -1,7 +1,7 @@
 import { logger } from "@trigger.dev/sdk/v3";
 import { sanitizeRepoName } from "./sanitizeRepoName";
 
-const GITHUB_ORG = "Recoupable-Com";
+const GITHUB_ORG = "recoupable";
 
 /**
  * Creates a private GitHub repository in the Recoupable-Com organization.
