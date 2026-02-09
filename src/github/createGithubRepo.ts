@@ -4,7 +4,7 @@ import { sanitizeRepoName } from "./sanitizeRepoName";
 const GITHUB_ORG = "recoupable";
 
 /**
- * Creates a private GitHub repository in the Recoupable-Com organization.
+ * Creates a private GitHub repository in the {@link GITHUB_ORG} organization.
  *
  * @param accountName - The account display name
  * @param accountId - The account UUID
