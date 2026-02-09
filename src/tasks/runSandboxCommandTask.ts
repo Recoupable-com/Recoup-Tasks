@@ -4,9 +4,9 @@ import { installOpenCode } from "../sandboxes/installOpenCode";
 import { writeOpenCodeConfig } from "../sandboxes/writeOpenCodeConfig";
 import { ensureGithubRepo } from "../sandboxes/ensureGithubRepo";
 import { getVercelSandboxCredentials } from "../sandboxes/getVercelSandboxCredentials";
+import { snapshotAndPersist } from "../sandboxes/snapshotAndPersist";
 import { writeReadme } from "../sandboxes/writeReadme";
 import { pushSandboxToGithub } from "../sandboxes/pushSandboxToGithub";
-import { updateAccountSnapshot } from "../recoup/updateAccountSnapshot";
 import {
   runSandboxCommandPayloadSchema,
   type SandboxResult,
@@ -76,17 +76,11 @@ export const runSandboxCommandTask = schemaTask({
       // Push sandbox files to GitHub repo
       await pushSandboxToGithub(sandbox);
 
-      // Take a snapshot
-      logger.log("Taking sandbox snapshot");
-      const snapshotResult = await sandbox.snapshot();
-
-      logger.log("Snapshot created", {
-        snapshotId: snapshotResult.snapshotId,
-        expiresAt: snapshotResult.expiresAt,
-      });
-
-      // Update account snapshot (and github_repo if newly created) via API
-      await updateAccountSnapshot(accountId, snapshotResult.snapshotId, githubRepo ?? undefined);
+      const snapshotResult = await snapshotAndPersist(
+        sandbox,
+        accountId,
+        githubRepo ?? undefined
+      );
 
       const result: SandboxResult = {
         stdout,
