@@ -5,13 +5,13 @@ import { NEW_API_BASE_URL, RECOUP_API_KEY } from "../consts";
  * Updates sandbox config for an account via PATCH /api/sandboxes.
  *
  * @param accountId - The account ID to update
- * @param snapshotId - The snapshot ID to set
+ * @param snapshotId - Optional snapshot ID to set
  * @param githubRepo - Optional GitHub repo URL to persist
  * @returns The updated snapshot data or undefined on error
  */
 export async function updateAccountSnapshot(
   accountId: string,
-  snapshotId: string,
+  snapshotId?: string,
   githubRepo?: string
 ): Promise<{ success: boolean; snapshotId: string } | undefined> {
   const url = `${NEW_API_BASE_URL}/api/sandboxes`;
@@ -19,7 +19,10 @@ export async function updateAccountSnapshot(
   logger.log("Updating account snapshot", { accountId, snapshotId, githubRepo, url });
 
   try {
-    const body: Record<string, string> = { snapshotId, account_id: accountId };
+    const body: Record<string, string> = { account_id: accountId };
+    if (snapshotId) {
+      body.snapshotId = snapshotId;
+    }
     if (githubRepo) {
       body.github_repo = githubRepo;
     }

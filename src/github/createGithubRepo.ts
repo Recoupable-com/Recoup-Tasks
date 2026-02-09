@@ -1,10 +1,11 @@
 import { logger } from "@trigger.dev/sdk/v3";
 import { sanitizeRepoName } from "./sanitizeRepoName";
+import { getExistingGithubRepo } from "./getExistingGithubRepo";
 
-const GITHUB_ORG = "Recoupable-Com";
+const GITHUB_ORG = "recoupable";
 
 /**
- * Creates a private GitHub repository in the Recoupable-Com organization.
+ * Creates a private GitHub repository in the {@link GITHUB_ORG} organization.
  *
  * @param accountName - The account display name
  * @param accountId - The account UUID
@@ -48,6 +49,11 @@ export async function createGithubRepo(
     );
 
     if (!response.ok) {
+      // 422 means repo already exists — fetch existing URL
+      if (response.status === 422) {
+        return getExistingGithubRepo(repoName);
+      }
+
       const errorText = await response.text();
       logger.error("Failed to create GitHub repo", {
         status: response.status,
