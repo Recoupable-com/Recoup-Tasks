@@ -1,10 +1,50 @@
-import { logger, schemaTask } from "@trigger.dev/sdk/v3";
+import { logger, schemaTask, wait } from "@trigger.dev/sdk/v3";
 import { Sandbox } from "@vercel/sandbox";
 import { createAccountSandbox } from "../recoup/createAccountSandbox";
 import { ensureGithubRepo } from "../sandboxes/ensureGithubRepo";
 import { getVercelSandboxCredentials } from "../sandboxes/getVercelSandboxCredentials";
 import { snapshotAndPersist } from "../sandboxes/snapshotAndPersist";
 import { setupSandboxPayloadSchema } from "../schemas/setupSandboxSchema";
+
+/**
+ * Polls until the sandbox reaches "running" status.
+ * Throws if the sandbox enters a terminal state or exceeds max attempts.
+ */
+async function waitForSandboxRunning(
+  sandboxId: string,
+  credentials: { token: string; teamId: string; projectId: string }
+): Promise<Sandbox> {
+  const maxAttempts = 15;
+  const delayMs = 2000;
+
+  for (let i = 0; i < maxAttempts; i++) {
+    const sandbox = await Sandbox.get({ sandboxId, ...credentials });
+    logger.log("Polling sandbox status", {
+      sandboxId,
+      status: sandbox.status,
+      attempt: i + 1,
+    });
+
+    if (sandbox.status === "running") {
+      return sandbox;
+    }
+
+    if (
+      sandbox.status === "stopped" ||
+      sandbox.status === "failed"
+    ) {
+      throw new Error(
+        `Sandbox ${sandboxId} entered terminal state: ${sandbox.status}`
+      );
+    }
+
+    await wait.for({ seconds: delayMs / 1000 });
+  }
+
+  throw new Error(
+    `Sandbox ${sandboxId} did not reach running state after ${maxAttempts} attempts`
+  );
+}
 
 /**
  * Background task that creates a personal Vercel Sandbox for an account,
@@ -19,7 +59,7 @@ export const setupSandboxTask = schemaTask({
   },
   run: async (payload) => {
     const { accountId } = payload;
-    const { token, teamId, projectId } = getVercelSandboxCredentials();
+    const credentials = getVercelSandboxCredentials();
 
     logger.log("Starting sandbox setup", { accountId });
 
@@ -31,13 +71,13 @@ export const setupSandboxTask = schemaTask({
     const { sandboxId } = created;
     logger.log("Sandbox created via API", { sandboxId });
 
-    const sandbox = await Sandbox.get({ sandboxId, token, teamId, projectId });
+    const sandbox = await waitForSandboxRunning(sandboxId, credentials);
 
-    logger.log("Connected to sandbox", {
+    logger.log("Sandbox is running", {
       sandboxId: sandbox.sandboxId,
-      status: sandbox.status,
     });
 
+    let snapshotted = false;
     try {
       const githubRepo = await ensureGithubRepo(sandbox, accountId);
 
@@ -46,6 +86,7 @@ export const setupSandboxTask = schemaTask({
         accountId,
         githubRepo ?? undefined
       );
+      snapshotted = true;
 
       logger.log("Sandbox setup complete", {
         sandboxId: sandbox.sandboxId,
@@ -58,8 +99,12 @@ export const setupSandboxTask = schemaTask({
         snapshotId: snapshotResult.snapshotId,
       };
     } finally {
-      logger.log("Stopping sandbox", { sandboxId: sandbox.sandboxId });
-      await sandbox.stop();
+      if (!snapshotted) {
+        logger.log("Stopping sandbox (snapshot did not complete)", {
+          sandboxId: sandbox.sandboxId,
+        });
+        await sandbox.stop();
+      }
     }
   },
 });
