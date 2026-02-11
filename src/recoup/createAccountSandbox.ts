@@ -23,6 +23,10 @@ export async function createAccountSandbox(
 ): Promise<{ sandboxId: string } | undefined> {
   const url = `${NEW_API_BASE_URL}/api/sandboxes?account_id=${encodeURIComponent(accountId)}`;
 
+  if (!RECOUP_API_KEY) {
+    throw new Error("RECOUP_API_KEY not configured");
+  }
+
   logger.log("Creating account sandbox", { accountId, url });
 
   try {
@@ -30,7 +34,7 @@ export async function createAccountSandbox(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": RECOUP_API_KEY || "",
+        "x-api-key": RECOUP_API_KEY,
       },
       body: JSON.stringify({}),
     });
