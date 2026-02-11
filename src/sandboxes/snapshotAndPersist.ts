@@ -24,6 +24,10 @@ export async function snapshotAndPersist(
     expiresAt: snapshotResult.expiresAt,
   });
 
+  logger.log("Persisting snapshot ID", {
+    accountId,
+    snapshotId: snapshotResult.snapshotId,
+  });
   await updateAccountSnapshot(accountId, snapshotResult.snapshotId, githubRepo);
 
   return snapshotResult;
