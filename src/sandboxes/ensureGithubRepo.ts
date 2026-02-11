@@ -52,6 +52,7 @@ export async function ensureGithubRepo(
     }
 
     // Persist the repo URL via PATCH /api/sandboxes
+    logger.log("Persisting GitHub repo URL", { accountId, repoUrl });
     const snapshotId = sandboxesInfo?.snapshotId ?? undefined;
     await updateAccountSnapshot(accountId, snapshotId, repoUrl);
 
