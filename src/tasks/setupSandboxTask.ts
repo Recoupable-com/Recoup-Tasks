@@ -4,6 +4,7 @@ import { createAccountSandbox } from "../recoup/createAccountSandbox";
 import { ensureGithubRepo } from "../sandboxes/ensureGithubRepo";
 import { getVercelSandboxCredentials } from "../sandboxes/getVercelSandboxCredentials";
 import { snapshotAndPersist } from "../sandboxes/snapshotAndPersist";
+import { populateArtistFolders } from "../sandboxes/populateArtistFolders";
 import { setupSandboxPayloadSchema } from "../schemas/setupSandboxSchema";
 
 /**
@@ -13,7 +14,7 @@ import { setupSandboxPayloadSchema } from "../schemas/setupSandboxSchema";
 export const setupSandboxTask = schemaTask({
   id: "setup-sandbox",
   schema: setupSandboxPayloadSchema,
-  maxDuration: 60 * 5, // 5 minutes max
+  maxDuration: 60 * 10, // 10 minutes max (opencode + LLM round-trips)
   retry: {
     maxAttempts: 0, // Zero retries — run once only
   },
@@ -40,6 +41,9 @@ export const setupSandboxTask = schemaTask({
 
     try {
       const githubRepo = await ensureGithubRepo(sandbox, accountId);
+
+      // Populate org/artist folder structure via opencode + skill
+      await populateArtistFolders(sandbox);
 
       const snapshotResult = await snapshotAndPersist(
         sandbox,
