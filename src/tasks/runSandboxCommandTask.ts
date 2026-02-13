@@ -1,7 +1,6 @@
 import { logger, schemaTask } from "@trigger.dev/sdk/v3";
 import { Sandbox } from "@vercel/sandbox";
-import { installOpenCode } from "../sandboxes/installOpenCode";
-import { writeOpenCodeConfig } from "../sandboxes/writeOpenCodeConfig";
+import { ensureOpenCode } from "../sandboxes/ensureOpenCode";
 import { ensureGithubRepo } from "../sandboxes/ensureGithubRepo";
 import { getVercelSandboxCredentials } from "../sandboxes/getVercelSandboxCredentials";
 import { snapshotAndPersist } from "../sandboxes/snapshotAndPersist";
@@ -45,8 +44,7 @@ export const runSandboxCommandTask = schemaTask({
 
     try {
       // Ensure OpenCode is installed and configured with Vercel AI Gateway
-      await installOpenCode(sandbox);
-      await writeOpenCodeConfig(sandbox);
+      await ensureOpenCode(sandbox);
 
       // Ensure GitHub repo exists and is cloned in sandbox
       const githubRepo = await ensureGithubRepo(sandbox, accountId);

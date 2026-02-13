@@ -82,6 +82,12 @@ export async function ensureGithubRepo(
     return undefined;
   }
 
+  // Default branch after `git init` is master — rename to main so
+  // `git push origin main` works for empty repos.
+  if (!(await runGitCommand(sandbox, ["branch", "-M", "main"], "set default branch to main"))) {
+    return undefined;
+  }
+
   if (
     !(await runGitCommand(
       sandbox,
