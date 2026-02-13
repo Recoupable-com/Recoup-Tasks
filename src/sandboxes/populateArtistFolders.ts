@@ -8,8 +8,9 @@ import { installRecoupCLI } from "./installRecoupCLI";
  * setup-sandbox skill and executing it via opencode.
  *
  * @param sandbox - The Vercel Sandbox instance
+ * @param accountId - The account ID to fetch data for
  */
-export async function populateArtistFolders(sandbox: Sandbox): Promise<void> {
+export async function populateArtistFolders(sandbox: Sandbox, accountId: string): Promise<void> {
   logger.log("Starting artist folder population via opencode + skill");
 
   await ensureOpenCode(sandbox);
@@ -64,6 +65,7 @@ export async function populateArtistFolders(sandbox: Sandbox): Promise<void> {
     ],
     env: {
       RECOUP_API_KEY: recoupApiKey,
+      RECOUP_ACCOUNT_ID: accountId,
     },
   });
 

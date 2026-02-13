@@ -43,7 +43,7 @@ export const setupSandboxTask = schemaTask({
       const githubRepo = await ensureGithubRepo(sandbox, accountId);
 
       // Populate org/artist folder structure via opencode + skill
-      await populateArtistFolders(sandbox);
+      await populateArtistFolders(sandbox, accountId);
 
       const snapshotResult = await snapshotAndPersist(
         sandbox,
