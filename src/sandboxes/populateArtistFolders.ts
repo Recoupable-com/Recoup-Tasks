@@ -19,7 +19,7 @@ export async function populateArtistFolders(sandbox: Sandbox): Promise<void> {
   logger.log("Installing setup-sandbox skill");
   const installSkill = await sandbox.runCommand({
     cmd: "npx",
-    args: ["skills", "add", "recoupable/skill-setup-sandbox"],
+    args: ["skills", "add", "recoupable/skill-setup-sandbox", "-y", "-g"],
   });
 
   const skillStdout = (await installSkill.stdout()) || "";
