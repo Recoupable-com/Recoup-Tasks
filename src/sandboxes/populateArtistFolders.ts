@@ -35,13 +35,24 @@ export async function populateArtistFolders(sandbox: Sandbox): Promise<void> {
     throw new Error("Failed to install setup-sandbox skill");
   }
 
-  // Run opencode to execute the skill
-  logger.log("Running opencode to execute setup-sandbox skill");
-
   const recoupApiKey = process.env.RECOUP_API_KEY;
   if (!recoupApiKey) {
     throw new Error("Missing RECOUP_API_KEY environment variable");
   }
+
+  // Verify which account the API key resolves to
+  const whoami = await sandbox.runCommand({
+    cmd: "recoup",
+    args: ["whoami"],
+    env: { RECOUP_API_KEY: recoupApiKey },
+  });
+  logger.log("Recoup whoami", {
+    stdout: (await whoami.stdout()) || "",
+    stderr: (await whoami.stderr()) || "",
+  });
+
+  // Run opencode to execute the skill
+  logger.log("Running opencode to execute setup-sandbox skill");
 
   const result = await sandbox.runCommand({
     cmd: "opencode",
