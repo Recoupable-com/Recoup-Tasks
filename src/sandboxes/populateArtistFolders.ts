@@ -22,12 +22,16 @@ export async function populateArtistFolders(sandbox: Sandbox): Promise<void> {
     args: ["skills", "add", "recoupable/skill-setup-sandbox"],
   });
 
+  const skillStdout = (await installSkill.stdout()) || "";
+  const skillStderr = (await installSkill.stderr()) || "";
+
+  logger.log("Skill install result", {
+    exitCode: installSkill.exitCode,
+    stdout: skillStdout,
+    stderr: skillStderr,
+  });
+
   if (installSkill.exitCode !== 0) {
-    const stderr = (await installSkill.stderr()) || "";
-    logger.error("Failed to install setup-sandbox skill", {
-      exitCode: installSkill.exitCode,
-      stderr,
-    });
     throw new Error("Failed to install setup-sandbox skill");
   }
 
