@@ -66,6 +66,7 @@ export async function populateArtistFolders(sandbox: Sandbox): Promise<void> {
 
   logger.log("Artist folder population complete", {
     exitCode: result.exitCode,
-    stdoutLength: stdout.length,
+    stdout,
+    stderr,
   });
 }
