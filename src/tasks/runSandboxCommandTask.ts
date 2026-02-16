@@ -6,6 +6,7 @@ import { ensureGithubRepo } from "../sandboxes/ensureGithubRepo";
 import { getVercelSandboxCredentials } from "../sandboxes/getVercelSandboxCredentials";
 import { snapshotAndPersist } from "../sandboxes/snapshotAndPersist";
 import { writeReadme } from "../sandboxes/writeReadme";
+import { ensureSetupSandbox } from "../sandboxes/ensureSetupSandbox";
 import { pushSandboxToGithub } from "../sandboxes/pushSandboxToGithub";
 import {
   runSandboxCommandPayloadSchema,
@@ -60,6 +61,12 @@ export const runSandboxCommandTask = schemaTask({
       // Write README.md with sandbox details
       await writeReadme(sandbox, sandboxId, accountId, githubRepo ?? undefined);
       metadata.append("logs", "README written");
+
+      // Ensure org/artist folder structure exists (setup via OpenCode)
+      metadata.set("currentStep", "Setting up sandbox folders");
+      metadata.append("logs", "Checking sandbox setup");
+      await ensureSetupSandbox(sandbox, accountId);
+      metadata.append("logs", "Sandbox folders ready");
 
       // Run the command with args
       metadata.set("currentStep", "Running command");
