@@ -1,4 +1,4 @@
-import { logger, schemaTask } from "@trigger.dev/sdk/v3";
+import { logger, metadata, schemaTask } from "@trigger.dev/sdk/v3";
 import { Sandbox } from "@vercel/sandbox";
 import { installOpenCode } from "../sandboxes/installOpenCode";
 import { writeOpenCodeConfig } from "../sandboxes/writeOpenCodeConfig";
@@ -38,6 +38,8 @@ export const runSandboxCommandTask = schemaTask({
 
     const sandbox = await Sandbox.get({ sandboxId, token, teamId, projectId });
 
+    metadata.set("currentStep", "Connected to sandbox");
+    metadata.append("logs", "Connected to sandbox");
     logger.log("Connected to sandbox", {
       sandboxId: sandbox.sandboxId,
       status: sandbox.status,
@@ -47,14 +49,21 @@ export const runSandboxCommandTask = schemaTask({
       // Ensure OpenCode is installed and configured with Vercel AI Gateway
       await installOpenCode(sandbox);
       await writeOpenCodeConfig(sandbox);
+      metadata.set("currentStep", "OpenCode configured");
+      metadata.append("logs", "OpenCode installed and configured");
 
       // Ensure GitHub repo exists and is cloned in sandbox
       const githubRepo = await ensureGithubRepo(sandbox, accountId);
+      metadata.set("currentStep", "GitHub repo ready");
+      metadata.append("logs", "GitHub repo ready");
 
       // Write README.md with sandbox details
       await writeReadme(sandbox, sandboxId, accountId, githubRepo ?? undefined);
+      metadata.append("logs", "README written");
 
       // Run the command with args
+      metadata.set("currentStep", "Running command");
+      metadata.append("logs", `Running command: ${command}`);
       logger.log("Running command", { command, args, cwd });
 
       const commandResult = await sandbox.runCommand({
@@ -72,8 +81,11 @@ export const runSandboxCommandTask = schemaTask({
         stdoutLength: stdout.length,
         stderrLength: stderr.length,
       });
+      metadata.append("logs", `Command finished with exit code ${exitCode}`);
 
       // Push sandbox files to GitHub repo
+      metadata.set("currentStep", "Pushing to GitHub");
+      metadata.append("logs", "Pushing to GitHub");
       await pushSandboxToGithub(sandbox);
 
       const snapshotResult = await snapshotAndPersist(
@@ -92,6 +104,8 @@ export const runSandboxCommandTask = schemaTask({
         },
       };
 
+      metadata.set("currentStep", "Complete");
+      metadata.append("logs", "Sandbox command completed successfully");
       logger.log("Sandbox command completed successfully", {
         sandboxId: sandbox.sandboxId,
         snapshotId: snapshotResult.snapshotId,
@@ -99,6 +113,11 @@ export const runSandboxCommandTask = schemaTask({
 
       return result;
     } catch (error) {
+      metadata.set("currentStep", "Failed");
+      metadata.append(
+        "logs",
+        `Error: ${error instanceof Error ? error.message : String(error)}`
+      );
       logger.error("Sandbox command failed", {
         sandboxId: sandbox.sandboxId,
         error: error instanceof Error ? error.message : String(error),
