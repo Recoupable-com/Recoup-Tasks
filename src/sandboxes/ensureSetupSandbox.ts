@@ -34,7 +34,7 @@ export async function ensureSetupSandbox(
     args: [
       "skills",
       "add",
-      "recoupable/skill-setup-sandbox",
+      "recoupable/setup-sandbox",
       "-a",
       "opencode",
       "-y",
@@ -54,7 +54,7 @@ RECOUP_API_KEY and RECOUP_ACCOUNT_ID are set in the environment.`;
 
   const result = await sandbox.runCommand({
     cmd: "opencode",
-    args: ["-p", setupPrompt],
+    args: ["run", setupPrompt],
     env: {
       RECOUP_API_KEY: process.env.RECOUP_API_KEY!,
       RECOUP_ACCOUNT_ID: accountId,
@@ -66,15 +66,15 @@ RECOUP_API_KEY and RECOUP_ACCOUNT_ID are set in the environment.`;
 
   logger.log("Setup-sandbox skill result", {
     exitCode: result.exitCode,
-    stdoutLength: stdout.length,
-    stderrLength: stderr.length,
+    stdout,
+    stderr,
   });
 
   if (result.exitCode !== 0) {
-    logger.error("Setup-sandbox skill failed", { stdout, stderr });
+    metadata.append("logs", `Setup-sandbox failed: ${stderr || stdout}`);
     throw new Error("Failed to set up sandbox via OpenCode");
   }
 
-  metadata.append("logs", "Setup-sandbox skill completed");
+  metadata.append("logs", `Setup-sandbox output: ${stdout || stderr}`);
   logger.log("Sandbox setup complete");
 }
