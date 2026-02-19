@@ -8,8 +8,11 @@ import {
 } from "remotion";
 
 // Load TikTok Sans Regular — the actual TikTok caption font
-const fontFace = new FontFace("TikTok Sans", `url(${staticFile("TikTokSans-Regular.ttf")})`);
-fontFace.load().then((f) => { document.fonts.add(f); }).catch(() => {});
+// Guard against server-side execution (FontFace is a browser-only API)
+if (typeof globalThis.FontFace !== "undefined") {
+  const fontFace = new FontFace("TikTok Sans", `url(${staticFile("TikTokSans-Regular.ttf")})`);
+  fontFace.load().then((f) => { document.fonts.add(f); }).catch(() => {});
+}
 
 export interface SocialPostProps {
   /** URL of the 16:9 source video */
