@@ -1,7 +1,5 @@
 import type { Sandbox } from "@vercel/sandbox";
 import { logger, metadata } from "@trigger.dev/sdk/v3";
-import { writeSandboxEnv } from "./writeSandboxEnv";
-
 /**
  * Ensures the sandbox has the org/artist folder structure set up.
  * Uses OpenClaw with the setup-sandbox skill to create the structure.
@@ -51,8 +49,7 @@ Then run the /setup-sandbox skill to create the org and artist folder structure.
 
 RECOUP_API_KEY and RECOUP_ACCOUNT_ID are available as inherited process environment variables.`;
 
-  await writeSandboxEnv(sandbox, accountId);
-
+  // writeSandboxEnv is called earlier in runSandboxCommandTask
   const apiKey = process.env.RECOUP_API_KEY!;
   const escapedPrompt = setupPrompt.replace(/'/g, "'\\''");
 

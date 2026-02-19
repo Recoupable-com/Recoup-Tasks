@@ -7,7 +7,7 @@ import { logger } from "@trigger.dev/sdk/v3";
  *
  * @param sandbox - The Vercel Sandbox instance
  * @param accountId - The account ID for the sandbox owner
- * @throws Error if RECOUP_API_KEY is not set
+ * @throws Error if RECOUP_API_KEY is not set or write fails
  */
 export async function writeSandboxEnv(
   sandbox: Sandbox,
@@ -24,11 +24,29 @@ export async function writeSandboxEnv(
     RECOUP_ACCOUNT_ID: accountId || "MISSING",
   });
 
-  await sandbox.runCommand({
+  const result = await sandbox.runCommand({
     cmd: "sh",
     args: [
       "-c",
-      `printf 'RECOUP_API_KEY=%s\\nRECOUP_ACCOUNT_ID=%s\\n' '${apiKey}' '${accountId}' >> /etc/environment`,
+      `printf 'RECOUP_API_KEY=%s\\nRECOUP_ACCOUNT_ID=%s\\n' '${apiKey}' '${accountId}' | sudo tee -a /etc/environment > /dev/null`,
     ],
+  });
+
+  if (result.exitCode !== 0) {
+    const stderr = (await result.stderr()) || "";
+    logger.error("Failed to write sandbox env vars", {
+      exitCode: result.exitCode,
+      stderr,
+    });
+    throw new Error("Failed to write env vars to /etc/environment");
+  }
+
+  // Verify the write
+  const verify = await sandbox.runCommand({
+    cmd: "sh",
+    args: ["-c", "grep -c RECOUP /etc/environment"],
+  });
+  logger.log("Verified /etc/environment", {
+    matchingLines: (await verify.stdout())?.trim() || "0",
   });
 }
