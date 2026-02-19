@@ -35,8 +35,6 @@ export async function ensureSetupSandbox(
       "skills",
       "add",
       "recoupable/setup-sandbox",
-      "-a",
-      "openclaw",
       "-y",
     ],
   });
@@ -52,13 +50,22 @@ Then run the /setup-sandbox skill to create the org and artist folder structure.
 
 RECOUP_API_KEY and RECOUP_ACCOUNT_ID are set in the environment.`;
 
+  // Set env vars in ~/.bashrc so they persist for OpenClaw and any
+  // subprocesses it spawns (skills, CLI tools, etc.)
+  await sandbox.runCommand({
+    cmd: "sh",
+    args: [
+      "-c",
+      `echo 'export RECOUP_API_KEY="${process.env.RECOUP_API_KEY}"' >> ~/.bashrc && echo 'export RECOUP_ACCOUNT_ID="${accountId}"' >> ~/.bashrc`,
+    ],
+  });
+
   const result = await sandbox.runCommand({
-    cmd: "openclaw",
-    args: ["agent", "--agent", "main", "--message", setupPrompt],
-    env: {
-      RECOUP_API_KEY: process.env.RECOUP_API_KEY!,
-      RECOUP_ACCOUNT_ID: accountId,
-    },
+    cmd: "sh",
+    args: [
+      "-c",
+      `. ~/.bashrc && openclaw agent --agent main --message '${setupPrompt.replace(/'/g, "'\\''")}'`,
+    ],
   });
 
   const stdout = (await result.stdout()) || "";

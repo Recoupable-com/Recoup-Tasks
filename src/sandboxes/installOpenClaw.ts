@@ -12,7 +12,7 @@ export async function installOpenClaw(sandbox: Sandbox): Promise<void> {
 
   const installCLI = await sandbox.runCommand({
     cmd: "npm",
-    args: ["install", "-g", "openclaw"],
+    args: ["install", "-g", "openclaw@latest"],
     sudo: true,
   });
 
