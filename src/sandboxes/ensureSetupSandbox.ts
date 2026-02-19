@@ -56,9 +56,21 @@ RECOUP_API_KEY and RECOUP_ACCOUNT_ID are available as inherited process environm
     throw new Error("Missing RECOUP_API_KEY environment variable");
   }
 
+  const apiKey = process.env.RECOUP_API_KEY;
+
   logger.log("Setting sandbox env vars", {
-    RECOUP_API_KEY: process.env.RECOUP_API_KEY ? `${process.env.RECOUP_API_KEY.slice(0, 4)}...` : "MISSING",
+    RECOUP_API_KEY: `${apiKey.slice(0, 4)}...`,
     RECOUP_ACCOUNT_ID: accountId || "MISSING",
+  });
+
+  // Write env vars to /etc/environment so they persist across all
+  // processes and subshells OpenClaw spawns (exec tool, etc.)
+  await sandbox.runCommand({
+    cmd: "sh",
+    args: [
+      "-c",
+      `printf 'RECOUP_API_KEY=%s\\nRECOUP_ACCOUNT_ID=%s\\n' '${apiKey}' '${accountId}' >> /etc/environment`,
+    ],
   });
 
   const escapedPrompt = setupPrompt.replace(/'/g, "'\\''");
@@ -67,7 +79,7 @@ RECOUP_API_KEY and RECOUP_ACCOUNT_ID are available as inherited process environm
     cmd: "sh",
     args: [
       "-c",
-      `RECOUP_API_KEY='${process.env.RECOUP_API_KEY}' RECOUP_ACCOUNT_ID='${accountId}' openclaw agent --agent main --message '${escapedPrompt}'`,
+      `RECOUP_API_KEY='${apiKey}' RECOUP_ACCOUNT_ID='${accountId}' openclaw agent --agent main --message '${escapedPrompt}'`,
     ],
   });
 
