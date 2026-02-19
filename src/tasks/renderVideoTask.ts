@@ -28,7 +28,7 @@ export const renderVideoTask = schemaTask({
   id: "render-video",
   schema: renderVideoPayloadSchema,
   maxDuration: 60 * 10, // 10 minutes max for video rendering
-  machine: "small-1x", // Rendering needs more CPU/RAM than default micro
+  machine: "large-1x", // Video rendering needs significant CPU/RAM
   retry: {
     maxAttempts: 1, // No retries — renders are expensive
   },
@@ -115,6 +115,7 @@ export const renderVideoTask = schemaTask({
       codec,
       outputLocation: outputPath,
       inputProps: inputProps as Record<string, unknown>,
+      timeoutInMilliseconds: 120_000, // 2 minutes per frame (generous for slow machines)
     });
 
     logger.log("Render complete", { outputPath });
