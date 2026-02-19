@@ -47,18 +47,19 @@ export async function ensureSetupSandbox(
 
 Then run the /setup-sandbox skill to create the org and artist folder structure.
 
-RECOUP_API_KEY and RECOUP_ACCOUNT_ID are available as inherited process environment variables.`;
+RECOUP_API_KEY and RECOUP_ACCOUNT_ID are available as environment variables.`;
 
-  // writeSandboxEnv is called earlier in runSandboxCommandTask
-  const apiKey = process.env.RECOUP_API_KEY!;
-  const escapedPrompt = setupPrompt.replace(/'/g, "'\\''");
+  if (!process.env.RECOUP_API_KEY) {
+    throw new Error("Missing RECOUP_API_KEY environment variable");
+  }
 
   const result = await sandbox.runCommand({
-    cmd: "sh",
-    args: [
-      "-c",
-      `RECOUP_API_KEY='${apiKey}' RECOUP_ACCOUNT_ID='${accountId}' openclaw agent --agent main --message '${escapedPrompt}'`,
-    ],
+    cmd: "openclaw",
+    args: ["agent", "--agent", "main", "--message", setupPrompt],
+    env: {
+      RECOUP_API_KEY: process.env.RECOUP_API_KEY,
+      RECOUP_ACCOUNT_ID: accountId,
+    },
   });
 
   const stdout = (await result.stdout()) || "";

@@ -7,7 +7,6 @@ import { getVercelSandboxCredentials } from "../sandboxes/getVercelSandboxCreden
 import { snapshotAndPersist } from "../sandboxes/snapshotAndPersist";
 import { writeReadme } from "../sandboxes/writeReadme";
 import { ensureSetupSandbox } from "../sandboxes/ensureSetupSandbox";
-import { writeSandboxEnv } from "../sandboxes/writeSandboxEnv";
 import { pushSandboxToGithub } from "../sandboxes/pushSandboxToGithub";
 import {
   runSandboxCommandPayloadSchema,
@@ -51,7 +50,6 @@ export const runSandboxCommandTask = schemaTask({
       // Ensure OpenClaw is installed and configured with AI Gateway
       await installOpenClaw(sandbox);
       await setupOpenClaw(sandbox);
-      await writeSandboxEnv(sandbox, accountId);
       metadata.set("currentStep", "OpenClaw configured");
       metadata.append("logs", "OpenClaw installed and configured");
 
@@ -79,6 +77,10 @@ export const runSandboxCommandTask = schemaTask({
         cmd: command,
         args: args || [],
         cwd,
+        env: {
+          RECOUP_API_KEY: process.env.RECOUP_API_KEY!,
+          RECOUP_ACCOUNT_ID: accountId,
+        },
       });
 
       const stdout = (await commandResult.stdout()) || "";
