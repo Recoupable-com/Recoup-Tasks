@@ -3,7 +3,7 @@ import { logger, metadata } from "@trigger.dev/sdk/v3";
 
 /**
  * Ensures the sandbox has the org/artist folder structure set up.
- * Uses OpenCode with the setup-sandbox skill to create the structure.
+ * Uses OpenClaw with the setup-sandbox skill to create the structure.
  * Idempotent — skips if `orgs/` directory already exists.
  *
  * @param sandbox - The Vercel Sandbox instance
@@ -24,7 +24,7 @@ export async function ensureSetupSandbox(
     return;
   }
 
-  // Install the setup-sandbox skill for OpenCode
+  // Install the setup-sandbox skill for OpenClaw
   metadata.set("currentStep", "Installing setup-sandbox skill");
   metadata.append("logs", "Installing setup-sandbox skill");
   logger.log("Installing setup-sandbox skill");
@@ -36,15 +36,15 @@ export async function ensureSetupSandbox(
       "add",
       "recoupable/setup-sandbox",
       "-a",
-      "opencode",
+      "openclaw",
       "-y",
     ],
   });
 
-  // Run OpenCode with the setup-sandbox skill
-  metadata.set("currentStep", "Running setup-sandbox skill via OpenCode");
-  metadata.append("logs", "Running setup-sandbox skill via OpenCode");
-  logger.log("Running setup-sandbox skill via OpenCode");
+  // Run OpenClaw with the setup-sandbox skill
+  metadata.set("currentStep", "Running setup-sandbox skill via OpenClaw");
+  metadata.append("logs", "Running setup-sandbox skill via OpenClaw");
+  logger.log("Running setup-sandbox skill via OpenClaw");
 
   const setupPrompt = `First, install the Recoup CLI globally: npm install -g @recoupable/cli
 
@@ -53,8 +53,8 @@ Then run the /setup-sandbox skill to create the org and artist folder structure.
 RECOUP_API_KEY and RECOUP_ACCOUNT_ID are set in the environment.`;
 
   const result = await sandbox.runCommand({
-    cmd: "opencode",
-    args: ["run", setupPrompt],
+    cmd: "openclaw",
+    args: ["agent", "--agent", "main", "--message", setupPrompt],
     env: {
       RECOUP_API_KEY: process.env.RECOUP_API_KEY!,
       RECOUP_ACCOUNT_ID: accountId,
@@ -72,7 +72,7 @@ RECOUP_API_KEY and RECOUP_ACCOUNT_ID are set in the environment.`;
 
   if (result.exitCode !== 0) {
     metadata.append("logs", `Setup-sandbox failed: ${stderr || stdout}`);
-    throw new Error("Failed to set up sandbox via OpenCode");
+    throw new Error("Failed to set up sandbox via OpenClaw");
   }
 
   metadata.append("logs", `Setup-sandbox output: ${stdout || stderr}`);
