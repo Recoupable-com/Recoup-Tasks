@@ -1,4 +1,5 @@
 import { defineConfig } from "@trigger.dev/sdk/v3";
+import { ffmpeg, additionalFiles } from "@trigger.dev/build/extensions/core";
 
 export default defineConfig({
   project: "proj_pxwxehzmqaxylqhhkomn",
@@ -20,4 +21,16 @@ export default defineConfig({
     },
   },
   dirs: ["src"],
+  build: {
+    extensions: [
+      // FFmpeg is required by Remotion for video encoding
+      ffmpeg(),
+      // Include the Remotion source files so bundle() can find them at runtime
+      additionalFiles({
+        files: [
+          "./src/remotion/**",
+        ],
+      }),
+    ],
+  },
 });
