@@ -1,7 +1,7 @@
 import { logger, metadata, schemaTask } from "@trigger.dev/sdk/v3";
 import { Sandbox } from "@vercel/sandbox";
-import { installOpenCode } from "../sandboxes/installOpenCode";
-import { writeOpenCodeConfig } from "../sandboxes/writeOpenCodeConfig";
+import { installOpenClaw } from "../sandboxes/installOpenClaw";
+import { setupOpenClaw } from "../sandboxes/setupOpenClaw";
 import { ensureGithubRepo } from "../sandboxes/ensureGithubRepo";
 import { getVercelSandboxCredentials } from "../sandboxes/getVercelSandboxCredentials";
 import { snapshotAndPersist } from "../sandboxes/snapshotAndPersist";
@@ -14,8 +14,8 @@ import {
 } from "../schemas/sandboxSchema";
 
 /**
- * Background task that connects to an existing Vercel Sandbox, ensures OpenCode
- * is installed with Vercel AI Gateway, runs a command with arguments, captures
+ * Background task that connects to an existing Vercel Sandbox, ensures OpenClaw
+ * is installed with AI Gateway, runs a command with arguments, captures
  * output, takes a snapshot, and updates the account's snapshot ID.
  */
 export const runSandboxCommandTask = schemaTask({
@@ -47,11 +47,11 @@ export const runSandboxCommandTask = schemaTask({
     });
 
     try {
-      // Ensure OpenCode is installed and configured with Vercel AI Gateway
-      await installOpenCode(sandbox);
-      await writeOpenCodeConfig(sandbox);
-      metadata.set("currentStep", "OpenCode configured");
-      metadata.append("logs", "OpenCode installed and configured");
+      // Ensure OpenClaw is installed and configured with AI Gateway
+      await installOpenClaw(sandbox);
+      await setupOpenClaw(sandbox);
+      metadata.set("currentStep", "OpenClaw configured");
+      metadata.append("logs", "OpenClaw installed and configured");
 
       // Ensure GitHub repo exists and is cloned in sandbox
       const githubRepo = await ensureGithubRepo(sandbox, accountId);
@@ -62,7 +62,7 @@ export const runSandboxCommandTask = schemaTask({
       await writeReadme(sandbox, sandboxId, accountId, githubRepo ?? undefined);
       metadata.append("logs", "README written");
 
-      // Ensure org/artist folder structure exists (setup via OpenCode)
+      // Ensure org/artist folder structure exists (setup via OpenClaw)
       metadata.set("currentStep", "Setting up sandbox folders");
       metadata.append("logs", "Checking sandbox setup");
       await ensureSetupSandbox(sandbox, accountId);

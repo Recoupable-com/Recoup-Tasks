@@ -1,6 +1,7 @@
 import type { Sandbox } from "@vercel/sandbox";
 import { logger } from "@trigger.dev/sdk/v3";
 import { runGitCommand } from "./runGitCommand";
+import { copyOpenClawToRepo } from "./copyOpenClawToRepo";
 
 /**
  * Commits and pushes all local sandbox files to the GitHub repository.
@@ -36,6 +37,8 @@ export async function pushSandboxToGithub(
   ) {
     return false;
   }
+
+  await copyOpenClawToRepo(sandbox);
 
   // Stage all files
   if (!(await runGitCommand(sandbox, ["add", "-A"], "stage files"))) {
