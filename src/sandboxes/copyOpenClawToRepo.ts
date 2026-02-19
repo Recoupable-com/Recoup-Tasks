@@ -17,7 +17,7 @@ export async function copyOpenClawToRepo(sandbox: Sandbox): Promise<void> {
     cmd: "sh",
     args: [
       "-c",
-      "cp -r ~/.openclaw /vercel/sandbox/.openclaw && find /vercel/sandbox/.openclaw -name .git -type d -exec rm -rf {} + 2>/dev/null || true",
+      "rm -rf /vercel/sandbox/.openclaw && cp -r ~/.openclaw /vercel/sandbox/.openclaw && find /vercel/sandbox/.openclaw -name .git -type d -exec rm -rf {} + 2>/dev/null || true",
     ],
   });
 

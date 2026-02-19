@@ -50,34 +50,21 @@ Then run the /setup-sandbox skill to create the org and artist folder structure.
 
 RECOUP_API_KEY and RECOUP_ACCOUNT_ID are set in the environment.`;
 
-  // Write env vars to ~/.openclaw/.env so OpenClaw picks them up
-  // (OpenClaw loads ~/.openclaw/.env as a global dotenv source)
+  // Inline env vars so they're in the process tree and inherited by
+  // all child processes OpenClaw spawns (skills, CLI tools, etc.)
   logger.log("Setting sandbox env vars", {
     RECOUP_API_KEY: process.env.RECOUP_API_KEY ? `${process.env.RECOUP_API_KEY.slice(0, 8)}...` : "MISSING",
     RECOUP_ACCOUNT_ID: accountId || "MISSING",
   });
 
-  await sandbox.runCommand({
+  const escapedPrompt = setupPrompt.replace(/'/g, "'\\''");
+
+  const result = await sandbox.runCommand({
     cmd: "sh",
     args: [
       "-c",
-      `echo 'RECOUP_API_KEY=${process.env.RECOUP_API_KEY}' >> ~/.openclaw/.env && echo 'RECOUP_ACCOUNT_ID=${accountId}' >> ~/.openclaw/.env`,
+      `RECOUP_API_KEY='${process.env.RECOUP_API_KEY}' RECOUP_ACCOUNT_ID='${accountId}' openclaw agent --agent main --message '${escapedPrompt}'`,
     ],
-  });
-
-  // Verify the .env was written correctly
-  const verify = await sandbox.runCommand({
-    cmd: "sh",
-    args: ["-c", "cat ~/.openclaw/.env"],
-  });
-  logger.log("Verified ~/.openclaw/.env contents", {
-    stdout: (await verify.stdout()) || "",
-    exitCode: verify.exitCode,
-  });
-
-  const result = await sandbox.runCommand({
-    cmd: "openclaw",
-    args: ["agent", "--agent", "main", "--message", setupPrompt],
   });
 
   const stdout = (await result.stdout()) || "";
