@@ -6,9 +6,9 @@ import * as fs from "node:fs";
 const SUPABASE_STORAGE_BUCKET = "user-files";
 
 interface UploadResult {
-  /** Public URL of the uploaded video */
+  /** Signed URL of the uploaded video (expires in 7 days) */
   videoUrl: string;
-  /** Storage key (path within the bucket) */
+  /** Storage key (path within the bucket) — use this to create a new signed URL later */
   storageKey: string;
 }
 
@@ -51,18 +51,27 @@ export async function uploadRenderedVideo(
     throw new Error(`Failed to upload video to Supabase: ${error.message}`);
   }
 
-  // Get the public URL
-  const {
-    data: { publicUrl },
-  } = supabase.storage.from(SUPABASE_STORAGE_BUCKET).getPublicUrl(storageKey);
+  // Create a signed URL (bucket is private, so public URLs won't work)
+  // 7 days expiry — callers can refresh via the API if needed
+  const SIGNED_URL_EXPIRY_SECONDS = 7 * 24 * 60 * 60;
+
+  const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+    .from(SUPABASE_STORAGE_BUCKET)
+    .createSignedUrl(storageKey, SIGNED_URL_EXPIRY_SECONDS);
+
+  if (signedUrlError || !signedUrlData?.signedUrl) {
+    throw new Error(
+      `Upload succeeded but failed to create signed URL: ${signedUrlError?.message ?? "unknown error"}`
+    );
+  }
 
   logger.log("Video uploaded successfully", {
     storageKey,
-    publicUrl,
+    signedUrl: signedUrlData.signedUrl,
   });
 
   return {
-    videoUrl: publicUrl,
+    videoUrl: signedUrlData.signedUrl,
     storageKey,
   };
 }
