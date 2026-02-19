@@ -65,6 +65,16 @@ RECOUP_API_KEY and RECOUP_ACCOUNT_ID are set in the environment.`;
     ],
   });
 
+  // Verify the .env was written correctly
+  const verify = await sandbox.runCommand({
+    cmd: "sh",
+    args: ["-c", "cat ~/.openclaw/.env"],
+  });
+  logger.log("Verified ~/.openclaw/.env contents", {
+    stdout: (await verify.stdout()) || "",
+    exitCode: verify.exitCode,
+  });
+
   const result = await sandbox.runCommand({
     cmd: "openclaw",
     args: ["agent", "--agent", "main", "--message", setupPrompt],
