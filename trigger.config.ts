@@ -22,6 +22,15 @@ export default defineConfig({
   },
   dirs: ["src"],
   build: {
+    // Remotion packages use dynamic requires internally (e.g. @remotion/studio/renderEntry)
+    // that break when bundled by esbuild. Mark them as external so they stay as
+    // real node_modules in the container.
+    external: [
+      "@remotion/bundler",
+      "@remotion/renderer",
+      "@remotion/studio",
+      "remotion",
+    ],
     extensions: [
       // FFmpeg is required by Remotion for video encoding
       ffmpeg(),
