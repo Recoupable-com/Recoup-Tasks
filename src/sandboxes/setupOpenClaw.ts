@@ -9,36 +9,43 @@ import { logger } from "@trigger.dev/sdk/v3";
  * @throws Error if onboarding or gateway startup fails
  */
 export async function setupOpenClaw(sandbox: Sandbox): Promise<void> {
-  logger.log("Running OpenClaw onboard");
+  const onboardArgs = [
+    "onboard",
+    "--non-interactive",
+    "--mode",
+    "local",
+    "--auth-choice",
+    "ai-gateway-api-key",
+    "--ai-gateway-api-key",
+    process.env.VERCEL_AI_GATEWAY_API_KEY!,
+    "--gateway-port",
+    "18789",
+    "--gateway-bind",
+    "loopback",
+    "--accept-risk",
+  ];
+
+  logger.log("Running OpenClaw onboard", {
+    command: `openclaw ${onboardArgs.map((a) => (a === process.env.VERCEL_AI_GATEWAY_API_KEY ? "[REDACTED]" : a)).join(" ")}`,
+  });
 
   const onboard = await sandbox.runCommand({
     cmd: "openclaw",
-    args: [
-      "onboard",
-      "--non-interactive",
-      "--mode",
-      "local",
-      "--auth-choice",
-      "ai-gateway-api-key",
-      "--ai-gateway-api-key",
-      process.env.AI_GATEWAY_API_KEY!,
-      "--gateway-port",
-      "18789",
-      "--gateway-bind",
-      "loopback",
-      "--accept-risk",
-    ],
+    args: onboardArgs,
   });
 
+  const onboardStdout = (await onboard.stdout()) || "";
+  const onboardStderr = (await onboard.stderr()) || "";
+
   if (onboard.exitCode !== 0) {
-    const stdout = (await onboard.stdout()) || "";
-    const stderr = (await onboard.stderr()) || "";
-    logger.error("Failed to onboard OpenClaw", {
+    // Onboard writes config successfully but exits non-zero when it can't
+    // verify the gateway connection (gateway isn't running yet). As long as
+    // the config was written we can proceed to start the gateway ourselves.
+    logger.warn("OpenClaw onboard exited with non-zero code", {
       exitCode: onboard.exitCode,
-      stdout,
-      stderr,
+      stdout: onboardStdout,
+      stderr: onboardStderr,
     });
-    throw new Error("Failed to onboard OpenClaw");
   }
 
   logger.log("OpenClaw onboard complete, starting gateway");

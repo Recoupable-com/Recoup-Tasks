@@ -37,6 +37,13 @@ export async function pushSandboxToGithub(
     return false;
   }
 
+  // Copy ~/.openclaw into the repo and remove any nested .git dirs
+  // so they don't conflict with the sandbox's own git repo.
+  await sandbox.runCommand({
+    cmd: "sh",
+    args: ["-c", "cp -r ~/.openclaw /vercel/sandbox/.openclaw && find /vercel/sandbox/.openclaw -name .git -type d -exec rm -rf {} + 2>/dev/null || true"],
+  });
+
   // Stage all files
   if (!(await runGitCommand(sandbox, ["add", "-A"], "stage files"))) {
     return false;
