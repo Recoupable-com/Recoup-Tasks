@@ -1,5 +1,6 @@
 import type { Sandbox } from "@vercel/sandbox";
 import { logger, metadata } from "@trigger.dev/sdk/v3";
+import { writeSandboxEnv } from "./writeSandboxEnv";
 
 /**
  * Ensures the sandbox has the org/artist folder structure set up.
@@ -50,29 +51,9 @@ Then run the /setup-sandbox skill to create the org and artist folder structure.
 
 RECOUP_API_KEY and RECOUP_ACCOUNT_ID are available as inherited process environment variables.`;
 
-  // Inline env vars so they're in the process tree and inherited by
-  // all child processes OpenClaw spawns (skills, CLI tools, etc.)
-  if (!process.env.RECOUP_API_KEY) {
-    throw new Error("Missing RECOUP_API_KEY environment variable");
-  }
+  await writeSandboxEnv(sandbox, accountId);
 
-  const apiKey = process.env.RECOUP_API_KEY;
-
-  logger.log("Setting sandbox env vars", {
-    RECOUP_API_KEY: `${apiKey.slice(0, 4)}...`,
-    RECOUP_ACCOUNT_ID: accountId || "MISSING",
-  });
-
-  // Write env vars to /etc/environment so they persist across all
-  // processes and subshells OpenClaw spawns (exec tool, etc.)
-  await sandbox.runCommand({
-    cmd: "sh",
-    args: [
-      "-c",
-      `printf 'RECOUP_API_KEY=%s\\nRECOUP_ACCOUNT_ID=%s\\n' '${apiKey}' '${accountId}' >> /etc/environment`,
-    ],
-  });
-
+  const apiKey = process.env.RECOUP_API_KEY!;
   const escapedPrompt = setupPrompt.replace(/'/g, "'\\''");
 
   const result = await sandbox.runCommand({
