@@ -60,8 +60,9 @@ export const renderVideoTask = schemaTask({
 
     // --- Step 1: Bundle the Remotion project ---
     // The entry point is the Remotion index.ts that calls registerRoot()
-    const entryPoint = path.resolve(__dirname, "../remotion/index.ts");
-    const publicDir = path.resolve(__dirname, "../remotion/public");
+    // In the Trigger.dev container, additionalFiles places them relative to cwd (/app)
+    const entryPoint = path.join(process.cwd(), "src", "remotion", "index.ts");
+    const publicDir = path.join(process.cwd(), "src", "remotion", "public");
 
     logger.log("Bundling Remotion project", { entryPoint, publicDir });
 
