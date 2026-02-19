@@ -52,6 +52,11 @@ RECOUP_API_KEY and RECOUP_ACCOUNT_ID are set in the environment.`;
 
   // Set env vars in ~/.bashrc so they persist for OpenClaw and any
   // subprocesses it spawns (skills, CLI tools, etc.)
+  logger.log("Setting sandbox env vars", {
+    RECOUP_API_KEY: process.env.RECOUP_API_KEY ? `${process.env.RECOUP_API_KEY.slice(0, 8)}...` : "MISSING",
+    RECOUP_ACCOUNT_ID: accountId || "MISSING",
+  });
+
   await sandbox.runCommand({
     cmd: "sh",
     args: [
