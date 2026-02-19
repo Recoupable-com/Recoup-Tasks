@@ -49,7 +49,7 @@ export const runSandboxCommandTask = schemaTask({
     try {
       // Ensure OpenClaw is installed and configured with AI Gateway
       await installOpenClaw(sandbox);
-      await setupOpenClaw(sandbox);
+      await setupOpenClaw(sandbox, accountId);
       metadata.set("currentStep", "OpenClaw configured");
       metadata.append("logs", "OpenClaw installed and configured");
 
@@ -77,6 +77,10 @@ export const runSandboxCommandTask = schemaTask({
         cmd: command,
         args: args || [],
         cwd,
+        env: {
+          RECOUP_API_KEY: process.env.RECOUP_API_KEY!,
+          RECOUP_ACCOUNT_ID: accountId,
+        },
       });
 
       const stdout = (await commandResult.stdout()) || "";

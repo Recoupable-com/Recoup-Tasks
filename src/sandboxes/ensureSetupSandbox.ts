@@ -1,6 +1,5 @@
 import type { Sandbox } from "@vercel/sandbox";
 import { logger, metadata } from "@trigger.dev/sdk/v3";
-
 /**
  * Ensures the sandbox has the org/artist folder structure set up.
  * Uses OpenClaw with the setup-sandbox skill to create the structure.
@@ -35,8 +34,6 @@ export async function ensureSetupSandbox(
       "skills",
       "add",
       "recoupable/setup-sandbox",
-      "-a",
-      "openclaw",
       "-y",
     ],
   });
@@ -50,13 +47,17 @@ export async function ensureSetupSandbox(
 
 Then run the /setup-sandbox skill to create the org and artist folder structure.
 
-RECOUP_API_KEY and RECOUP_ACCOUNT_ID are set in the environment.`;
+RECOUP_API_KEY and RECOUP_ACCOUNT_ID are available as environment variables.`;
+
+  if (!process.env.RECOUP_API_KEY) {
+    throw new Error("Missing RECOUP_API_KEY environment variable");
+  }
 
   const result = await sandbox.runCommand({
     cmd: "openclaw",
     args: ["agent", "--agent", "main", "--message", setupPrompt],
     env: {
-      RECOUP_API_KEY: process.env.RECOUP_API_KEY!,
+      RECOUP_API_KEY: process.env.RECOUP_API_KEY,
       RECOUP_ACCOUNT_ID: accountId,
     },
   });
