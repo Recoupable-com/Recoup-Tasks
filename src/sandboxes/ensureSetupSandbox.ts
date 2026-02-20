@@ -28,10 +28,24 @@ export async function ensureSetupSandbox(
   metadata.append("logs", "Installing setup-sandbox skill");
   logger.log("Installing setup-sandbox skill");
 
-  await sandbox.runCommand({
+  const skillInstall = await sandbox.runCommand({
     cmd: "clawhub",
     args: ["install", "sweetmantech/setup-sandbox"],
   });
+
+  const skillStdout = (await skillInstall.stdout()) || "";
+  const skillStderr = (await skillInstall.stderr()) || "";
+
+  logger.log("Skill install result", {
+    exitCode: skillInstall.exitCode,
+    stdout: skillStdout,
+    stderr: skillStderr,
+  });
+
+  if (skillInstall.exitCode !== 0) {
+    metadata.append("logs", `Skill install failed: ${skillStderr || skillStdout}`);
+    throw new Error("Failed to install setup-sandbox skill via clawhub");
+  }
 
   // Run OpenClaw with the setup-sandbox skill
   metadata.set("currentStep", "Running setup-sandbox skill via OpenClaw");
