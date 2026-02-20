@@ -12,8 +12,6 @@ export async function runSetupSandboxSkill(
   sandbox: Sandbox,
   env: Record<string, string>
 ): Promise<void> {
-  logger.log("Running setup-sandbox skill");
-
   const result = await sandbox.runCommand({
     cmd: "openclaw",
     args: [
