@@ -1,5 +1,6 @@
 import type { Sandbox } from "@vercel/sandbox";
 import { logger, metadata } from "@trigger.dev/sdk/v3";
+import { installSkill } from "./installSkill";
 /**
  * Ensures the sandbox has the org/artist folder structure set up.
  * Uses OpenClaw with the setup-sandbox skill to create the structure.
@@ -23,20 +24,10 @@ export async function ensureSetupSandbox(
     return;
   }
 
-  // Install the setup-sandbox skill for OpenClaw
   metadata.set("currentStep", "Installing setup-sandbox skill");
   metadata.append("logs", "Installing setup-sandbox skill");
-  logger.log("Installing setup-sandbox skill");
 
-  await sandbox.runCommand({
-    cmd: "npx",
-    args: [
-      "skills",
-      "add",
-      "recoupable/setup-sandbox",
-      "-y",
-    ],
-  });
+  await installSkill(sandbox, "recoupable/setup-sandbox");
 
   // Run OpenClaw with the setup-sandbox skill
   metadata.set("currentStep", "Running setup-sandbox skill via OpenClaw");
