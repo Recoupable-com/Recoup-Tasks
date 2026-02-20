@@ -24,10 +24,12 @@ export async function ensureSetupSandbox(
     return;
   }
 
-  metadata.set("currentStep", "Installing setup-sandbox skill");
-  metadata.append("logs", "Installing setup-sandbox skill");
+  metadata.set("currentStep", "Installing skills");
+  metadata.append("logs", "Installing skills");
 
   await installSkill(sandbox, "recoupable/setup-sandbox");
+  await installSkill(sandbox, "recoupable/setup-artist");
+  await installSkill(sandbox, "recoupable/release-management");
 
   // Run OpenClaw with the setup-sandbox skill
   metadata.set("currentStep", "Running setup-sandbox skill via OpenClaw");
