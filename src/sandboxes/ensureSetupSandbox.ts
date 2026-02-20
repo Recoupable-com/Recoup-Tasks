@@ -31,14 +31,17 @@ export async function ensureSetupSandbox(
   await installSkill(sandbox, "recoupable/setup-artist");
   await installSkill(sandbox, "recoupable/release-management");
 
-  // Run OpenClaw with the setup-sandbox skill
-  metadata.set("currentStep", "Running setup-sandbox skill via OpenClaw");
-  metadata.append("logs", "Running setup-sandbox skill via OpenClaw");
-  logger.log("Running setup-sandbox skill via OpenClaw");
+  // Run OpenClaw with setup-sandbox then setup-artist for each artist
+  metadata.set("currentStep", "Running setup skills via OpenClaw");
+  metadata.append("logs", "Running setup skills via OpenClaw");
+  logger.log("Running setup skills via OpenClaw");
 
   const setupPrompt = `First, install the Recoup CLI globally: npm install -g @recoupable/cli
 
-Then run the /setup-sandbox skill to create the org and artist folder structure.
+Then follow these steps in order:
+
+1. Run the /setup-sandbox skill to create the org and artist folder structure.
+2. After the folder structure is created, run the /setup-artist skill for EACH artist that was created in step 1.
 
 RECOUP_API_KEY and RECOUP_ACCOUNT_ID are available as environment variables.`;
 
