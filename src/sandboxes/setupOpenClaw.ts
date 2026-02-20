@@ -22,7 +22,7 @@ export async function setupOpenClaw(
     throw new Error("Missing RECOUP_API_KEY environment variable");
   }
 
-  logger.log("Injecting env vars and skills config into openclaw.json", {
+  logger.log("Injecting env vars into openclaw.json", {
     RECOUP_API_KEY: `${process.env.RECOUP_API_KEY.slice(0, 4)}...`,
     RECOUP_ACCOUNT_ID: accountId,
   });
@@ -38,10 +38,6 @@ export async function setupOpenClaw(
         c.env = c.env || {};
         c.env.RECOUP_API_KEY = '${process.env.RECOUP_API_KEY}';
         c.env.RECOUP_ACCOUNT_ID = '${accountId}';
-        const skillsDir = require('path').resolve(process.cwd(), '.agents/skills');
-        c.skills = c.skills || {};
-        c.skills.load = c.skills.load || {};
-        c.skills.load.extraDirs = (c.skills.load.extraDirs || []).filter(d => d !== skillsDir).concat([skillsDir]);
         fs.writeFileSync(p, JSON.stringify(c, null, 2));
       "`,
     ],

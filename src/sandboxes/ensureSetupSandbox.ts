@@ -29,13 +29,8 @@ export async function ensureSetupSandbox(
   logger.log("Installing setup-sandbox skill");
 
   await sandbox.runCommand({
-    cmd: "npx",
-    args: [
-      "skills",
-      "add",
-      "recoupable/setup-sandbox",
-      "-y",
-    ],
+    cmd: "clawhub",
+    args: ["install", "sweetmantech/setup-sandbox"],
   });
 
   // Run OpenClaw with the setup-sandbox skill
