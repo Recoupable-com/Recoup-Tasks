@@ -1,9 +1,12 @@
 import type { Sandbox } from "@vercel/sandbox";
-import { logger, metadata } from "@trigger.dev/sdk/v3";
+import { logger } from "@trigger.dev/sdk/v3";
 import { installSkill } from "./installSkill";
+import { runSetupSandboxSkill } from "./runSetupSandboxSkill";
+import { runSetupArtistSkill } from "./runSetupArtistSkill";
+import { logStep } from "./logStep";
 /**
  * Ensures the sandbox has the org/artist folder structure set up.
- * Uses OpenClaw with the setup-sandbox skill to create the structure.
+ * Installs skills, runs setup-sandbox, then setup-artist for each artist.
  * Idempotent — skips if `orgs/` directory already exists.
  *
  * @param sandbox - The Vercel Sandbox instance
@@ -13,7 +16,6 @@ export async function ensureSetupSandbox(
   sandbox: Sandbox,
   accountId: string
 ): Promise<void> {
-  // Check if orgs/ directory already exists
   const check = await sandbox.runCommand({
     cmd: "test",
     args: ["-d", "orgs/"],
@@ -24,49 +26,26 @@ export async function ensureSetupSandbox(
     return;
   }
 
-  metadata.set("currentStep", "Installing setup-sandbox skill");
-  metadata.append("logs", "Installing setup-sandbox skill");
+  logStep("Installing skills");
 
   await installSkill(sandbox, "recoupable/setup-sandbox");
-
-  // Run OpenClaw with the setup-sandbox skill
-  metadata.set("currentStep", "Running setup-sandbox skill via OpenClaw");
-  metadata.append("logs", "Running setup-sandbox skill via OpenClaw");
-  logger.log("Running setup-sandbox skill via OpenClaw");
-
-  const setupPrompt = `First, install the Recoup CLI globally: npm install -g @recoupable/cli
-
-Then run the /setup-sandbox skill to create the org and artist folder structure.
-
-RECOUP_API_KEY and RECOUP_ACCOUNT_ID are available as environment variables.`;
+  await installSkill(sandbox, "recoupable/setup-artist");
+  await installSkill(sandbox, "recoupable/release-management");
 
   if (!process.env.RECOUP_API_KEY) {
     throw new Error("Missing RECOUP_API_KEY environment variable");
   }
 
-  const result = await sandbox.runCommand({
-    cmd: "openclaw",
-    args: ["agent", "--agent", "main", "--message", setupPrompt],
-    env: {
-      RECOUP_API_KEY: process.env.RECOUP_API_KEY,
-      RECOUP_ACCOUNT_ID: accountId,
-    },
-  });
+  const env = {
+    RECOUP_API_KEY: process.env.RECOUP_API_KEY,
+    RECOUP_ACCOUNT_ID: accountId,
+  };
 
-  const stdout = (await result.stdout()) || "";
-  const stderr = (await result.stderr()) || "";
+  logStep("Running setup-sandbox skill");
+  await runSetupSandboxSkill(sandbox, env);
+  logStep("Setup-sandbox complete", false);
 
-  logger.log("Setup-sandbox skill result", {
-    exitCode: result.exitCode,
-    stdout,
-    stderr,
-  });
-
-  if (result.exitCode !== 0) {
-    metadata.append("logs", `Setup-sandbox failed: ${stderr || stdout}`);
-    throw new Error("Failed to set up sandbox via OpenClaw");
-  }
-
-  metadata.append("logs", `Setup-sandbox output: ${stdout || stderr}`);
-  logger.log("Sandbox setup complete");
+  logStep("Running setup-artist skill");
+  await runSetupArtistSkill(sandbox, env);
+  logStep("Setup-artist complete", false);
 }
