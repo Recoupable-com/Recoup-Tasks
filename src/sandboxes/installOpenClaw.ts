@@ -8,6 +8,16 @@ import { logger } from "@trigger.dev/sdk/v3";
  * @throws Error if installation fails
  */
 export async function installOpenClaw(sandbox: Sandbox): Promise<void> {
+  const check = await sandbox.runCommand({
+    cmd: "which",
+    args: ["openclaw"],
+  });
+
+  if (check.exitCode === 0) {
+    logger.log("OpenClaw CLI already installed, skipping");
+    return;
+  }
+
   logger.log("Installing OpenClaw CLI globally");
 
   const installCLI = await sandbox.runCommand({
