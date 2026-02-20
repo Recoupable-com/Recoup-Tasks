@@ -38,9 +38,10 @@ export async function setupOpenClaw(
         c.env = c.env || {};
         c.env.RECOUP_API_KEY = '${process.env.RECOUP_API_KEY}';
         c.env.RECOUP_ACCOUNT_ID = '${accountId}';
+        const skillsDir = require('path').resolve(process.cwd(), '.agents/skills');
         c.skills = c.skills || {};
         c.skills.load = c.skills.load || {};
-        c.skills.load.extraDirs = ['.agents/skills'];
+        c.skills.load.extraDirs = (c.skills.load.extraDirs || []).filter(d => d !== skillsDir).concat([skillsDir]);
         fs.writeFileSync(p, JSON.stringify(c, null, 2));
       "`,
     ],
