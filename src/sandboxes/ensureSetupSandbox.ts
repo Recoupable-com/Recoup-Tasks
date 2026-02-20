@@ -28,7 +28,8 @@ export async function ensureSetupSandbox(
   metadata.append("logs", "Installing setup-sandbox skill");
   logger.log("Installing setup-sandbox skill");
 
-  // skills.sh installs to .agents/skills/ — copy to skills/ for OpenClaw discovery
+  // skills.sh installs to .agents/skills/ — copy to workspace/skills/ for OpenClaw discovery
+  // OpenClaw workspace defaults to ~/.openclaw/workspace/
   await sandbox.runCommand({
     cmd: "npx",
     args: ["skills", "add", "recoupable/setup-sandbox", "-y"],
@@ -36,14 +37,16 @@ export async function ensureSetupSandbox(
 
   const copySkill = await sandbox.runCommand({
     cmd: "sh",
-    args: ["-c", "mkdir -p skills && rm -rf skills/setup-sandbox && cp -r .agents/skills/setup-sandbox skills/setup-sandbox"],
+    args: ["-c", "mkdir -p ~/.openclaw/workspace/skills && rm -rf ~/.openclaw/workspace/skills/setup-sandbox && cp -r .agents/skills/setup-sandbox ~/.openclaw/workspace/skills/setup-sandbox"],
   });
 
   if (copySkill.exitCode !== 0) {
     const stderr = (await copySkill.stderr()) || "";
-    logger.error("Failed to copy skill to OpenClaw skills directory", { stderr });
-    throw new Error("Failed to copy setup-sandbox skill to skills/");
+    logger.error("Failed to copy skill to OpenClaw workspace skills directory", { stderr });
+    throw new Error("Failed to copy setup-sandbox skill to workspace/skills/");
   }
+
+  logger.log("Skill installed to ~/.openclaw/workspace/skills/setup-sandbox");
 
   // Run OpenClaw with the setup-sandbox skill
   metadata.set("currentStep", "Running setup-sandbox skill via OpenClaw");
