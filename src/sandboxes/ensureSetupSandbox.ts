@@ -1,8 +1,9 @@
 import type { Sandbox } from "@vercel/sandbox";
-import { logger, metadata } from "@trigger.dev/sdk/v3";
+import { logger } from "@trigger.dev/sdk/v3";
 import { installSkill } from "./installSkill";
 import { runSetupSandboxSkill } from "./runSetupSandboxSkill";
 import { runSetupArtistSkill } from "./runSetupArtistSkill";
+import { logStep } from "./logStep";
 /**
  * Ensures the sandbox has the org/artist folder structure set up.
  * Installs skills, runs setup-sandbox, then setup-artist for each artist.
@@ -25,8 +26,7 @@ export async function ensureSetupSandbox(
     return;
   }
 
-  metadata.set("currentStep", "Installing skills");
-  metadata.append("logs", "Installing skills");
+  logStep("Installing skills");
 
   await installSkill(sandbox, "recoupable/setup-sandbox");
   await installSkill(sandbox, "recoupable/setup-artist");
@@ -41,15 +41,11 @@ export async function ensureSetupSandbox(
     RECOUP_ACCOUNT_ID: accountId,
   };
 
-  metadata.set("currentStep", "Running setup-sandbox skill");
-  metadata.append("logs", "Running setup-sandbox skill");
+  logStep("Running setup-sandbox skill");
   await runSetupSandboxSkill(sandbox, env);
-  metadata.append("logs", "Setup-sandbox complete");
+  logStep("Setup-sandbox complete", false);
 
-  metadata.set("currentStep", "Running setup-artist skill");
-  metadata.append("logs", "Running setup-artist skill");
+  logStep("Running setup-artist skill");
   await runSetupArtistSkill(sandbox, env);
-  metadata.append("logs", "Setup-artist complete");
-
-  logger.log("Sandbox setup complete");
+  logStep("Setup-artist complete", false);
 }
