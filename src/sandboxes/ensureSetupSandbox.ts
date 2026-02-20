@@ -28,23 +28,21 @@ export async function ensureSetupSandbox(
   metadata.append("logs", "Installing setup-sandbox skill");
   logger.log("Installing setup-sandbox skill");
 
-  const skillInstall = await sandbox.runCommand({
-    cmd: "clawhub",
-    args: ["install", "sweetmantech/setup-sandbox"],
+  // skills.sh installs to .agents/skills/ — copy to skills/ for OpenClaw discovery
+  await sandbox.runCommand({
+    cmd: "npx",
+    args: ["skills", "add", "recoupable/setup-sandbox", "-y"],
   });
 
-  const skillStdout = (await skillInstall.stdout()) || "";
-  const skillStderr = (await skillInstall.stderr()) || "";
-
-  logger.log("Skill install result", {
-    exitCode: skillInstall.exitCode,
-    stdout: skillStdout,
-    stderr: skillStderr,
+  const copySkill = await sandbox.runCommand({
+    cmd: "sh",
+    args: ["-c", "mkdir -p skills && rm -rf skills/setup-sandbox && cp -r .agents/skills/setup-sandbox skills/setup-sandbox"],
   });
 
-  if (skillInstall.exitCode !== 0) {
-    metadata.append("logs", `Skill install failed: ${skillStderr || skillStdout}`);
-    throw new Error("Failed to install setup-sandbox skill via clawhub");
+  if (copySkill.exitCode !== 0) {
+    const stderr = (await copySkill.stderr()) || "";
+    logger.error("Failed to copy skill to OpenClaw skills directory", { stderr });
+    throw new Error("Failed to copy setup-sandbox skill to skills/");
   }
 
   // Run OpenClaw with the setup-sandbox skill
