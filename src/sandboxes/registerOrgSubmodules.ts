@@ -2,15 +2,14 @@ import type { Sandbox } from "@vercel/sandbox";
 import { logger } from "@trigger.dev/sdk/v3";
 
 /**
- * Delegates submodule registration to OpenClaw, which handles the git
- * complexity of converting plain org directories into submodule references.
+ * Delegates org repo pushing and submodule registration to OpenClaw.
  *
- * Called AFTER `copyOpenClawToRepo` (which copies org dirs as plain files)
- * and `pushOrgRepos` (which pushes org changes to their GitHub repos).
+ * OpenClaw handles:
+ * 1. Committing and pushing changes in each org repo to its GitHub remote
+ * 2. Converting plain org directories into git submodule references
+ * 3. Stripping auth tokens from .gitmodules
  *
- * Previous approach of manually running git submodule add / git rm / git
- * update-index kept failing with ".gitmodules not in the working tree"
- * due to index/working-tree mismatches. OpenClaw can inspect and adapt.
+ * Called AFTER `copyOpenClawToRepo` (which copies org dirs as plain files).
  *
  * @param sandbox - The Vercel Sandbox instance
  */
@@ -57,12 +56,22 @@ export async function registerOrgSubmodules(
   const orgList = orgNames.map((name) => `- ${name}`).join("\n");
 
   const message = [
-    "Register the following org directories as git submodules in the current repo.",
+    "Push changes and register submodules for the following org repos.",
     "Each org has a git repo at ~/.openclaw/workspace/orgs/{name} with a remote origin.",
     "",
     "Org directories:",
     orgList,
     "",
+    "STEP 1: commit and push each org repo to its own remote",
+    "For each org:",
+    "1. Configure git user: email agent@recoupable.com, name Recoup Agent",
+    "2. Stage all changes: git -C ~/.openclaw/workspace/orgs/{name} add -A",
+    "3. Check for changes: git -C ~/.openclaw/workspace/orgs/{name} diff --cached --quiet",
+    "4. If changes exist, commit: git -C ~/.openclaw/workspace/orgs/{name} commit -m 'Update org files'",
+    "5. Push to origin: git -C ~/.openclaw/workspace/orgs/{name} push --force origin HEAD:main",
+    "6. Skip orgs with no changes",
+    "",
+    "STEP 2: register each org as a git submodule in the account repo",
     "For each org:",
     "1. Get the remote URL: git -C ~/.openclaw/workspace/orgs/{name} remote get-url origin",
     "2. Clean up any existing submodule state for this path (deinit, remove from index, remove .git/modules/{path})",
@@ -73,7 +82,7 @@ export async function registerOrgSubmodules(
     "6. Re-stage .gitmodules: git add .gitmodules",
     "",
     "IMPORTANT:",
-    "- Work in the repo root directory",
+    "- Work in the repo root directory for step 2",
     "- If .gitmodules already exists in the index but not the working tree, remove it from the index first (git update-index --force-remove .gitmodules)",
     "- Handle errors gracefully — if a step fails, inspect the state and try to fix it",
   ].join("\n");

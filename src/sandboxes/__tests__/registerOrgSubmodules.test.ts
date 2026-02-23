@@ -248,6 +248,40 @@ describe("registerOrgSubmodules", () => {
     expect(updateIndexCall).toBeUndefined();
   });
 
+  it("instructs OpenClaw to commit and push org repos before registering submodules", async () => {
+    const sandbox = createMockSandbox();
+
+    sandbox.runCommand.mockImplementation(async (opts: any) => {
+      if (opts.cmd === "sh" && opts.args?.[1] === "echo ~") {
+        return {
+          exitCode: 0,
+          stdout: async () => "/root\n",
+          stderr: async () => "",
+        };
+      }
+      if (opts.cmd === "sh" && opts.args?.[1]?.includes("find")) {
+        return {
+          exitCode: 0,
+          stdout: async () => "recoup\n",
+          stderr: async () => "",
+        };
+      }
+      return { exitCode: 0, stdout: async () => "", stderr: async () => "" };
+    });
+
+    await registerOrgSubmodules(sandbox);
+
+    const openclawCall = sandbox.runCommand.mock.calls.find(
+      (call: any[]) => call[0]?.cmd === "openclaw"
+    );
+    const message = openclawCall![0].args[4];
+
+    // Message should instruct pushing org repos
+    expect(message).toContain("commit");
+    expect(message).toContain("push");
+    expect(message).toContain("origin");
+  });
+
   it("uses resolved home dir for workspace path (no tilde)", async () => {
     const sandbox = createMockSandbox();
 

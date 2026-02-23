@@ -2,7 +2,6 @@ import type { Sandbox } from "@vercel/sandbox";
 import { logger } from "@trigger.dev/sdk/v3";
 import { runGitCommand } from "./runGitCommand";
 import { copyOpenClawToRepo } from "./copyOpenClawToRepo";
-import { pushOrgRepos } from "./pushOrgRepos";
 import { registerOrgSubmodules } from "./registerOrgSubmodules";
 
 /**
@@ -42,15 +41,12 @@ export async function pushSandboxToGithub(
 
   await copyOpenClawToRepo(sandbox);
 
-  // Push org repos from ~/.openclaw/workspace/orgs/ (originals still have .git)
-  await pushOrgRepos(sandbox);
-
-  // Stage all files first (so registerOrgSubmodules can git rm the plain dirs)
+  // Stage all files first
   if (!(await runGitCommand(sandbox, ["add", "-A"], "stage files"))) {
     return false;
   }
 
-  // Convert plain org dirs to submodule references
+  // Push org repos and register them as submodules (delegated to OpenClaw)
   await registerOrgSubmodules(sandbox);
 
   // Check if there are changes to commit
