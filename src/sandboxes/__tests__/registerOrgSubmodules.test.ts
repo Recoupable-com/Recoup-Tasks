@@ -234,6 +234,68 @@ describe("registerOrgSubmodules", () => {
   });
 
   /**
+   * Regression for production error:
+   * "fatal: please make sure that the .gitmodules file is in the working tree"
+   *
+   * rm -f .gitmodules only removes from the working tree, not the git index.
+   * git submodule add then fails because .gitmodules is tracked but missing.
+   * Must use git rm to remove from BOTH index and working tree.
+   */
+  it("removes .gitmodules from git index, not just working tree", async () => {
+    const sandbox = createMockSandbox();
+
+    sandbox.runCommand.mockImplementation(async (opts: any) => {
+      if (opts.cmd === "sh" && opts.args?.[1] === "echo ~") {
+        return {
+          exitCode: 0,
+          stdout: async () => "/root\n",
+          stderr: async () => "",
+        };
+      }
+      if (opts.cmd === "sh" && opts.args?.[1]?.includes("find")) {
+        return {
+          exitCode: 0,
+          stdout: async () => "recoup\n",
+          stderr: async () => "",
+        };
+      }
+      if (
+        opts.cmd === "git" &&
+        opts.args?.includes("remote") &&
+        opts.args?.includes("get-url")
+      ) {
+        return {
+          exitCode: 0,
+          stdout: async () =>
+            "https://github.com/recoupable/org-recoup-abc123\n",
+          stderr: async () => "",
+        };
+      }
+      return { exitCode: 0, stdout: async () => "", stderr: async () => "" };
+    });
+
+    await registerOrgSubmodules(sandbox);
+
+    // Should use "git rm" for .gitmodules, not bare "rm -f"
+    const gitRmGitmodules = sandbox.runCommand.mock.calls.find(
+      (call: any[]) => {
+        const args = call[0]?.args;
+        return args?.[1]?.includes("git rm") && args?.[1]?.includes(".gitmodules");
+      }
+    );
+    expect(gitRmGitmodules).toBeDefined();
+
+    // Should NOT use bare rm -f .gitmodules (only removes working tree, not index)
+    const bareRmGitmodules = sandbox.runCommand.mock.calls.find(
+      (call: any[]) => {
+        const args = call[0]?.args;
+        return args?.[1] === "rm -f .gitmodules 2>/dev/null || true";
+      }
+    );
+    expect(bareRmGitmodules).toBeUndefined();
+  });
+
+  /**
    * Regression: stale orgs/ submodule entries from the old approach
    * exist at the repo root (160000 commit orgs/recoup, etc.) and a
    * stale .gitmodules with path = orgs/{name}.

@@ -76,7 +76,7 @@ export async function registerOrgSubmodules(
   });
   await sandbox.runCommand({
     cmd: "sh",
-    args: ["-c", "rm -f .gitmodules 2>/dev/null || true"],
+    args: ["-c", "git rm -f .gitmodules 2>/dev/null || true"],
   });
   await sandbox.runCommand({
     cmd: "sh",
