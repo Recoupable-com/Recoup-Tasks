@@ -95,8 +95,8 @@ export const runSandboxCommandTask = schemaTask({
 
       logger.log("Command execution completed", {
         exitCode,
-        stdoutLength: stdout.length,
-        stderrLength: stderr.length,
+        stdout,
+        stderr,
       });
       metadata.append("logs", `Command finished with exit code ${exitCode}`);
 
