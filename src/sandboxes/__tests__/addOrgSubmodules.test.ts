@@ -4,7 +4,7 @@ vi.mock("@trigger.dev/sdk/v3", () => ({
   logger: { log: vi.fn(), error: vi.fn() },
 }));
 
-const { addOrgSubmodules } = await import("../addOrgSubmodules");
+const { addOrgSubmodules } = await import("../git/addOrgSubmodules");
 
 function createMockSandbox() {
   const runCommand = vi.fn().mockResolvedValue({

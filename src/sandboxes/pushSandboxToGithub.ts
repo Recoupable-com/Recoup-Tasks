@@ -2,7 +2,7 @@ import type { Sandbox } from "@vercel/sandbox";
 import { logger } from "@trigger.dev/sdk/v3";
 import { runGitCommand } from "./runGitCommand";
 import { copyOpenClawToRepo } from "./copyOpenClawToRepo";
-import { addOrgSubmodules } from "./addOrgSubmodules";
+import { addOrgSubmodules } from "./git/addOrgSubmodules";
 import { stripGitmodulesTokens } from "./stripGitmodulesTokens";
 import { registerOrgSubmodules } from "./registerOrgSubmodules";
 
