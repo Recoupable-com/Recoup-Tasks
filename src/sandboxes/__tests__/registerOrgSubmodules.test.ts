@@ -233,6 +233,59 @@ describe("registerOrgSubmodules", () => {
     expect(rmCachedCall).toBeDefined();
   });
 
+  /**
+   * Regression: stale orgs/ submodule entries from the old approach
+   * exist at the repo root (160000 commit orgs/recoup, etc.) and a
+   * stale .gitmodules with path = orgs/{name}.
+   * registerOrgSubmodules must remove these before adding new ones
+   * at .openclaw/workspace/orgs/{name}.
+   */
+  it("removes stale orgs/ submodules at repo root from old approach", async () => {
+    const sandbox = createMockSandbox();
+
+    sandbox.runCommand.mockImplementation(async (opts: any) => {
+      if (opts.cmd === "sh" && opts.args?.[1] === "echo ~") {
+        return {
+          exitCode: 0,
+          stdout: async () => "/root\n",
+          stderr: async () => "",
+        };
+      }
+      if (opts.cmd === "sh" && opts.args?.[1]?.includes("find")) {
+        return {
+          exitCode: 0,
+          stdout: async () => "recoup\n",
+          stderr: async () => "",
+        };
+      }
+      if (
+        opts.cmd === "git" &&
+        opts.args?.includes("remote") &&
+        opts.args?.includes("get-url")
+      ) {
+        return {
+          exitCode: 0,
+          stdout: async () =>
+            "https://github.com/recoupable/org-recoup-abc123\n",
+          stderr: async () => "",
+        };
+      }
+      return { exitCode: 0, stdout: async () => "", stderr: async () => "" };
+    });
+
+    await registerOrgSubmodules(sandbox);
+
+    // Should remove stale orgs/ at repo root from index
+    const rmStaleCall = sandbox.runCommand.mock.calls.find(
+      (call: any[]) => {
+        const args = call[0]?.args;
+        // Looking for: sh -c "git rm -r --cached orgs ..."
+        return args?.[1]?.includes("git rm") && args?.[1]?.includes("orgs 2>");
+      }
+    );
+    expect(rmStaleCall).toBeDefined();
+  });
+
   it("uses resolved home dir for git -C paths (no tilde)", async () => {
     const sandbox = createMockSandbox();
 

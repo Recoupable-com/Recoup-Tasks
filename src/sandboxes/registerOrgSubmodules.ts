@@ -83,6 +83,16 @@ export async function registerOrgSubmodules(
     args: ["-c", "rm -rf .git/modules 2>/dev/null || true"],
   });
 
+  // Remove stale orgs/ submodules at repo root from old approach
+  await sandbox.runCommand({
+    cmd: "sh",
+    args: ["-c", "git rm -r --cached orgs 2>/dev/null || true"],
+  });
+  await sandbox.runCommand({
+    cmd: "sh",
+    args: ["-c", "rm -rf orgs 2>/dev/null || true"],
+  });
+
   for (const orgName of orgNames) {
     const orgSrcPath = `${workspaceOrgs}/${orgName}`;
     const submodulePath = `.openclaw/workspace/orgs/${orgName}`;
