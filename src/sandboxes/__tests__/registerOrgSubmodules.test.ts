@@ -367,6 +367,43 @@ describe("registerOrgSubmodules", () => {
     expect(message).toContain("--cached");
   });
 
+  /**
+   * Idempotency: if an org is already registered as a submodule (has a
+   * gitlink .git file and is in .gitmodules), skip re-adding it.
+   * Without this check, git submodule add fails or creates conflicts.
+   */
+  it("instructs OpenClaw to skip already-registered submodules", async () => {
+    const sandbox = createMockSandbox();
+
+    sandbox.runCommand.mockImplementation(async (opts: any) => {
+      if (opts.cmd === "sh" && opts.args?.[1] === "echo ~") {
+        return {
+          exitCode: 0,
+          stdout: async () => "/root\n",
+          stderr: async () => "",
+        };
+      }
+      if (opts.cmd === "sh" && opts.args?.[1]?.includes("find")) {
+        return {
+          exitCode: 0,
+          stdout: async () => "recoup\n",
+          stderr: async () => "",
+        };
+      }
+      return { exitCode: 0, stdout: async () => "", stderr: async () => "" };
+    });
+
+    await registerOrgSubmodules(sandbox);
+
+    const openclawCall = sandbox.runCommand.mock.calls.find(
+      (call: any[]) => call[0]?.cmd === "openclaw"
+    );
+    const message = openclawCall![0].args[4];
+
+    // Must instruct checking if submodule is already registered before adding
+    expect(message).toContain("already registered");
+  });
+
   it("uses resolved home dir for workspace path (no tilde)", async () => {
     const sandbox = createMockSandbox();
 

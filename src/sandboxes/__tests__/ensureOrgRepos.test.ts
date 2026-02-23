@@ -157,6 +157,37 @@ describe("ensureOrgRepos", () => {
     expect(openclawCall).toBeDefined();
   });
 
+  /**
+   * Regression: submodules use a .git FILE (gitlink), not a .git DIRECTORY.
+   * If the clone prompt only checks for a .git directory, it treats
+   * submodule dirs as "not a git repo", removes them, and clones fresh —
+   * destroying the submodule registration every re-run.
+   */
+  it("instructs OpenClaw to detect .git files (gitlinks) for submodules", async () => {
+    mockGetAccountOrgs.mockResolvedValueOnce([
+      { organizationId: "org-1", organizationName: "Test Org" },
+    ]);
+
+    mockCreateOrgGithubRepo.mockResolvedValueOnce(
+      "https://github.com/recoupable/org-test-org-org-1"
+    );
+
+    const sandbox = createMockSandbox();
+
+    await ensureOrgRepos(sandbox, "account-1");
+
+    const openclawCall = sandbox.runCommand.mock.calls.find(
+      (call: any[]) => call[0]?.cmd === "openclaw"
+    );
+    const args = openclawCall![0].args;
+    const message = args.find(
+      (a: string, i: number) => args[i - 1] === "--message"
+    );
+
+    // Message must handle .git as a file (submodule gitlink), not just directory
+    expect(message).toContain(".git file");
+  });
+
   it("skips openclaw when all repo creations fail", async () => {
     mockGetAccountOrgs.mockResolvedValueOnce([
       { organizationId: "org-1", organizationName: "Failing Org" },
