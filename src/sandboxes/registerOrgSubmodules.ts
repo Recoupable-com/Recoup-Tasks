@@ -3,14 +3,11 @@ import { logger } from "@trigger.dev/sdk/v3";
 import { runOpenClawAgent } from "./runOpenClawAgent";
 
 /**
- * Delegates org repo pushing and submodule registration to OpenClaw.
+ * Pushes changes in each org repo to its GitHub remote via OpenClaw.
  *
- * OpenClaw handles:
- * 1. Committing and pushing changes in each org repo to its GitHub remote
- * 2. Converting plain org directories into git submodule references
- * 3. Stripping auth tokens from .gitmodules
- *
- * Called AFTER `copyOpenClawToRepo` (which copies org dirs as plain files).
+ * This is the AI-delegated half of org handling: OpenClaw commits and
+ * force-pushes each org repo. The deterministic submodule registration
+ * happens later in `copyOpenClawToRepo`.
  *
  * @param sandbox - The Vercel Sandbox instance
  */
@@ -52,56 +49,24 @@ export async function registerOrgSubmodules(
     return;
   }
 
-  logger.log("Registering org submodules via OpenClaw", { orgNames });
-
-  const orgList = orgNames.map((name) => `- ${name}`).join("\n");
+  logger.log("Pushing org repo changes via OpenClaw", { orgNames });
 
   const message = [
-    "Push changes and register submodules for the following org repos.",
-    "Each org has a git repo at ~/.openclaw/workspace/orgs/{name} with a remote origin.",
+    "Commit and push changes for each org repo.",
+    "Org repos are at ~/.openclaw/workspace/orgs/",
     "",
-    "Org directories:",
-    orgList,
-    "",
-    "STEP 1: commit and push each org repo to its own remote",
-    "For each org:",
-    "1. Configure git user: email agent@recoupable.com, name Recoup Agent",
-    "2. Stage all changes: git -C ~/.openclaw/workspace/orgs/{name} add -A",
-    "3. Check for changes: git -C ~/.openclaw/workspace/orgs/{name} diff --cached --quiet",
-    "4. If changes exist, commit: git -C ~/.openclaw/workspace/orgs/{name} commit -m 'Update org files'",
-    "5. Check for unpushed commits: git log origin/main..HEAD --oneline",
-    "6. If there are unpushed commits OR new commits from step 4, push: git -C ~/.openclaw/workspace/orgs/{name} push --force origin HEAD:main",
-    "7. ALWAYS push if git log shows unpushed commits, even if step 3 showed no new changes",
-    "",
-    "STEP 2: register each org as a git submodule in the account repo",
-    "For each org:",
-    "1. Get the remote URL: git -C ~/.openclaw/workspace/orgs/{name} remote get-url origin",
-    "2. Check if already registered as a submodule:",
-    "   git config --file .gitmodules --get submodule..openclaw/workspace/orgs/{name}.url 2>/dev/null",
-    "   If it returns a URL AND .openclaw/workspace/orgs/{name}/.git exists (file or directory), the submodule is already registered — skip to the next org.",
-    "3. Remove any existing entry (plain tree or submodule) from the git index:",
-    "   git rm -r --cached .openclaw/workspace/orgs/{name} 2>/dev/null || true",
-    "4. Remove stale submodule config: git config --remove-section submodule..openclaw/workspace/orgs/{name} 2>/dev/null || true",
-    "5. Remove stale module cache: rm -rf .git/modules/.openclaw/workspace/orgs/{name} 2>/dev/null || true",
-    "6. Remove the working tree copy: rm -rf .openclaw/workspace/orgs/{name} 2>/dev/null || true",
-    "7. Run: git submodule add <remote-url> .openclaw/workspace/orgs/{name}",
-    "   - Use GITHUB_TOKEN env var for auth: replace https://github.com/ with https://x-access-token:$GITHUB_TOKEN@github.com/",
-    "8. After ALL submodules are added, strip x-access-token auth from .gitmodules so tokens are not committed",
-    "9. Re-stage .gitmodules: git add .gitmodules",
-    "",
-    "IMPORTANT:",
-    "- Work in the repo root directory for step 2",
-    "- If .gitmodules already exists in the index but not the working tree, remove it from the index first (git update-index --force-remove .gitmodules)",
-    "- Handle errors gracefully — if a step fails, inspect the state and try to fix it",
+    "For each org directory that is a git repo:",
+    "1. git add -A",
+    "2. git commit -m 'Update org files' (skip if nothing to commit)",
+    "3. git push origin HEAD:main --force (always push if there are unpushed commits)",
   ].join("\n");
 
-  // GITHUB_TOKEN is already injected into openclaw.json by setupOpenClaw
   await runOpenClawAgent(sandbox, {
-    label: "Pushing org repos and registering submodules",
+    label: "Pushing org repo changes",
     message,
   });
 
-  logger.log("Org submodule registration complete", {
+  logger.log("Org repo push complete", {
     count: orgNames.length,
   });
 }

@@ -39,15 +39,16 @@ export async function pushSandboxToGithub(
     return false;
   }
 
+  // Push org repo changes to their remotes (simple OpenClaw prompt)
+  await registerOrgSubmodules(sandbox);
+
+  // Copy .openclaw (skip orgs/) + register submodules (deterministic)
   await copyOpenClawToRepo(sandbox);
 
-  // Stage all files first
+  // Stage all files (.gitmodules + everything else)
   if (!(await runGitCommand(sandbox, ["add", "-A"], "stage files"))) {
     return false;
   }
-
-  // Push org repos and register them as submodules (delegated to OpenClaw)
-  await registerOrgSubmodules(sandbox);
 
   // Check if there are changes to commit
   const diffResult = await sandbox.runCommand({
