@@ -114,7 +114,7 @@ export async function ensureOrgSubmodules(
 
       const seedDir = `/tmp/seed-${sanitizedName}`;
 
-      // Initialize a temp repo, create a README, push to seed the remote
+      // Initialize a temp repo, push an empty commit to seed the remote
       await sandbox.runCommand({ cmd: "rm", args: ["-rf", seedDir] });
       await sandbox.runCommand({ cmd: "mkdir", args: ["-p", seedDir] });
       await sandbox.runCommand({
@@ -139,18 +139,16 @@ export async function ensureOrgSubmodules(
         cmd: "git",
         args: ["-C", seedDir, "config", "user.name", "Recoup Agent"],
       });
-
-      await sandbox.writeFiles({
-        [`${seedDir}/README.md`]: `# ${org.organizationName}\n`,
-      });
-
       await sandbox.runCommand({
         cmd: "git",
-        args: ["-C", seedDir, "add", "-A"],
-      });
-      await sandbox.runCommand({
-        cmd: "git",
-        args: ["-C", seedDir, "commit", "-m", "Initial commit"],
+        args: [
+          "-C",
+          seedDir,
+          "commit",
+          "--allow-empty",
+          "-m",
+          "Initial commit",
+        ],
       });
 
       const pushResult = await sandbox.runCommand({

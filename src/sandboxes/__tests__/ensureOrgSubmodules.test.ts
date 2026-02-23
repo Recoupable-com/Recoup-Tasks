@@ -130,7 +130,6 @@ describe("ensureOrgSubmodules", () => {
     );
 
     const sandbox = createMockSandbox();
-    sandbox.writeFiles = vi.fn().mockResolvedValue(undefined);
     sandbox.runCommand.mockImplementation(async (opts: any) => {
       // .gitmodules cat returns empty
       if (opts.cmd === "cat") {
@@ -153,7 +152,7 @@ describe("ensureOrgSubmodules", () => {
 
     await ensureOrgSubmodules(sandbox, "account-1");
 
-    // Should have created a seed dir and pushed initial commit
+    // Should have created a seed dir and pushed an empty commit
     const seedInitCall = sandbox.runCommand.mock.calls.find(
       (call: any[]) =>
         call[0]?.cmd === "git" &&
@@ -163,8 +162,16 @@ describe("ensureOrgSubmodules", () => {
     );
     expect(seedInitCall).toBeDefined();
 
-    // Should have written a README to the seed dir
-    expect(sandbox.writeFiles).toHaveBeenCalled();
+    // Should have committed with --allow-empty
+    const seedCommitCall = sandbox.runCommand.mock.calls.find(
+      (call: any[]) =>
+        call[0]?.cmd === "git" &&
+        call[0]?.args?.[0] === "-C" &&
+        call[0]?.args?.[1]?.startsWith("/tmp/seed-") &&
+        call[0]?.args?.[2] === "commit" &&
+        call[0]?.args?.[3] === "--allow-empty"
+    );
+    expect(seedCommitCall).toBeDefined();
 
     // Should have pushed the seed commit
     const seedPushCall = sandbox.runCommand.mock.calls.find(
