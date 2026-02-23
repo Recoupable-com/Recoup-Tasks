@@ -9,12 +9,10 @@ import { logger } from "@trigger.dev/sdk/v3";
  * and `pushOrgRepos` (which pushes org changes to their GitHub repos).
  *
  * For each org repo found in `~/.openclaw/workspace/orgs/`:
- * 1. Gets the remote URL (stripped of auth tokens)
+ * 1. Gets the remote URL (with auth token for cloning)
  * 2. Removes the plain directory copy from the git index
- * 3. Adds it as a git submodule via `git submodule add`
- *
- * Uses git URL rewriting so `.gitmodules` contains clean public URLs
- * while cloning still works with authentication.
+ * 3. Adds it as a git submodule via `git submodule add` with authed URL
+ * 4. Strips auth tokens from `.gitmodules` via sed
  *
  * @param sandbox - The Vercel Sandbox instance
  */
@@ -57,17 +55,6 @@ export async function registerOrgSubmodules(
   }
 
   logger.log("Registering org submodules", { orgNames });
-
-  // Set up git URL rewriting so private repos can be cloned
-  // without embedding tokens in .gitmodules
-  await sandbox.runCommand({
-    cmd: "git",
-    args: [
-      "config",
-      `url.https://x-access-token:${githubToken}@github.com/.insteadOf`,
-      "https://github.com/",
-    ],
-  });
 
   // Clean up any existing submodule state for idempotency.
   // ORDER MATTERS: git rm of submodule gitlinks updates .gitmodules
@@ -117,13 +104,17 @@ export async function registerOrgSubmodules(
       continue;
     }
 
-    // Strip auth token from URL for clean .gitmodules
-    remoteUrl = remoteUrl.replace(
-      /https:\/\/x-access-token:[^@]+@github\.com\//,
-      "https://github.com/"
-    );
+    // Ensure URL has auth token so git submodule add can clone.
+    // git config insteadOf doesn't work in sandboxes, so we embed
+    // the token directly and strip it from .gitmodules afterward.
+    if (!remoteUrl.includes("x-access-token")) {
+      remoteUrl = remoteUrl.replace(
+        "https://github.com/",
+        `https://x-access-token:${githubToken}@github.com/`
+      );
+    }
 
-    logger.log("Adding org submodule", { orgName, remoteUrl, submodulePath });
+    logger.log("Adding org submodule", { orgName, submodulePath });
 
     // Remove the plain directory from git index (staged by copyOpenClawToRepo)
     await sandbox.runCommand({
@@ -151,6 +142,17 @@ export async function registerOrgSubmodules(
       logger.error("Failed to add org submodule", { orgName, stderr });
     }
   }
+
+  // Strip auth tokens from .gitmodules so they aren't committed.
+  // The authed URLs were needed for cloning, but .gitmodules should
+  // only contain clean public URLs.
+  await sandbox.runCommand({
+    cmd: "sh",
+    args: [
+      "-c",
+      `sed -i 's|https://x-access-token:[^@]*@github.com/|https://github.com/|g' .gitmodules 2>/dev/null || true`,
+    ],
+  });
 
   logger.log("Org submodule registration complete", {
     count: orgNames.length,

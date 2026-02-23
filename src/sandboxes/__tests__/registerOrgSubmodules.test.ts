@@ -111,7 +111,7 @@ describe("registerOrgSubmodules", () => {
 
     await registerOrgSubmodules(sandbox);
 
-    // Should call git submodule add for each org
+    // Should call git submodule add for each org with authed URL for cloning
     const submoduleCalls = sandbox.runCommand.mock.calls.filter(
       (call: any[]) =>
         call[0]?.cmd === "git" &&
@@ -120,20 +120,28 @@ describe("registerOrgSubmodules", () => {
     );
     expect(submoduleCalls).toHaveLength(2);
 
-    // URLs in submodule add should be PUBLIC (no token)
+    // URLs in submodule add should contain auth token for cloning
     for (const call of submoduleCalls) {
       const url = call[0].args[2];
-      expect(url).not.toContain("x-access-token");
-      expect(url).toMatch(/^https:\/\/github\.com\//);
+      expect(url).toContain("x-access-token");
     }
 
     // Paths should be .openclaw/workspace/orgs/{name}
     const paths = submoduleCalls.map((c: any[]) => c[0].args[3]);
     expect(paths).toContain(".openclaw/workspace/orgs/recoup");
     expect(paths).toContain(".openclaw/workspace/orgs/myco-wtf");
+
+    // Should strip tokens from .gitmodules after submodule add
+    const sedCall = sandbox.runCommand.mock.calls.find(
+      (call: any[]) => {
+        const args = call[0]?.args;
+        return args?.[1]?.includes("sed") && args?.[1]?.includes(".gitmodules");
+      }
+    );
+    expect(sedCall).toBeDefined();
   });
 
-  it("sets up git URL rewriting for auth (no tokens in .gitmodules)", async () => {
+  it("adds auth token to public URLs for cloning", async () => {
     const sandbox = createMockSandbox();
 
     sandbox.runCommand.mockImplementation(async (opts: any) => {
@@ -156,6 +164,7 @@ describe("registerOrgSubmodules", () => {
         opts.args?.includes("remote") &&
         opts.args?.includes("get-url")
       ) {
+        // Remote URL without auth token (public URL)
         return {
           exitCode: 0,
           stdout: async () =>
@@ -168,14 +177,17 @@ describe("registerOrgSubmodules", () => {
 
     await registerOrgSubmodules(sandbox);
 
-    // Should set up URL rewriting in git config
-    const configCall = sandbox.runCommand.mock.calls.find(
+    // Even though remote had a public URL, submodule add should use authed URL
+    const submoduleCall = sandbox.runCommand.mock.calls.find(
       (call: any[]) =>
         call[0]?.cmd === "git" &&
-        call[0]?.args?.[0] === "config" &&
-        call[0]?.args?.[1]?.includes("insteadOf")
+        call[0]?.args?.[0] === "submodule" &&
+        call[0]?.args?.[1] === "add"
     );
-    expect(configCall).toBeDefined();
+    expect(submoduleCall).toBeDefined();
+    const url = submoduleCall![0].args[2];
+    expect(url).toContain("x-access-token");
+    expect(url).toContain("test-token");
   });
 
   it("cleans up existing submodule state for idempotency", async () => {
