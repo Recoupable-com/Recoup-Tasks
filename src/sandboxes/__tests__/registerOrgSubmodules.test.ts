@@ -322,6 +322,51 @@ describe("registerOrgSubmodules", () => {
     expect(message).toContain("git log");
   });
 
+  /**
+   * Regression: copyOpenClawToRepo strips .git dirs from org copies,
+   * then git add -A stages them as 040000 plain trees. If the message
+   * only says "clean up submodule state", OpenClaw sees no submodules
+   * and skips cleanup. The 040000 entries persist, preventing
+   * git submodule add from creating 160000 entries.
+   *
+   * Fix: message must instruct explicitly removing entries from the
+   * git index (git rm --cached) for the org path, not just "clean up
+   * submodule state".
+   */
+  it("instructs OpenClaw to remove org paths from git index before submodule add", async () => {
+    const sandbox = createMockSandbox();
+
+    sandbox.runCommand.mockImplementation(async (opts: any) => {
+      if (opts.cmd === "sh" && opts.args?.[1] === "echo ~") {
+        return {
+          exitCode: 0,
+          stdout: async () => "/root\n",
+          stderr: async () => "",
+        };
+      }
+      if (opts.cmd === "sh" && opts.args?.[1]?.includes("find")) {
+        return {
+          exitCode: 0,
+          stdout: async () => "recoup\n",
+          stderr: async () => "",
+        };
+      }
+      return { exitCode: 0, stdout: async () => "", stderr: async () => "" };
+    });
+
+    await registerOrgSubmodules(sandbox);
+
+    const openclawCall = sandbox.runCommand.mock.calls.find(
+      (call: any[]) => call[0]?.cmd === "openclaw"
+    );
+    const message = openclawCall![0].args[4];
+
+    // Must explicitly instruct removing from git index with --cached
+    // (not just "clean up submodule state" which OpenClaw ignores for plain trees)
+    expect(message).toContain("git rm");
+    expect(message).toContain("--cached");
+  });
+
   it("uses resolved home dir for workspace path (no tilde)", async () => {
     const sandbox = createMockSandbox();
 
