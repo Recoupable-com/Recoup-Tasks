@@ -41,7 +41,7 @@ export async function pushSandboxToGithub(
 
   await copyOpenClawToRepo(sandbox);
 
-  // Push org repos before copyOpenClawToRepo strips their .git dirs
+  // Push org repos from ~/.openclaw/workspace/orgs/ (originals still have .git)
   await pushOrgRepos(sandbox);
 
   // Stage all files

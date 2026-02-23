@@ -1,8 +1,6 @@
 import type { Sandbox } from "@vercel/sandbox";
 import { logger } from "@trigger.dev/sdk/v3";
 
-const WORKSPACE_ORGS = "~/.openclaw/workspace/orgs";
-
 /**
  * Commits and pushes changes inside each org repo found in the
  * OpenClaw workspace before the parent account repo is pushed.
@@ -13,12 +11,22 @@ const WORKSPACE_ORGS = "~/.openclaw/workspace/orgs";
  * @param sandbox - The Vercel Sandbox instance
  */
 export async function pushOrgRepos(sandbox: Sandbox): Promise<void> {
+  // Resolve ~ to the actual home directory so git -C gets an absolute path.
+  // Tilde expansion only happens in shell context (sh -c), NOT when passed
+  // as a direct argument to commands via sandbox.runCommand().
+  const homeResult = await sandbox.runCommand({
+    cmd: "sh",
+    args: ["-c", "echo ~"],
+  });
+  const homeDir = ((await homeResult.stdout()) || "").trim() || "/root";
+  const workspaceOrgs = `${homeDir}/.openclaw/workspace/orgs`;
+
   // Find org directories that are git repos
   const findResult = await sandbox.runCommand({
     cmd: "sh",
     args: [
       "-c",
-      `find ${WORKSPACE_ORGS} -mindepth 1 -maxdepth 1 -type d -exec test -d {}/.git \\; -print 2>/dev/null | xargs -I{} basename {}`,
+      `find ${workspaceOrgs} -mindepth 1 -maxdepth 1 -type d -exec test -d {}/.git \\; -print 2>/dev/null | xargs -I{} basename {}`,
     ],
   });
 
@@ -36,7 +44,7 @@ export async function pushOrgRepos(sandbox: Sandbox): Promise<void> {
   logger.log("Pushing org repos", { orgNames });
 
   for (const orgName of orgNames) {
-    const orgPath = `${WORKSPACE_ORGS}/${orgName}`;
+    const orgPath = `${workspaceOrgs}/${orgName}`;
 
     logger.log("Processing org repo", { path: orgPath });
 
