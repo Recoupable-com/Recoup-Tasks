@@ -86,15 +86,11 @@ export async function ensureOrgRepos(
     orgCount: orgRepos.length,
   });
 
+  // GITHUB_TOKEN and RECOUP_API_KEY are injected into openclaw.json
+  // by setupOpenClaw — no need to pass them via env here.
   const result = await sandbox.runCommand({
     cmd: "openclaw",
     args: ["agent", "--agent", "main", "--message", message],
-    env: {
-      GITHUB_TOKEN: githubToken,
-      ...(process.env.RECOUP_API_KEY
-        ? { RECOUP_API_KEY: process.env.RECOUP_API_KEY }
-        : {}),
-    },
   });
 
   const stdout = (await result.stdout()) || "";

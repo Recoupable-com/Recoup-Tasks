@@ -104,8 +104,9 @@ describe("ensureOrgRepos", () => {
     );
     expect(message).toContain("org-test-org-org-1");
 
-    // Should pass GITHUB_TOKEN in env
-    expect(openclawCall![0].env).toHaveProperty("GITHUB_TOKEN");
+    // GITHUB_TOKEN is injected into openclaw.json by setupOpenClaw,
+    // not passed via env on this runCommand call.
+    expect(openclawCall![0].env).toBeUndefined();
   });
 
   // Should NOT use git submodule add — that's the old approach
