@@ -235,6 +235,78 @@ describe("ensureOrgSubmodules", () => {
     expect(updateCall).toBeDefined();
   });
 
+  // Regression: empty org repos caused "fatal: You are on a branch yet to be
+  // born" and "fatal: unable to checkout submodule 'orgs/myco-wtf'"
+  it("does not call git submodule add on an empty remote without seeding first", async () => {
+    mockGetAccountOrgs.mockResolvedValueOnce([
+      { organizationId: "org-1", organizationName: "Myco WTF" },
+    ]);
+
+    mockCreateOrgGithubRepo.mockResolvedValueOnce(
+      "https://github.com/recoupable/org-myco-wtf-org-1"
+    );
+
+    const commandLog: string[] = [];
+    const sandbox = createMockSandbox();
+    sandbox.runCommand.mockImplementation(async (opts: any) => {
+      const tag = `${opts.cmd} ${(opts.args || []).join(" ")}`;
+      commandLog.push(tag);
+
+      // .gitmodules does not exist
+      if (opts.cmd === "cat" && opts.args?.[0] === ".gitmodules") {
+        return { exitCode: 1, stdout: async () => "", stderr: async () => "" };
+      }
+      // Remote has no refs — this is the empty repo scenario
+      if (opts.cmd === "git" && opts.args?.[0] === "ls-remote") {
+        return { exitCode: 0, stdout: async () => "", stderr: async () => "" };
+      }
+      return { exitCode: 0, stdout: async () => "", stderr: async () => "" };
+    });
+
+    await ensureOrgSubmodules(sandbox, "account-1");
+
+    // The seed (git init in /tmp, commit --allow-empty, push) MUST happen
+    // BEFORE git submodule add. Find indices of each in the command log.
+    const seedPushIdx = commandLog.findIndex(
+      (c) => c.includes("-C") && c.includes("/tmp/seed-") && c.includes("push")
+    );
+    const submoduleAddIdx = commandLog.findIndex(
+      (c) => c.includes("submodule add")
+    );
+
+    expect(seedPushIdx).toBeGreaterThan(-1);
+    expect(submoduleAddIdx).toBeGreaterThan(-1);
+    expect(seedPushIdx).toBeLessThan(submoduleAddIdx);
+  });
+
+  // Regression: sandbox.writeFiles({key: value}) threw
+  // "params.files is not iterable" — writeFiles expects an array, not object
+  it("does not call sandbox.writeFiles during empty repo seeding", async () => {
+    mockGetAccountOrgs.mockResolvedValueOnce([
+      { organizationId: "org-1", organizationName: "Test Org" },
+    ]);
+
+    mockCreateOrgGithubRepo.mockResolvedValueOnce(
+      "https://github.com/recoupable/org-test-org-org-1"
+    );
+
+    const sandbox = createMockSandbox();
+    sandbox.runCommand.mockImplementation(async (opts: any) => {
+      if (opts.cmd === "cat") {
+        return { exitCode: 1, stdout: async () => "", stderr: async () => "" };
+      }
+      if (opts.cmd === "git" && opts.args?.[0] === "ls-remote") {
+        return { exitCode: 0, stdout: async () => "", stderr: async () => "" };
+      }
+      return { exitCode: 0, stdout: async () => "", stderr: async () => "" };
+    });
+
+    await ensureOrgSubmodules(sandbox, "account-1");
+
+    // writeFiles must NOT be called — we use git commit --allow-empty instead
+    expect(sandbox.writeFiles).not.toHaveBeenCalled();
+  });
+
   it("continues with other orgs when one fails", async () => {
     mockGetAccountOrgs.mockResolvedValueOnce([
       { organizationId: "org-1", organizationName: "Failing Org" },

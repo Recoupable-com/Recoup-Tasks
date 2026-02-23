@@ -84,6 +84,22 @@ describe("createOrgGithubRepo", () => {
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
+  // Regression: repos created without auto_init were empty (no commits),
+  // causing "fatal: You are on a branch yet to be born" when used as submodules
+  it("sends auto_init: true to prevent empty repos", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        html_url: "https://github.com/recoupable/org-test-uuid-auto",
+      }),
+    });
+
+    await createOrgGithubRepo("Test", "uuid-auto");
+
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(body).toHaveProperty("auto_init", true);
+  });
+
   it("sanitizes org name for repo name", async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
