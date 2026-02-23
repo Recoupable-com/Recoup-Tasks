@@ -4,6 +4,7 @@ import { getAccountOrgs } from "../recoup/getAccountOrgs";
 import { createOrgGithubRepo } from "../github/createOrgGithubRepo";
 import { sanitizeRepoName } from "../github/sanitizeRepoName";
 import { runOpenClawAgent } from "./runOpenClawAgent";
+import { logStep } from "./logStep";
 
 /**
  * Ensures each of the account's organizations has a GitHub repo and
@@ -26,6 +27,7 @@ export async function ensureOrgRepos(
     return;
   }
 
+  logStep("Fetching account organizations");
   const orgs = await getAccountOrgs(accountId);
 
   if (!orgs || orgs.length === 0) {
@@ -33,10 +35,7 @@ export async function ensureOrgRepos(
     return;
   }
 
-  logger.log("Setting up org repos", {
-    accountId,
-    orgCount: orgs.length,
-  });
+  logStep("Setting up org repos");
 
   // Create GitHub repos for each org and collect URLs
   const orgRepos: Array<{ name: string; url: string }> = [];
@@ -94,8 +93,5 @@ export async function ensureOrgRepos(
     message,
   });
 
-  logger.log("Org repo setup complete", {
-    totalOrgs: orgs.length,
-    reposCreated: orgRepos.length,
-  });
+  logStep("Org repo setup complete");
 }
