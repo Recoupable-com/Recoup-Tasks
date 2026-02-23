@@ -47,6 +47,7 @@ export async function createOrgGithubRepo(
         body: JSON.stringify({
           name: repoName,
           private: true,
+          auto_init: true,
         }),
       }
     );

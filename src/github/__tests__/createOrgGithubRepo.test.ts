@@ -31,11 +31,12 @@ describe("createOrgGithubRepo", () => {
     );
     expect(mockFetch).toHaveBeenCalledOnce();
 
-    // Verify the request body has the right repo name
+    // Verify the request body has the right repo name and auto_init
     const call = mockFetch.mock.calls[0];
     const body = JSON.parse(call[1].body);
     expect(body.name).toBe("org-test-org-uuid-123");
     expect(body.private).toBe(true);
+    expect(body.auto_init).toBe(true);
   });
 
   it("fetches existing repo on 422", async () => {

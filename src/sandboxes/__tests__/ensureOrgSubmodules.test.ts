@@ -67,7 +67,7 @@ describe("ensureOrgSubmodules", () => {
     expect(mockCreateOrgGithubRepo).not.toHaveBeenCalled();
   });
 
-  it("adds new org as submodule", async () => {
+  it("adds new org as submodule when remote has refs", async () => {
     mockGetAccountOrgs.mockResolvedValueOnce([
       { organizationId: "org-1", organizationName: "Test Org" },
     ]);
@@ -77,11 +77,24 @@ describe("ensureOrgSubmodules", () => {
     );
 
     const sandbox = createMockSandbox();
-    // .gitmodules cat returns empty (no existing submodules)
-    sandbox.runCommand.mockResolvedValue({
-      exitCode: 1,
-      stdout: async () => "",
-      stderr: async () => "",
+    sandbox.runCommand.mockImplementation(async (opts: any) => {
+      // .gitmodules cat returns empty (no existing submodules)
+      if (opts.cmd === "cat") {
+        return { exitCode: 1, stdout: async () => "", stderr: async () => "" };
+      }
+      // git ls-remote returns a ref (non-empty repo)
+      if (
+        opts.cmd === "git" &&
+        opts.args?.[0] === "ls-remote" &&
+        opts.args?.[1] === "--heads"
+      ) {
+        return {
+          exitCode: 0,
+          stdout: async () => "abc123\trefs/heads/main\n",
+          stderr: async () => "",
+        };
+      }
+      return { exitCode: 0, stdout: async () => "", stderr: async () => "" };
     });
 
     await ensureOrgSubmodules(sandbox, "account-1");
@@ -89,6 +102,81 @@ describe("ensureOrgSubmodules", () => {
     expect(mockCreateOrgGithubRepo).toHaveBeenCalledWith("Test Org", "org-1");
 
     // Should have called git submodule add
+    const submoduleAddCall = sandbox.runCommand.mock.calls.find(
+      (call: any[]) =>
+        call[0]?.cmd === "git" &&
+        call[0]?.args?.[0] === "submodule" &&
+        call[0]?.args?.[1] === "add"
+    );
+    expect(submoduleAddCall).toBeDefined();
+
+    // Should NOT have seeded (ls-remote returned refs)
+    const initCall = sandbox.runCommand.mock.calls.find(
+      (call: any[]) =>
+        call[0]?.cmd === "git" &&
+        call[0]?.args?.[1] === "init" &&
+        call[0]?.args?.[0] === "-C"
+    );
+    expect(initCall).toBeUndefined();
+  });
+
+  it("seeds empty repo before adding as submodule", async () => {
+    mockGetAccountOrgs.mockResolvedValueOnce([
+      { organizationId: "org-1", organizationName: "Test Org" },
+    ]);
+
+    mockCreateOrgGithubRepo.mockResolvedValueOnce(
+      "https://github.com/Recoupable-Com/org-test-org-org-1"
+    );
+
+    const sandbox = createMockSandbox();
+    sandbox.writeFiles = vi.fn().mockResolvedValue(undefined);
+    sandbox.runCommand.mockImplementation(async (opts: any) => {
+      // .gitmodules cat returns empty
+      if (opts.cmd === "cat") {
+        return { exitCode: 1, stdout: async () => "", stderr: async () => "" };
+      }
+      // git ls-remote returns empty (no refs)
+      if (
+        opts.cmd === "git" &&
+        opts.args?.[0] === "ls-remote" &&
+        opts.args?.[1] === "--heads"
+      ) {
+        return {
+          exitCode: 0,
+          stdout: async () => "",
+          stderr: async () => "",
+        };
+      }
+      return { exitCode: 0, stdout: async () => "", stderr: async () => "" };
+    });
+
+    await ensureOrgSubmodules(sandbox, "account-1");
+
+    // Should have created a seed dir and pushed initial commit
+    const seedInitCall = sandbox.runCommand.mock.calls.find(
+      (call: any[]) =>
+        call[0]?.cmd === "git" &&
+        call[0]?.args?.[0] === "-C" &&
+        call[0]?.args?.[1]?.startsWith("/tmp/seed-") &&
+        call[0]?.args?.[2] === "init"
+    );
+    expect(seedInitCall).toBeDefined();
+
+    // Should have written a README to the seed dir
+    expect(sandbox.writeFiles).toHaveBeenCalled();
+
+    // Should have pushed the seed commit
+    const seedPushCall = sandbox.runCommand.mock.calls.find(
+      (call: any[]) =>
+        call[0]?.cmd === "git" &&
+        call[0]?.args?.[0] === "-C" &&
+        call[0]?.args?.[1]?.startsWith("/tmp/seed-") &&
+        call[0]?.args?.[2] === "push"
+    );
+    expect(seedPushCall).toBeDefined();
+
+    // Should still have called git submodule add after seeding
     const submoduleAddCall = sandbox.runCommand.mock.calls.find(
       (call: any[]) =>
         call[0]?.cmd === "git" &&

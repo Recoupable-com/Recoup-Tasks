@@ -96,6 +96,84 @@ export async function ensureOrgSubmodules(
       repoUrl,
     });
 
+    // Check if the remote repo is empty (no refs) — git submodule add fails
+    // on empty repos with "fatal: You are on a branch yet to be born"
+    const lsRemote = await sandbox.runCommand({
+      cmd: "git",
+      args: ["ls-remote", "--heads", authedUrl],
+    });
+
+    const lsRemoteOutput =
+      lsRemote.exitCode === 0 ? (await lsRemote.stdout()) || "" : "";
+
+    if (lsRemoteOutput.trim() === "") {
+      logger.log("Remote repo is empty, seeding with initial commit", {
+        orgId: org.organizationId,
+        repoUrl,
+      });
+
+      const seedDir = `/tmp/seed-${sanitizedName}`;
+
+      // Initialize a temp repo, create a README, push to seed the remote
+      await sandbox.runCommand({ cmd: "rm", args: ["-rf", seedDir] });
+      await sandbox.runCommand({ cmd: "mkdir", args: ["-p", seedDir] });
+      await sandbox.runCommand({
+        cmd: "git",
+        args: ["-C", seedDir, "init"],
+      });
+      await sandbox.runCommand({
+        cmd: "git",
+        args: ["-C", seedDir, "remote", "add", "origin", authedUrl],
+      });
+      await sandbox.runCommand({
+        cmd: "git",
+        args: [
+          "-C",
+          seedDir,
+          "config",
+          "user.email",
+          "agent@recoupable.com",
+        ],
+      });
+      await sandbox.runCommand({
+        cmd: "git",
+        args: ["-C", seedDir, "config", "user.name", "Recoup Agent"],
+      });
+
+      await sandbox.writeFiles({
+        [`${seedDir}/README.md`]: `# ${org.organizationName}\n`,
+      });
+
+      await sandbox.runCommand({
+        cmd: "git",
+        args: ["-C", seedDir, "add", "-A"],
+      });
+      await sandbox.runCommand({
+        cmd: "git",
+        args: ["-C", seedDir, "commit", "-m", "Initial commit"],
+      });
+
+      const pushResult = await sandbox.runCommand({
+        cmd: "git",
+        args: ["-C", seedDir, "push", "-u", "origin", "HEAD:main"],
+      });
+
+      await sandbox.runCommand({ cmd: "rm", args: ["-rf", seedDir] });
+
+      if (pushResult.exitCode !== 0) {
+        const pushStderr = (await pushResult.stderr()) || "";
+        logger.error("Failed to seed empty org repo", {
+          orgId: org.organizationId,
+          stderr: pushStderr,
+        });
+        continue;
+      }
+
+      logger.log("Empty org repo seeded successfully", {
+        orgId: org.organizationId,
+      });
+    }
+
     // Add as submodule
     const addResult = await sandbox.runCommand({
       cmd: "git",
