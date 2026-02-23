@@ -1,5 +1,6 @@
 import type { Sandbox } from "@vercel/sandbox";
 import { logger } from "@trigger.dev/sdk/v3";
+import { runOpenClawAgent } from "./runOpenClawAgent";
 
 /**
  * Delegates org repo pushing and submodule registration to OpenClaw.
@@ -88,23 +89,10 @@ export async function registerOrgSubmodules(
   ].join("\n");
 
   // GITHUB_TOKEN is already injected into openclaw.json by setupOpenClaw
-  const result = await sandbox.runCommand({
-    cmd: "openclaw",
-    args: ["agent", "--agent", "main", "--message", message],
+  await runOpenClawAgent(sandbox, {
+    label: "Pushing org repos and registering submodules",
+    message,
   });
-
-  const resultStdout = (await result.stdout()) || "";
-  const stderr = (await result.stderr()) || "";
-
-  logger.log("OpenClaw submodule registration result", {
-    exitCode: result.exitCode,
-    stdout: resultStdout,
-    stderr,
-  });
-
-  if (result.exitCode !== 0) {
-    logger.error("OpenClaw submodule registration failed", { stderr });
-  }
 
   logger.log("Org submodule registration complete", {
     count: orgNames.length,

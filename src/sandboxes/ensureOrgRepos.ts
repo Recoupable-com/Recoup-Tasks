@@ -3,6 +3,7 @@ import { logger } from "@trigger.dev/sdk/v3";
 import { getAccountOrgs } from "../recoup/getAccountOrgs";
 import { createOrgGithubRepo } from "../github/createOrgGithubRepo";
 import { sanitizeRepoName } from "../github/sanitizeRepoName";
+import { runOpenClawAgent } from "./runOpenClawAgent";
 
 /**
  * Ensures each of the account's organizations has a GitHub repo and
@@ -82,29 +83,12 @@ export async function ensureOrgRepos(
     repoList,
   ].join("\n");
 
-  logger.log("Asking OpenClaw to clone org repos", {
-    orgCount: orgRepos.length,
-  });
-
   // GITHUB_TOKEN and RECOUP_API_KEY are injected into openclaw.json
   // by setupOpenClaw — no need to pass them via env here.
-  const result = await sandbox.runCommand({
-    cmd: "openclaw",
-    args: ["agent", "--agent", "main", "--message", message],
+  await runOpenClawAgent(sandbox, {
+    label: "Cloning org repos",
+    message,
   });
-
-  const stdout = (await result.stdout()) || "";
-  const stderr = (await result.stderr()) || "";
-
-  logger.log("OpenClaw clone result", {
-    exitCode: result.exitCode,
-    stdout,
-    stderr,
-  });
-
-  if (result.exitCode !== 0) {
-    logger.error("OpenClaw failed to clone org repos", { stderr });
-  }
 
   logger.log("Org repo setup complete", {
     totalOrgs: orgs.length,

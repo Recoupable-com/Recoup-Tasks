@@ -1,5 +1,5 @@
 import type { Sandbox } from "@vercel/sandbox";
-import { logger } from "@trigger.dev/sdk/v3";
+import { runOpenClawAgent } from "./runOpenClawAgent";
 
 /**
  * Runs the /setup-sandbox skill via OpenClaw to create the
@@ -12,22 +12,11 @@ export async function runSetupSandboxSkill(
   sandbox: Sandbox,
   env: Record<string, string>
 ): Promise<void> {
-  const result = await sandbox.runCommand({
-    cmd: "openclaw",
-    args: [
-      "agent", "--agent", "main", "--message",
+  const result = await runOpenClawAgent(sandbox, {
+    label: "Running setup-sandbox skill",
+    message:
       "Install the Recoup CLI globally: npm install -g @recoupable/cli\n\nThen run the /setup-sandbox skill to create the org and artist folder structure.\n\nRECOUP_API_KEY and RECOUP_ACCOUNT_ID are available as environment variables.",
-    ],
     env,
-  });
-
-  const stdout = (await result.stdout()) || "";
-  const stderr = (await result.stderr()) || "";
-
-  logger.log("Setup-sandbox result", {
-    exitCode: result.exitCode,
-    stdout,
-    stderr,
   });
 
   if (result.exitCode !== 0) {
