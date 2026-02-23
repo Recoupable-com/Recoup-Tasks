@@ -1,5 +1,6 @@
 import type { Sandbox } from "@vercel/sandbox";
-import { logger, metadata } from "@trigger.dev/sdk/v3";
+import { logger } from "@trigger.dev/sdk/v3";
+import { logStep } from "./logStep";
 
 interface RunOpenClawAgentOptions {
   label: string;
@@ -26,8 +27,7 @@ export async function runOpenClawAgent(
 ): Promise<RunOpenClawAgentResult> {
   const { label, message, env } = options;
 
-  metadata.set("currentStep", label);
-  metadata.append("logs", label);
+  logStep(label);
 
   const commandOpts: Record<string, unknown> = {
     cmd: "openclaw",
