@@ -427,6 +427,124 @@ describe("registerOrgSubmodules", () => {
     expect(rmStaleCall).toBeDefined();
   });
 
+  /**
+   * Regression for production error on second run (idempotency):
+   * "fatal: please make sure that the .gitmodules file is in the working tree"
+   *
+   * After the first run, .openclaw/workspace/orgs/ entries are 160000 (submodule)
+   * in the index. On the second run, cleanup removes .gitmodules, then
+   * git rm --cached of a submodule entry tries to update .gitmodules — but it
+   * was already removed. Fix: remove .openclaw/workspace/orgs entries from the
+   * index BEFORE removing .gitmodules, just like we do for stale orgs/.
+   */
+  it("removes .openclaw/workspace/orgs from index BEFORE .gitmodules", async () => {
+    const sandbox = createMockSandbox();
+    const callOrder: string[] = [];
+
+    sandbox.runCommand.mockImplementation(async (opts: any) => {
+      if (opts.cmd === "sh" && opts.args?.[1] === "echo ~") {
+        return {
+          exitCode: 0,
+          stdout: async () => "/root\n",
+          stderr: async () => "",
+        };
+      }
+      if (opts.cmd === "sh" && opts.args?.[1]?.includes("find")) {
+        return {
+          exitCode: 0,
+          stdout: async () => "recoup\n",
+          stderr: async () => "",
+        };
+      }
+      if (
+        opts.cmd === "git" &&
+        opts.args?.includes("remote") &&
+        opts.args?.includes("get-url")
+      ) {
+        return {
+          exitCode: 0,
+          stdout: async () =>
+            "https://github.com/recoupable/org-recoup-abc123\n",
+          stderr: async () => "",
+        };
+      }
+
+      // Track cleanup order
+      const arg = opts.args?.[1] || "";
+      if (typeof arg === "string") {
+        if (arg.includes("git rm") && arg.includes(".openclaw/workspace/orgs")) {
+          callOrder.push("rm-openclaw-orgs");
+        }
+        if (arg.includes("git rm") && arg.includes(".gitmodules")) {
+          callOrder.push("rm-gitmodules");
+        }
+      }
+
+      return { exitCode: 0, stdout: async () => "", stderr: async () => "" };
+    });
+
+    await registerOrgSubmodules(sandbox);
+
+    // Both cleanup calls should exist
+    expect(callOrder).toContain("rm-openclaw-orgs");
+    expect(callOrder).toContain("rm-gitmodules");
+
+    // rm-openclaw-orgs MUST come before rm-gitmodules
+    const openclawIdx = callOrder.indexOf("rm-openclaw-orgs");
+    const gitmodulesIdx = callOrder.indexOf("rm-gitmodules");
+    expect(openclawIdx).toBeLessThan(gitmodulesIdx);
+  });
+
+  /**
+   * Regression: git submodule add stages .gitmodules in the index.
+   * sed only modifies the working tree. Without re-staging, the
+   * committed .gitmodules still contains auth tokens.
+   */
+  it("re-stages .gitmodules after stripping tokens via sed", async () => {
+    const sandbox = createMockSandbox();
+
+    sandbox.runCommand.mockImplementation(async (opts: any) => {
+      if (opts.cmd === "sh" && opts.args?.[1] === "echo ~") {
+        return {
+          exitCode: 0,
+          stdout: async () => "/root\n",
+          stderr: async () => "",
+        };
+      }
+      if (opts.cmd === "sh" && opts.args?.[1]?.includes("find")) {
+        return {
+          exitCode: 0,
+          stdout: async () => "recoup\n",
+          stderr: async () => "",
+        };
+      }
+      if (
+        opts.cmd === "git" &&
+        opts.args?.includes("remote") &&
+        opts.args?.includes("get-url")
+      ) {
+        return {
+          exitCode: 0,
+          stdout: async () =>
+            "https://github.com/recoupable/org-recoup-abc123\n",
+          stderr: async () => "",
+        };
+      }
+      return { exitCode: 0, stdout: async () => "", stderr: async () => "" };
+    });
+
+    await registerOrgSubmodules(sandbox);
+
+    // Should re-stage .gitmodules after sed (git add .gitmodules)
+    const addGitmodules = sandbox.runCommand.mock.calls.find(
+      (call: any[]) =>
+        call[0]?.cmd === "git" &&
+        call[0]?.args?.[0] === "add" &&
+        call[0]?.args?.[1] === ".gitmodules"
+    );
+    expect(addGitmodules).toBeDefined();
+  });
+
   it("uses resolved home dir for git -C paths (no tilde)", async () => {
     const sandbox = createMockSandbox();
 

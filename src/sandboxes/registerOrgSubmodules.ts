@@ -75,16 +75,30 @@ export async function registerOrgSubmodules(
     args: ["-c", "git rm -rf orgs 2>/dev/null || true"],
   });
 
-  // 3. NOW remove .gitmodules (already updated/emptied by git rm above)
+  // 3. Remove .openclaw/workspace/orgs submodule entries WHILE .gitmodules
+  //    still exists. git rm of submodule entries updates .gitmodules — if
+  //    .gitmodules is removed first, git rm re-stages it in the index.
+  await sandbox.runCommand({
+    cmd: "sh",
+    args: [
+      "-c",
+      "git rm -rf .openclaw/workspace/orgs 2>/dev/null || true",
+    ],
+  });
+
+  // 4. NOW remove .gitmodules (already updated/emptied by git rm above)
   await sandbox.runCommand({
     cmd: "sh",
     args: ["-c", "git rm -f .gitmodules 2>/dev/null || true"],
   });
 
-  // 4. Clear modules cache and working tree remnants
+  // 5. Clear modules cache and working tree remnants
   await sandbox.runCommand({
     cmd: "sh",
-    args: ["-c", "rm -rf .git/modules orgs 2>/dev/null || true"],
+    args: [
+      "-c",
+      "rm -rf .git/modules .openclaw/workspace/orgs orgs 2>/dev/null || true",
+    ],
   });
 
   for (const orgName of orgNames) {
@@ -145,13 +159,18 @@ export async function registerOrgSubmodules(
 
   // Strip auth tokens from .gitmodules so they aren't committed.
   // The authed URLs were needed for cloning, but .gitmodules should
-  // only contain clean public URLs.
+  // only contain clean public URLs. sed modifies the working tree;
+  // we must re-stage so the committed version is also clean.
   await sandbox.runCommand({
     cmd: "sh",
     args: [
       "-c",
       `sed -i 's|https://x-access-token:[^@]*@github.com/|https://github.com/|g' .gitmodules 2>/dev/null || true`,
     ],
+  });
+  await sandbox.runCommand({
+    cmd: "git",
+    args: ["add", ".gitmodules"],
   });
 
   logger.log("Org submodule registration complete", {
