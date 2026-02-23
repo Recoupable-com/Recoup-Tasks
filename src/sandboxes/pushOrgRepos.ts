@@ -11,7 +11,7 @@ import { runOpenClawAgent } from "./runOpenClawAgent";
  *
  * @param sandbox - The Vercel Sandbox instance
  */
-export async function registerOrgSubmodules(
+export async function pushOrgRepos(
   sandbox: Sandbox
 ): Promise<void> {
   const githubToken = process.env.GITHUB_TOKEN;

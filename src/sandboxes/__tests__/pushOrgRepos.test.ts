@@ -5,7 +5,7 @@ vi.mock("@trigger.dev/sdk/v3", () => ({
   metadata: { set: vi.fn(), append: vi.fn() },
 }));
 
-const { registerOrgSubmodules } = await import("../registerOrgSubmodules");
+const { pushOrgRepos } = await import("../pushOrgRepos");
 
 function createMockSandbox() {
   const runCommand = vi.fn();
@@ -17,12 +17,12 @@ beforeEach(() => {
   process.env.GITHUB_TOKEN = "test-token";
 });
 
-describe("registerOrgSubmodules", () => {
+describe("pushOrgRepos", () => {
   it("skips when no GITHUB_TOKEN", async () => {
     delete process.env.GITHUB_TOKEN;
     const sandbox = createMockSandbox();
 
-    await registerOrgSubmodules(sandbox);
+    await pushOrgRepos(sandbox);
 
     expect(sandbox.runCommand).not.toHaveBeenCalled();
   });
@@ -48,7 +48,7 @@ describe("registerOrgSubmodules", () => {
       return { exitCode: 0, stdout: async () => "", stderr: async () => "" };
     });
 
-    await registerOrgSubmodules(sandbox);
+    await pushOrgRepos(sandbox);
 
     // Should not call openclaw
     const openclawCall = sandbox.runCommand.mock.calls.find(
@@ -78,7 +78,7 @@ describe("registerOrgSubmodules", () => {
       return { exitCode: 0, stdout: async () => "", stderr: async () => "" };
     });
 
-    await registerOrgSubmodules(sandbox);
+    await pushOrgRepos(sandbox);
 
     const openclawCall = sandbox.runCommand.mock.calls.find(
       (call: any[]) =>
@@ -121,7 +121,7 @@ describe("registerOrgSubmodules", () => {
       return { exitCode: 0, stdout: async () => "", stderr: async () => "" };
     });
 
-    await registerOrgSubmodules(sandbox);
+    await pushOrgRepos(sandbox);
 
     const openclawCall = sandbox.runCommand.mock.calls.find(
       (call: any[]) => call[0]?.cmd === "openclaw"
@@ -159,7 +159,7 @@ describe("registerOrgSubmodules", () => {
       return { exitCode: 0, stdout: async () => "", stderr: async () => "" };
     });
 
-    await registerOrgSubmodules(sandbox);
+    await pushOrgRepos(sandbox);
 
     // The find command should use resolved path, not ~
     const findCall = sandbox.runCommand.mock.calls.find(
@@ -200,7 +200,7 @@ describe("registerOrgSubmodules", () => {
       return { exitCode: 0, stdout: async () => "", stderr: async () => "" };
     });
 
-    await registerOrgSubmodules(sandbox);
+    await pushOrgRepos(sandbox);
 
     expect(logger.error).toHaveBeenCalledWith(
       expect.stringContaining("failed"),

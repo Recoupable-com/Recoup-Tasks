@@ -4,7 +4,7 @@ import { runGitCommand } from "./runGitCommand";
 import { copyOpenClawToRepo } from "./copyOpenClawToRepo";
 import { addOrgSubmodules } from "./git/addOrgSubmodules";
 import { stripGitmodulesTokens } from "./stripGitmodulesTokens";
-import { registerOrgSubmodules } from "./registerOrgSubmodules";
+import { pushOrgRepos } from "./pushOrgRepos";
 
 /**
  * Commits and pushes all local sandbox files to the GitHub repository.
@@ -42,7 +42,7 @@ export async function pushSandboxToGithub(
   }
 
   // Push org repo changes to their remotes (simple OpenClaw prompt)
-  await registerOrgSubmodules(sandbox);
+  await pushOrgRepos(sandbox);
 
   // Copy .openclaw (skip orgs/) into repo
   await copyOpenClawToRepo(sandbox);
