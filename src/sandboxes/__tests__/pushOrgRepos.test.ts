@@ -5,7 +5,7 @@ vi.mock("@trigger.dev/sdk/v3", () => ({
   metadata: { set: vi.fn(), append: vi.fn() },
 }));
 
-const { pushOrgRepos } = await import("../pushOrgRepos");
+const { pushOrgRepos } = await import("../git/pushOrgRepos");
 
 function createMockSandbox() {
   const runCommand = vi.fn();

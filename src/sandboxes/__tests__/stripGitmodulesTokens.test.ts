@@ -4,7 +4,7 @@ vi.mock("@trigger.dev/sdk/v3", () => ({
   logger: { log: vi.fn(), error: vi.fn() },
 }));
 
-const { stripGitmodulesTokens } = await import("../stripGitmodulesTokens");
+const { stripGitmodulesTokens } = await import("../git/stripGitmodulesTokens");
 
 function createMockSandbox() {
   const runCommand = vi.fn().mockResolvedValue({

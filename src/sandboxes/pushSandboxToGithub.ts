@@ -3,8 +3,8 @@ import { logger } from "@trigger.dev/sdk/v3";
 import { runGitCommand } from "./runGitCommand";
 import { copyOpenClawToRepo } from "./copyOpenClawToRepo";
 import { addOrgSubmodules } from "./git/addOrgSubmodules";
-import { stripGitmodulesTokens } from "./stripGitmodulesTokens";
-import { pushOrgRepos } from "./pushOrgRepos";
+import { stripGitmodulesTokens } from "./git/stripGitmodulesTokens";
+import { pushOrgRepos } from "./git/pushOrgRepos";
 
 /**
  * Commits and pushes all local sandbox files to the GitHub repository.

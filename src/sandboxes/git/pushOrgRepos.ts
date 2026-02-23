@@ -1,6 +1,6 @@
 import type { Sandbox } from "@vercel/sandbox";
 import { logger } from "@trigger.dev/sdk/v3";
-import { runOpenClawAgent } from "./runOpenClawAgent";
+import { runOpenClawAgent } from "../runOpenClawAgent";
 
 /**
  * Pushes changes in each org repo to its GitHub remote via OpenClaw.
