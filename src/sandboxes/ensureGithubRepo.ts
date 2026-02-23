@@ -116,11 +116,6 @@ export async function ensureGithubRepo(
         return undefined;
       }
 
-      // Initialize submodules if they exist
-      await sandbox.runCommand({
-        cmd: "git",
-        args: ["submodule", "update", "--init", "--recursive"],
-      });
     } else {
       logger.log("Empty remote repo, skipping checkout");
     }
