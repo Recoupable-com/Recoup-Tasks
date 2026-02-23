@@ -172,6 +172,41 @@ export async function ensureOrgSubmodules(
       });
     }
 
+    // Check if the target path already exists (e.g. from a previous skill run
+    // that created orgs/{name}/ as a plain directory). git submodule add fails
+    // with "fatal: 'orgs/X' does not have a commit checked out" in this case.
+    const pathCheck = await sandbox.runCommand({
+      cmd: "test",
+      args: ["-e", submodulePath],
+    });
+
+    const backupDir = `/tmp/backup-${sanitizedName}`;
+    const hadExistingDir = pathCheck.exitCode === 0;
+
+    if (hadExistingDir) {
+      logger.log("Backing up existing org directory before submodule add", {
+        orgId: org.organizationId,
+        path: submodulePath,
+        backupDir,
+      });
+
+      await sandbox.runCommand({ cmd: "rm", args: ["-rf", backupDir] });
+      await sandbox.runCommand({
+        cmd: "mv",
+        args: [submodulePath, backupDir],
+      });
+
+      // Clean up any partial submodule state from failed previous attempts
+      await sandbox.runCommand({
+        cmd: "git",
+        args: ["rm", "--cached", "-f", submodulePath],
+      });
+      await sandbox.runCommand({
+        cmd: "rm",
+        args: ["-rf", `.git/modules/${submodulePath}`],
+      });
+    }
+
     // Add as submodule
     const addResult = await sandbox.runCommand({
       cmd: "git",
@@ -185,7 +220,29 @@ export async function ensureOrgSubmodules(
         path: submodulePath,
         stderr,
       });
+
+      // Restore backup if we moved the directory
+      if (hadExistingDir) {
+        await sandbox.runCommand({
+          cmd: "mv",
+          args: [backupDir, submodulePath],
+        });
+      }
       continue;
+    }
+
+    // Restore backed-up files into the submodule working tree
+    if (hadExistingDir) {
+      logger.log("Restoring backed-up files into submodule", {
+        orgId: org.organizationId,
+        path: submodulePath,
+      });
+
+      await sandbox.runCommand({
+        cmd: "cp",
+        args: ["-a", `${backupDir}/.`, `${submodulePath}/`],
+      });
+      await sandbox.runCommand({ cmd: "rm", args: ["-rf", backupDir] });
     }
 
     // Rewrite .gitmodules to use the public URL (no token)

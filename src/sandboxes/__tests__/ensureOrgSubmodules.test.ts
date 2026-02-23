@@ -307,6 +307,176 @@ describe("ensureOrgSubmodules", () => {
     expect(sandbox.writeFiles).not.toHaveBeenCalled();
   });
 
+  // Regression: "fatal: 'orgs/recoup' does not have a commit checked out"
+  // When orgs/{name} already exists as a plain directory from a previous skill
+  // run, git submodule add fails. The code must back up the directory, remove
+  // it, add the submodule, then restore the files.
+  it("backs up and removes pre-existing org directory before submodule add", async () => {
+    mockGetAccountOrgs.mockResolvedValueOnce([
+      { organizationId: "org-1", organizationName: "Recoup" },
+    ]);
+
+    mockCreateOrgGithubRepo.mockResolvedValueOnce(
+      "https://github.com/recoupable/org-recoup-org-1"
+    );
+
+    const commandLog: string[] = [];
+    const sandbox = createMockSandbox();
+    sandbox.runCommand.mockImplementation(async (opts: any) => {
+      const tag = `${opts.cmd} ${(opts.args || []).join(" ")}`;
+      commandLog.push(tag);
+
+      // .gitmodules does not exist (not registered as submodule yet)
+      if (opts.cmd === "cat" && opts.args?.[0] === ".gitmodules") {
+        return { exitCode: 1, stdout: async () => "", stderr: async () => "" };
+      }
+      // Remote has refs (already seeded)
+      if (opts.cmd === "git" && opts.args?.[0] === "ls-remote") {
+        return {
+          exitCode: 0,
+          stdout: async () => "abc123\trefs/heads/main\n",
+          stderr: async () => "",
+        };
+      }
+      // orgs/recoup already exists as a plain directory
+      if (
+        opts.cmd === "test" &&
+        opts.args?.[0] === "-e" &&
+        opts.args?.[1] === "orgs/recoup"
+      ) {
+        return { exitCode: 0, stdout: async () => "", stderr: async () => "" };
+      }
+      return { exitCode: 0, stdout: async () => "", stderr: async () => "" };
+    });
+
+    await ensureOrgSubmodules(sandbox, "account-1");
+
+    // Must move existing dir to backup BEFORE submodule add
+    const mvIdx = commandLog.findIndex(
+      (c) => c.includes("mv") && c.includes("orgs/recoup") && c.includes("/tmp/backup-")
+    );
+    const submoduleAddIdx = commandLog.findIndex(
+      (c) => c.includes("submodule add")
+    );
+
+    expect(mvIdx).toBeGreaterThan(-1);
+    expect(submoduleAddIdx).toBeGreaterThan(-1);
+    expect(mvIdx).toBeLessThan(submoduleAddIdx);
+
+    // Must also clean up partial submodule state
+    const rmCachedIdx = commandLog.findIndex(
+      (c) => c.includes("rm --cached") && c.includes("orgs/recoup")
+    );
+    expect(rmCachedIdx).toBeGreaterThan(-1);
+    expect(rmCachedIdx).toBeLessThan(submoduleAddIdx);
+  });
+
+  // Regression: "fatal: 'orgs/recoup' does not have a commit checked out"
+  // After successful submodule add, backed-up files must be restored into the
+  // submodule working tree.
+  it("restores backed-up files into submodule after successful add", async () => {
+    mockGetAccountOrgs.mockResolvedValueOnce([
+      { organizationId: "org-1", organizationName: "Recoup" },
+    ]);
+
+    mockCreateOrgGithubRepo.mockResolvedValueOnce(
+      "https://github.com/recoupable/org-recoup-org-1"
+    );
+
+    const commandLog: string[] = [];
+    const sandbox = createMockSandbox();
+    sandbox.runCommand.mockImplementation(async (opts: any) => {
+      const tag = `${opts.cmd} ${(opts.args || []).join(" ")}`;
+      commandLog.push(tag);
+
+      if (opts.cmd === "cat" && opts.args?.[0] === ".gitmodules") {
+        return { exitCode: 1, stdout: async () => "", stderr: async () => "" };
+      }
+      if (opts.cmd === "git" && opts.args?.[0] === "ls-remote") {
+        return {
+          exitCode: 0,
+          stdout: async () => "abc123\trefs/heads/main\n",
+          stderr: async () => "",
+        };
+      }
+      // Directory exists
+      if (opts.cmd === "test" && opts.args?.[0] === "-e") {
+        return { exitCode: 0, stdout: async () => "", stderr: async () => "" };
+      }
+      return { exitCode: 0, stdout: async () => "", stderr: async () => "" };
+    });
+
+    await ensureOrgSubmodules(sandbox, "account-1");
+
+    // After submodule add, must copy backup files back
+    const submoduleAddIdx = commandLog.findIndex(
+      (c) => c.includes("submodule add")
+    );
+    const cpIdx = commandLog.findIndex(
+      (c) =>
+        c.includes("cp") &&
+        c.includes("/tmp/backup-") &&
+        c.includes("orgs/recoup")
+    );
+
+    expect(submoduleAddIdx).toBeGreaterThan(-1);
+    expect(cpIdx).toBeGreaterThan(-1);
+    expect(cpIdx).toBeGreaterThan(submoduleAddIdx);
+
+    // Must clean up the backup dir
+    const rmBackupIdx = commandLog.findIndex(
+      (c, i) =>
+        i > cpIdx && c.includes("rm") && c.includes("/tmp/backup-recoup")
+    );
+    expect(rmBackupIdx).toBeGreaterThan(-1);
+  });
+
+  // When the directory does NOT pre-exist, no backup/restore should happen
+  it("skips backup when org directory does not pre-exist", async () => {
+    mockGetAccountOrgs.mockResolvedValueOnce([
+      { organizationId: "org-1", organizationName: "New Org" },
+    ]);
+
+    mockCreateOrgGithubRepo.mockResolvedValueOnce(
+      "https://github.com/recoupable/org-new-org-org-1"
+    );
+
+    const commandLog: string[] = [];
+    const sandbox = createMockSandbox();
+    sandbox.runCommand.mockImplementation(async (opts: any) => {
+      const tag = `${opts.cmd} ${(opts.args || []).join(" ")}`;
+      commandLog.push(tag);
+
+      if (opts.cmd === "cat" && opts.args?.[0] === ".gitmodules") {
+        return { exitCode: 1, stdout: async () => "", stderr: async () => "" };
+      }
+      if (opts.cmd === "git" && opts.args?.[0] === "ls-remote") {
+        return {
+          exitCode: 0,
+          stdout: async () => "abc123\trefs/heads/main\n",
+          stderr: async () => "",
+        };
+      }
+      // Directory does NOT exist
+      if (opts.cmd === "test" && opts.args?.[0] === "-e") {
+        return { exitCode: 1, stdout: async () => "", stderr: async () => "" };
+      }
+      return { exitCode: 0, stdout: async () => "", stderr: async () => "" };
+    });
+
+    await ensureOrgSubmodules(sandbox, "account-1");
+
+    // No mv or cp commands — no backup needed
+    const mvCall = commandLog.find((c) => c.includes("mv") && c.includes("/tmp/backup-"));
+    const cpCall = commandLog.find((c) => c.includes("cp") && c.includes("/tmp/backup-"));
+    expect(mvCall).toBeUndefined();
+    expect(cpCall).toBeUndefined();
+
+    // Submodule add should still be called
+    const submoduleAddCall = commandLog.find((c) => c.includes("submodule add"));
+    expect(submoduleAddCall).toBeDefined();
+  });
+
   it("continues with other orgs when one fails", async () => {
     mockGetAccountOrgs.mockResolvedValueOnce([
       { organizationId: "org-1", organizationName: "Failing Org" },
