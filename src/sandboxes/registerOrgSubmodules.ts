@@ -56,11 +56,9 @@ export async function registerOrgSubmodules(
 
   logger.log("Registering org submodules", { orgNames });
 
-  // Clean up any existing submodule state for idempotency.
-  // ORDER MATTERS: git rm of submodule gitlinks updates .gitmodules
-  // automatically. If .gitmodules is removed first, git rm re-stages it
-  // in the index, causing "please make sure .gitmodules is in the working
-  // tree" errors on subsequent git submodule add.
+  // Clean up ALL submodule/org entries from the index using plumbing commands.
+  // git update-index --force-remove manipulates the index directly without
+  // any .gitmodules side effects (unlike git rm which auto-updates .gitmodules).
 
   // 1. Deinit submodules (clears working tree content)
   await sandbox.runCommand({
@@ -68,36 +66,37 @@ export async function registerOrgSubmodules(
     args: ["-c", "git submodule deinit --all -f 2>/dev/null || true"],
   });
 
-  // 2. Remove stale orgs/ submodule gitlinks WHILE .gitmodules still exists
-  //    so git rm can properly update .gitmodules
+  // 2. Remove .gitmodules from index (no side effects)
   await sandbox.runCommand({
-    cmd: "sh",
-    args: ["-c", "git rm -rf orgs 2>/dev/null || true"],
+    cmd: "git",
+    args: ["update-index", "--force-remove", ".gitmodules"],
   });
 
-  // 3. Remove .openclaw/workspace/orgs submodule entries WHILE .gitmodules
-  //    still exists. git rm of submodule entries updates .gitmodules — if
-  //    .gitmodules is removed first, git rm re-stages it in the index.
+  // 3. Remove all .openclaw/workspace/orgs/ entries from index
+  //    Use ls-files to find them, then force-remove each
   await sandbox.runCommand({
     cmd: "sh",
     args: [
       "-c",
-      "git rm -rf .openclaw/workspace/orgs 2>/dev/null || true",
+      "git ls-files --stage .openclaw/workspace/orgs/ | awk '{print $4}' | xargs -I{} git update-index --force-remove {} 2>/dev/null || true",
     ],
   });
 
-  // 4. NOW remove .gitmodules (already updated/emptied by git rm above)
-  await sandbox.runCommand({
-    cmd: "sh",
-    args: ["-c", "git rm -f .gitmodules 2>/dev/null || true"],
-  });
-
-  // 5. Clear modules cache and working tree remnants
+  // 4. Remove stale orgs/ entries at root (from old approach)
   await sandbox.runCommand({
     cmd: "sh",
     args: [
       "-c",
-      "rm -rf .git/modules .openclaw/workspace/orgs orgs 2>/dev/null || true",
+      "git ls-files --stage orgs/ | awk '{print $4}' | xargs -I{} git update-index --force-remove {} 2>/dev/null || true",
+    ],
+  });
+
+  // 5. Clean working tree + module cache
+  await sandbox.runCommand({
+    cmd: "sh",
+    args: [
+      "-c",
+      "rm -f .gitmodules && rm -rf .git/modules .openclaw/workspace/orgs orgs 2>/dev/null || true",
     ],
   });
 
@@ -130,16 +129,7 @@ export async function registerOrgSubmodules(
 
     logger.log("Adding org submodule", { orgName, submodulePath });
 
-    // Remove the plain directory from git index (staged by copyOpenClawToRepo)
-    await sandbox.runCommand({
-      cmd: "sh",
-      args: [
-        "-c",
-        `git rm -r --cached ${submodulePath} 2>/dev/null || true`,
-      ],
-    });
-
-    // Remove the plain directory from working tree
+    // Remove the plain directory from working tree (index already cleaned above)
     await sandbox.runCommand({
       cmd: "sh",
       args: ["-c", `rm -rf ${submodulePath}`],

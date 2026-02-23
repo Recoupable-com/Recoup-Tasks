@@ -235,25 +235,43 @@ describe("registerOrgSubmodules", () => {
     );
     expect(deinitCall).toBeDefined();
 
-    // Should remove plain dir from index before submodule add
-    const rmCachedCall = sandbox.runCommand.mock.calls.find(
+    // Should use git update-index --force-remove (plumbing, no .gitmodules side effects)
+    // instead of git rm (which auto-updates .gitmodules and causes index mismatches)
+    const updateIndexCall = sandbox.runCommand.mock.calls.find(
       (call: any[]) => {
         const args = call[0]?.args;
-        return args?.[1]?.includes("git rm -r --cached");
+        return (
+          call[0]?.cmd === "git" &&
+          args?.[0] === "update-index" &&
+          args?.[1] === "--force-remove"
+        );
       }
     );
-    expect(rmCachedCall).toBeDefined();
+    expect(updateIndexCall).toBeDefined();
+
+    // Should NOT use git rm for cleanup (causes .gitmodules side effects)
+    const gitRmCleanupCall = sandbox.runCommand.mock.calls.find(
+      (call: any[]) => {
+        const args = call[0]?.args;
+        return (
+          args?.[1]?.includes("git rm -rf orgs") ||
+          args?.[1]?.includes("git rm -rf .openclaw") ||
+          args?.[1]?.includes("git rm -f .gitmodules")
+        );
+      }
+    );
+    expect(gitRmCleanupCall).toBeUndefined();
   });
 
   /**
    * Regression for production error:
    * "fatal: please make sure that the .gitmodules file is in the working tree"
    *
-   * rm -f .gitmodules only removes from the working tree, not the git index.
-   * git submodule add then fails because .gitmodules is tracked but missing.
-   * Must use git rm to remove from BOTH index and working tree.
+   * git rm of submodule entries auto-updates .gitmodules, causing index/working
+   * tree mismatches. Fix: use git update-index --force-remove (plumbing command)
+   * which removes from the index with zero side effects.
    */
-  it("removes .gitmodules from git index, not just working tree", async () => {
+  it("removes .gitmodules from git index via update-index, not git rm", async () => {
     const sandbox = createMockSandbox();
 
     sandbox.runCommand.mockImplementation(async (opts: any) => {
@@ -288,37 +306,41 @@ describe("registerOrgSubmodules", () => {
 
     await registerOrgSubmodules(sandbox);
 
-    // Should use "git rm" for .gitmodules, not bare "rm -f"
+    // Should use git update-index --force-remove for .gitmodules
+    const updateIndexGitmodules = sandbox.runCommand.mock.calls.find(
+      (call: any[]) => {
+        const args = call[0]?.args;
+        return (
+          call[0]?.cmd === "git" &&
+          args?.[0] === "update-index" &&
+          args?.[1] === "--force-remove" &&
+          args?.[2] === ".gitmodules"
+        );
+      }
+    );
+    expect(updateIndexGitmodules).toBeDefined();
+
+    // Should NOT use git rm for .gitmodules (causes side effects)
     const gitRmGitmodules = sandbox.runCommand.mock.calls.find(
       (call: any[]) => {
         const args = call[0]?.args;
         return args?.[1]?.includes("git rm") && args?.[1]?.includes(".gitmodules");
       }
     );
-    expect(gitRmGitmodules).toBeDefined();
-
-    // Should NOT use bare rm -f .gitmodules (only removes working tree, not index)
-    const bareRmGitmodules = sandbox.runCommand.mock.calls.find(
-      (call: any[]) => {
-        const args = call[0]?.args;
-        return args?.[1] === "rm -f .gitmodules 2>/dev/null || true";
-      }
-    );
-    expect(bareRmGitmodules).toBeUndefined();
+    expect(gitRmGitmodules).toBeUndefined();
   });
 
   /**
    * Regression for production error (persists after git rm fix):
    * "fatal: please make sure that the .gitmodules file is in the working tree"
    *
-   * git rm of a submodule gitlink (e.g. orgs/recoup) automatically updates
-   * .gitmodules. If .gitmodules was already deleted, git rm re-stages it
-   * in the index, causing the mismatch. Fix: remove stale orgs/ gitlinks
-   * BEFORE removing .gitmodules so git rm can update it properly.
+   * Root cause: git rm of submodule entries auto-updates .gitmodules,
+   * causing index/working-tree mismatches regardless of ordering.
+   * Fix: use git update-index --force-remove for ALL cleanup — a plumbing
+   * command that has zero .gitmodules side effects, eliminating ordering issues.
    */
-  it("removes stale orgs/ gitlinks BEFORE removing .gitmodules", async () => {
+  it("uses update-index for .openclaw/workspace/orgs cleanup (no ordering issues)", async () => {
     const sandbox = createMockSandbox();
-    const callOrder: string[] = [];
 
     sandbox.runCommand.mockImplementation(async (opts: any) => {
       if (opts.cmd === "sh" && opts.args?.[1] === "echo ~") {
@@ -348,40 +370,33 @@ describe("registerOrgSubmodules", () => {
         };
       }
 
-      // Track cleanup call order
-      const arg = opts.args?.[1] || "";
-      if (typeof arg === "string") {
-        if (arg.includes("git rm") && arg.includes("orgs ")) {
-          callOrder.push("rm-orgs");
-        }
-        if (arg.includes("git rm") && arg.includes(".gitmodules")) {
-          callOrder.push("rm-gitmodules");
-        }
-      }
-
       return { exitCode: 0, stdout: async () => "", stderr: async () => "" };
     });
 
     await registerOrgSubmodules(sandbox);
 
-    // Both calls should exist
-    expect(callOrder).toContain("rm-orgs");
-    expect(callOrder).toContain("rm-gitmodules");
-
-    // rm-orgs MUST come before rm-gitmodules
-    const orgsIdx = callOrder.indexOf("rm-orgs");
-    const gitmodulesIdx = callOrder.indexOf("rm-gitmodules");
-    expect(orgsIdx).toBeLessThan(gitmodulesIdx);
+    // Should use git update-index pipeline to remove .openclaw/workspace/orgs/ entries
+    const openclawUpdateIndex = sandbox.runCommand.mock.calls.find(
+      (call: any[]) => {
+        const args = call[0]?.args;
+        return (
+          args?.[1]?.includes("git ls-files") &&
+          args?.[1]?.includes(".openclaw/workspace/orgs/") &&
+          args?.[1]?.includes("update-index --force-remove")
+        );
+      }
+    );
+    expect(openclawUpdateIndex).toBeDefined();
   });
 
   /**
    * Regression: stale orgs/ submodule entries from the old approach
    * exist at the repo root (160000 commit orgs/recoup, etc.) and a
    * stale .gitmodules with path = orgs/{name}.
-   * registerOrgSubmodules must remove these before adding new ones
-   * at .openclaw/workspace/orgs/{name}.
+   * registerOrgSubmodules must remove these via update-index before
+   * adding new ones at .openclaw/workspace/orgs/{name}.
    */
-  it("removes stale orgs/ submodules at repo root from old approach", async () => {
+  it("removes stale orgs/ submodules at repo root via update-index", async () => {
     const sandbox = createMockSandbox();
 
     sandbox.runCommand.mockImplementation(async (opts: any) => {
@@ -416,12 +431,15 @@ describe("registerOrgSubmodules", () => {
 
     await registerOrgSubmodules(sandbox);
 
-    // Should remove stale orgs/ at repo root from index
+    // Should remove stale orgs/ at repo root from index via update-index pipeline
     const rmStaleCall = sandbox.runCommand.mock.calls.find(
       (call: any[]) => {
         const args = call[0]?.args;
-        // Looking for: sh -c "git rm -r --cached orgs ..."
-        return args?.[1]?.includes("git rm") && args?.[1]?.includes("orgs 2>");
+        return (
+          args?.[1]?.includes("git ls-files") &&
+          args?.[1]?.includes("orgs/") &&
+          args?.[1]?.includes("update-index --force-remove")
+        );
       }
     );
     expect(rmStaleCall).toBeDefined();
@@ -431,15 +449,13 @@ describe("registerOrgSubmodules", () => {
    * Regression for production error on second run (idempotency):
    * "fatal: please make sure that the .gitmodules file is in the working tree"
    *
-   * After the first run, .openclaw/workspace/orgs/ entries are 160000 (submodule)
-   * in the index. On the second run, cleanup removes .gitmodules, then
-   * git rm --cached of a submodule entry tries to update .gitmodules — but it
-   * was already removed. Fix: remove .openclaw/workspace/orgs entries from the
-   * index BEFORE removing .gitmodules, just like we do for stale orgs/.
+   * Root cause: git rm of submodule entries auto-updates .gitmodules.
+   * No ordering of git rm calls can fix this reliably.
+   * Fix: use git update-index --force-remove for ALL cleanup.
+   * This is a plumbing command with zero .gitmodules interaction.
    */
-  it("removes .openclaw/workspace/orgs from index BEFORE .gitmodules", async () => {
+  it("never uses git rm for cleanup (update-index only)", async () => {
     const sandbox = createMockSandbox();
-    const callOrder: string[] = [];
 
     sandbox.runCommand.mockImplementation(async (opts: any) => {
       if (opts.cmd === "sh" && opts.args?.[1] === "echo ~") {
@@ -469,30 +485,22 @@ describe("registerOrgSubmodules", () => {
         };
       }
 
-      // Track cleanup order
-      const arg = opts.args?.[1] || "";
-      if (typeof arg === "string") {
-        if (arg.includes("git rm") && arg.includes(".openclaw/workspace/orgs")) {
-          callOrder.push("rm-openclaw-orgs");
-        }
-        if (arg.includes("git rm") && arg.includes(".gitmodules")) {
-          callOrder.push("rm-gitmodules");
-        }
-      }
-
       return { exitCode: 0, stdout: async () => "", stderr: async () => "" };
     });
 
     await registerOrgSubmodules(sandbox);
 
-    // Both cleanup calls should exist
-    expect(callOrder).toContain("rm-openclaw-orgs");
-    expect(callOrder).toContain("rm-gitmodules");
-
-    // rm-openclaw-orgs MUST come before rm-gitmodules
-    const openclawIdx = callOrder.indexOf("rm-openclaw-orgs");
-    const gitmodulesIdx = callOrder.indexOf("rm-gitmodules");
-    expect(openclawIdx).toBeLessThan(gitmodulesIdx);
+    // Should NOT use git rm anywhere in cleanup
+    const gitRmCalls = sandbox.runCommand.mock.calls.filter(
+      (call: any[]) => {
+        const args = call[0]?.args;
+        return (
+          args?.[1]?.includes("git rm") ||
+          (call[0]?.cmd === "git" && args?.[0] === "rm")
+        );
+      }
+    );
+    expect(gitRmCalls).toHaveLength(0);
   });
 
   /**
