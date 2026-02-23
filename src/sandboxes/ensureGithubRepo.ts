@@ -116,6 +116,21 @@ export async function ensureGithubRepo(
         return undefined;
       }
 
+      // Set up URL rewriting so submodule clones use auth
+      await sandbox.runCommand({
+        cmd: "git",
+        args: [
+          "config",
+          `url.https://x-access-token:${githubToken}@github.com/.insteadOf`,
+          "https://github.com/",
+        ],
+      });
+
+      // Initialize submodules if they exist (org repos)
+      await sandbox.runCommand({
+        cmd: "git",
+        args: ["submodule", "update", "--init", "--recursive"],
+      });
     } else {
       logger.log("Empty remote repo, skipping checkout");
     }

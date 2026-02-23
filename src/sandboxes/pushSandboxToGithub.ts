@@ -3,6 +3,7 @@ import { logger } from "@trigger.dev/sdk/v3";
 import { runGitCommand } from "./runGitCommand";
 import { copyOpenClawToRepo } from "./copyOpenClawToRepo";
 import { pushOrgRepos } from "./pushOrgRepos";
+import { registerOrgSubmodules } from "./registerOrgSubmodules";
 
 /**
  * Commits and pushes all local sandbox files to the GitHub repository.
@@ -44,10 +45,13 @@ export async function pushSandboxToGithub(
   // Push org repos from ~/.openclaw/workspace/orgs/ (originals still have .git)
   await pushOrgRepos(sandbox);
 
-  // Stage all files
+  // Stage all files first (so registerOrgSubmodules can git rm the plain dirs)
   if (!(await runGitCommand(sandbox, ["add", "-A"], "stage files"))) {
     return false;
   }
+
+  // Convert plain org dirs to submodule references
+  await registerOrgSubmodules(sandbox);
 
   // Check if there are changes to commit
   const diffResult = await sandbox.runCommand({
