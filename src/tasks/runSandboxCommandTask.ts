@@ -6,6 +6,7 @@ import { ensureGithubRepo } from "../sandboxes/ensureGithubRepo";
 import { getVercelSandboxCredentials } from "../sandboxes/getVercelSandboxCredentials";
 import { snapshotAndPersist } from "../sandboxes/snapshotAndPersist";
 import { writeReadme } from "../sandboxes/writeReadme";
+import { ensureOrgSubmodules } from "../sandboxes/ensureOrgSubmodules";
 import { ensureSetupSandbox } from "../sandboxes/ensureSetupSandbox";
 import { pushSandboxToGithub } from "../sandboxes/pushSandboxToGithub";
 import {
@@ -61,6 +62,11 @@ export const runSandboxCommandTask = schemaTask({
       // Write README.md with sandbox details
       await writeReadme(sandbox, sandboxId, accountId, githubRepo ?? undefined);
       metadata.append("logs", "README written");
+
+      // Ensure org directories are git submodules
+      metadata.set("currentStep", "Setting up org submodules");
+      await ensureOrgSubmodules(sandbox, accountId);
+      metadata.append("logs", "Org submodules ready");
 
       // Ensure org/artist folder structure exists (setup via OpenClaw)
       metadata.set("currentStep", "Setting up sandbox folders");
