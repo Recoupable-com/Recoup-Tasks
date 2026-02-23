@@ -2,17 +2,15 @@ import type { Sandbox } from "@vercel/sandbox";
 import { logger } from "@trigger.dev/sdk/v3";
 
 /**
- * Converts plain org directories in the account repo into git submodule
- * references pointing to their respective org GitHub repos.
+ * Delegates submodule registration to OpenClaw, which handles the git
+ * complexity of converting plain org directories into submodule references.
  *
  * Called AFTER `copyOpenClawToRepo` (which copies org dirs as plain files)
  * and `pushOrgRepos` (which pushes org changes to their GitHub repos).
  *
- * For each org repo found in `~/.openclaw/workspace/orgs/`:
- * 1. Gets the remote URL (with auth token for cloning)
- * 2. Removes the plain directory copy from the git index
- * 3. Adds it as a git submodule via `git submodule add` with authed URL
- * 4. Strips auth tokens from `.gitmodules` via sed
+ * Previous approach of manually running git submodule add / git rm / git
+ * update-index kept failing with ".gitmodules not in the working tree"
+ * due to index/working-tree mismatches. OpenClaw can inspect and adapt.
  *
  * @param sandbox - The Vercel Sandbox instance
  */
@@ -54,114 +52,50 @@ export async function registerOrgSubmodules(
     return;
   }
 
-  logger.log("Registering org submodules", { orgNames });
+  logger.log("Registering org submodules via OpenClaw", { orgNames });
 
-  // Clean up ALL submodule/org entries from the index using plumbing commands.
-  // git update-index --force-remove manipulates the index directly without
-  // any .gitmodules side effects (unlike git rm which auto-updates .gitmodules).
+  const orgList = orgNames.map((name) => `- ${name}`).join("\n");
 
-  // 1. Deinit submodules (clears working tree content)
-  await sandbox.runCommand({
-    cmd: "sh",
-    args: ["-c", "git submodule deinit --all -f 2>/dev/null || true"],
+  const message = [
+    "Register the following org directories as git submodules in the current repo.",
+    "Each org has a git repo at ~/.openclaw/workspace/orgs/{name} with a remote origin.",
+    "",
+    "Org directories:",
+    orgList,
+    "",
+    "For each org:",
+    "1. Get the remote URL: git -C ~/.openclaw/workspace/orgs/{name} remote get-url origin",
+    "2. Clean up any existing submodule state for this path (deinit, remove from index, remove .git/modules/{path})",
+    "3. Remove the plain directory copy at .openclaw/workspace/orgs/{name} in the repo if it exists",
+    "4. Run: git submodule add <remote-url> .openclaw/workspace/orgs/{name}",
+    "   - Use GITHUB_TOKEN env var for auth: replace https://github.com/ with https://x-access-token:$GITHUB_TOKEN@github.com/",
+    "5. After ALL submodules are added, strip x-access-token auth from .gitmodules so tokens are not committed",
+    "6. Re-stage .gitmodules: git add .gitmodules",
+    "",
+    "IMPORTANT:",
+    "- Work in the repo root directory",
+    "- If .gitmodules already exists in the index but not the working tree, remove it from the index first (git update-index --force-remove .gitmodules)",
+    "- Handle errors gracefully — if a step fails, inspect the state and try to fix it",
+  ].join("\n");
+
+  // GITHUB_TOKEN is already injected into openclaw.json by setupOpenClaw
+  const result = await sandbox.runCommand({
+    cmd: "openclaw",
+    args: ["agent", "--agent", "main", "--message", message],
   });
 
-  // 2. Remove .gitmodules from index (no side effects)
-  await sandbox.runCommand({
-    cmd: "git",
-    args: ["update-index", "--force-remove", ".gitmodules"],
+  const resultStdout = (await result.stdout()) || "";
+  const stderr = (await result.stderr()) || "";
+
+  logger.log("OpenClaw submodule registration result", {
+    exitCode: result.exitCode,
+    stdout: resultStdout,
+    stderr,
   });
 
-  // 3. Remove all .openclaw/workspace/orgs/ entries from index
-  //    Use ls-files to find them, then force-remove each
-  await sandbox.runCommand({
-    cmd: "sh",
-    args: [
-      "-c",
-      "git ls-files --stage .openclaw/workspace/orgs/ | awk '{print $4}' | xargs -I{} git update-index --force-remove {} 2>/dev/null || true",
-    ],
-  });
-
-  // 4. Remove stale orgs/ entries at root (from old approach)
-  await sandbox.runCommand({
-    cmd: "sh",
-    args: [
-      "-c",
-      "git ls-files --stage orgs/ | awk '{print $4}' | xargs -I{} git update-index --force-remove {} 2>/dev/null || true",
-    ],
-  });
-
-  // 5. Clean working tree + module cache
-  await sandbox.runCommand({
-    cmd: "sh",
-    args: [
-      "-c",
-      "rm -f .gitmodules && rm -rf .git/modules .openclaw/workspace/orgs orgs 2>/dev/null || true",
-    ],
-  });
-
-  for (const orgName of orgNames) {
-    const orgSrcPath = `${workspaceOrgs}/${orgName}`;
-    const submodulePath = `.openclaw/workspace/orgs/${orgName}`;
-
-    // Get remote URL from the working copy
-    const urlResult = await sandbox.runCommand({
-      cmd: "git",
-      args: ["-C", orgSrcPath, "remote", "get-url", "origin"],
-    });
-
-    let remoteUrl = ((await urlResult.stdout()) || "").trim();
-
-    if (!remoteUrl) {
-      logger.error("No remote URL for org repo, skipping", { orgName });
-      continue;
-    }
-
-    // Ensure URL has auth token so git submodule add can clone.
-    // git config insteadOf doesn't work in sandboxes, so we embed
-    // the token directly and strip it from .gitmodules afterward.
-    if (!remoteUrl.includes("x-access-token")) {
-      remoteUrl = remoteUrl.replace(
-        "https://github.com/",
-        `https://x-access-token:${githubToken}@github.com/`
-      );
-    }
-
-    logger.log("Adding org submodule", { orgName, submodulePath });
-
-    // Remove the plain directory from working tree (index already cleaned above)
-    await sandbox.runCommand({
-      cmd: "sh",
-      args: ["-c", `rm -rf ${submodulePath}`],
-    });
-
-    // Add as submodule — this clones the repo and creates the gitlink entry
-    const addResult = await sandbox.runCommand({
-      cmd: "git",
-      args: ["submodule", "add", remoteUrl, submodulePath],
-    });
-
-    if (addResult.exitCode !== 0) {
-      const stderr = (await addResult.stderr()) || "";
-      logger.error("Failed to add org submodule", { orgName, stderr });
-    }
+  if (result.exitCode !== 0) {
+    logger.error("OpenClaw submodule registration failed", { stderr });
   }
-
-  // Strip auth tokens from .gitmodules so they aren't committed.
-  // The authed URLs were needed for cloning, but .gitmodules should
-  // only contain clean public URLs. sed modifies the working tree;
-  // we must re-stage so the committed version is also clean.
-  await sandbox.runCommand({
-    cmd: "sh",
-    args: [
-      "-c",
-      `sed -i 's|https://x-access-token:[^@]*@github.com/|https://github.com/|g' .gitmodules 2>/dev/null || true`,
-    ],
-  });
-  await sandbox.runCommand({
-    cmd: "git",
-    args: ["add", ".gitmodules"],
-  });
 
   logger.log("Org submodule registration complete", {
     count: orgNames.length,
