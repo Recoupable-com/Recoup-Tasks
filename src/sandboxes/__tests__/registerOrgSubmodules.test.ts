@@ -283,6 +283,45 @@ describe("registerOrgSubmodules", () => {
     expect(message).toContain("origin");
   });
 
+  /**
+   * Regression: if a previous run committed changes locally but failed
+   * to push (e.g. .gitmodules error), the next run sees a clean working
+   * tree (no staged changes) and skips the push. The unpushed commits
+   * sit locally forever. Fix: also check for unpushed commits.
+   */
+  it("instructs OpenClaw to push unpushed commits, not just uncommitted changes", async () => {
+    const sandbox = createMockSandbox();
+
+    sandbox.runCommand.mockImplementation(async (opts: any) => {
+      if (opts.cmd === "sh" && opts.args?.[1] === "echo ~") {
+        return {
+          exitCode: 0,
+          stdout: async () => "/root\n",
+          stderr: async () => "",
+        };
+      }
+      if (opts.cmd === "sh" && opts.args?.[1]?.includes("find")) {
+        return {
+          exitCode: 0,
+          stdout: async () => "recoup\n",
+          stderr: async () => "",
+        };
+      }
+      return { exitCode: 0, stdout: async () => "", stderr: async () => "" };
+    });
+
+    await registerOrgSubmodules(sandbox);
+
+    const openclawCall = sandbox.runCommand.mock.calls.find(
+      (call: any[]) => call[0]?.cmd === "openclaw"
+    );
+    const message = openclawCall![0].args[4];
+
+    // Message must instruct to always push, even if no new changes to commit
+    expect(message).toContain("unpushed");
+    expect(message).toContain("git log");
+  });
+
   it("uses resolved home dir for workspace path (no tilde)", async () => {
     const sandbox = createMockSandbox();
 
