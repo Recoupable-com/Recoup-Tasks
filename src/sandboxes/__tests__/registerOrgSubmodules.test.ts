@@ -296,6 +296,73 @@ describe("registerOrgSubmodules", () => {
   });
 
   /**
+   * Regression for production error (persists after git rm fix):
+   * "fatal: please make sure that the .gitmodules file is in the working tree"
+   *
+   * git rm of a submodule gitlink (e.g. orgs/recoup) automatically updates
+   * .gitmodules. If .gitmodules was already deleted, git rm re-stages it
+   * in the index, causing the mismatch. Fix: remove stale orgs/ gitlinks
+   * BEFORE removing .gitmodules so git rm can update it properly.
+   */
+  it("removes stale orgs/ gitlinks BEFORE removing .gitmodules", async () => {
+    const sandbox = createMockSandbox();
+    const callOrder: string[] = [];
+
+    sandbox.runCommand.mockImplementation(async (opts: any) => {
+      if (opts.cmd === "sh" && opts.args?.[1] === "echo ~") {
+        return {
+          exitCode: 0,
+          stdout: async () => "/root\n",
+          stderr: async () => "",
+        };
+      }
+      if (opts.cmd === "sh" && opts.args?.[1]?.includes("find")) {
+        return {
+          exitCode: 0,
+          stdout: async () => "recoup\n",
+          stderr: async () => "",
+        };
+      }
+      if (
+        opts.cmd === "git" &&
+        opts.args?.includes("remote") &&
+        opts.args?.includes("get-url")
+      ) {
+        return {
+          exitCode: 0,
+          stdout: async () =>
+            "https://github.com/recoupable/org-recoup-abc123\n",
+          stderr: async () => "",
+        };
+      }
+
+      // Track cleanup call order
+      const arg = opts.args?.[1] || "";
+      if (typeof arg === "string") {
+        if (arg.includes("git rm") && arg.includes("orgs ")) {
+          callOrder.push("rm-orgs");
+        }
+        if (arg.includes("git rm") && arg.includes(".gitmodules")) {
+          callOrder.push("rm-gitmodules");
+        }
+      }
+
+      return { exitCode: 0, stdout: async () => "", stderr: async () => "" };
+    });
+
+    await registerOrgSubmodules(sandbox);
+
+    // Both calls should exist
+    expect(callOrder).toContain("rm-orgs");
+    expect(callOrder).toContain("rm-gitmodules");
+
+    // rm-orgs MUST come before rm-gitmodules
+    const orgsIdx = callOrder.indexOf("rm-orgs");
+    const gitmodulesIdx = callOrder.indexOf("rm-gitmodules");
+    expect(orgsIdx).toBeLessThan(gitmodulesIdx);
+  });
+
+  /**
    * Regression: stale orgs/ submodule entries from the old approach
    * exist at the repo root (160000 commit orgs/recoup, etc.) and a
    * stale .gitmodules with path = orgs/{name}.

@@ -69,28 +69,35 @@ export async function registerOrgSubmodules(
     ],
   });
 
-  // Clean up any existing submodule state for idempotency
+  // Clean up any existing submodule state for idempotency.
+  // ORDER MATTERS: git rm of submodule gitlinks updates .gitmodules
+  // automatically. If .gitmodules is removed first, git rm re-stages it
+  // in the index, causing "please make sure .gitmodules is in the working
+  // tree" errors on subsequent git submodule add.
+
+  // 1. Deinit submodules (clears working tree content)
   await sandbox.runCommand({
     cmd: "sh",
     args: ["-c", "git submodule deinit --all -f 2>/dev/null || true"],
   });
+
+  // 2. Remove stale orgs/ submodule gitlinks WHILE .gitmodules still exists
+  //    so git rm can properly update .gitmodules
+  await sandbox.runCommand({
+    cmd: "sh",
+    args: ["-c", "git rm -rf orgs 2>/dev/null || true"],
+  });
+
+  // 3. NOW remove .gitmodules (already updated/emptied by git rm above)
   await sandbox.runCommand({
     cmd: "sh",
     args: ["-c", "git rm -f .gitmodules 2>/dev/null || true"],
   });
-  await sandbox.runCommand({
-    cmd: "sh",
-    args: ["-c", "rm -rf .git/modules 2>/dev/null || true"],
-  });
 
-  // Remove stale orgs/ submodules at repo root from old approach
+  // 4. Clear modules cache and working tree remnants
   await sandbox.runCommand({
     cmd: "sh",
-    args: ["-c", "git rm -r --cached orgs 2>/dev/null || true"],
-  });
-  await sandbox.runCommand({
-    cmd: "sh",
-    args: ["-c", "rm -rf orgs 2>/dev/null || true"],
+    args: ["-c", "rm -rf .git/modules orgs 2>/dev/null || true"],
   });
 
   for (const orgName of orgNames) {
