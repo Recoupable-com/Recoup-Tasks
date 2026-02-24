@@ -5,12 +5,14 @@ import { NEW_API_BASE_URL, RECOUP_API_KEY } from "../consts";
 const sandboxEntrySchema = z.object({
   sandboxId: z.string(),
   sandboxStatus: z.enum(["pending", "running", "stopping", "stopped", "failed"]),
+  timeout: z.number(),
+  createdAt: z.string(),
+  runId: z.string().optional(),
 });
 
 const executePulseResponseSchema = z.object({
   status: z.literal("success"),
   sandboxes: z.array(sandboxEntrySchema).min(1),
-  runId: z.string(),
 });
 
 /**
@@ -27,7 +29,7 @@ export async function executePulseInSandbox({
 }: {
   accountId: string;
   prompt: string;
-}): Promise<{ sandboxId: string; runId: string } | undefined> {
+}): Promise<{ sandboxId: string; runId: string | undefined } | undefined> {
   const url = `${NEW_API_BASE_URL}/api/sandboxes?account_id=${encodeURIComponent(accountId)}`;
 
   if (!RECOUP_API_KEY) {
@@ -65,8 +67,7 @@ export async function executePulseInSandbox({
       return undefined;
     }
 
-    const { sandboxId } = validation.data.sandboxes[0];
-    const { runId } = validation.data;
+    const { sandboxId, runId } = validation.data.sandboxes[0];
 
     logger.log("Pulse sandbox execution started", {
       accountId,

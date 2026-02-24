@@ -27,9 +27,11 @@ describe("executePulseInSandbox", () => {
           {
             sandboxId: "sbx-abc",
             sandboxStatus: "running",
+            timeout: 600000,
+            createdAt: "2026-02-24T09:00:00.000Z",
+            runId: "run-xyz",
           },
         ],
-        runId: "run-xyz",
       }),
     });
 
@@ -43,6 +45,27 @@ describe("executePulseInSandbox", () => {
     const fetchOptions = mockFetch.mock.calls[0][1];
     expect(fetchOptions.method).toBe("POST");
     expect(JSON.parse(fetchOptions.body)).toEqual({ prompt });
+  });
+
+  it("returns sandboxId with undefined runId when no command triggered", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        status: "success",
+        sandboxes: [
+          {
+            sandboxId: "sbx-abc",
+            sandboxStatus: "running",
+            timeout: 600000,
+            createdAt: "2026-02-24T09:00:00.000Z",
+          },
+        ],
+      }),
+    });
+
+    const result = await executePulseInSandbox({ accountId, prompt });
+
+    expect(result).toEqual({ sandboxId: "sbx-abc", runId: undefined });
   });
 
   it("returns undefined on non-ok response", async () => {
@@ -99,8 +122,15 @@ describe("executePulseInSandbox", () => {
       ok: true,
       json: async () => ({
         status: "success",
-        sandboxes: [{ sandboxId: "sbx-abc", sandboxStatus: "running" }],
-        runId: "run-xyz",
+        sandboxes: [
+          {
+            sandboxId: "sbx-abc",
+            sandboxStatus: "running",
+            timeout: 600000,
+            createdAt: "2026-02-24T09:00:00.000Z",
+            runId: "run-xyz",
+          },
+        ],
       }),
     });
 
