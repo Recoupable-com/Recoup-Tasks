@@ -1,8 +1,6 @@
 import { logger, schedules } from "@trigger.dev/sdk/v3";
 import { fetchActivePulses } from "../recoup/fetchActivePulses";
-import { getTaskRoomId } from "../chats/getTaskRoomId";
-import { generateChat } from "../recoup/generateChat";
-import { formatPulseDate } from "../pulse/formatPulseDate";
+import { executePulseInSandbox } from "../pulse/executePulseInSandbox";
 
 const DEFAULT_PULSE_PROMPT = `You are sending a daily Pulse email. Your job is to surface what's MOST RELEVANT RIGHT NOW and deliver genuine value.
 
@@ -146,26 +144,15 @@ export const sendPulsesTask = schedules.task({
       logger.log("Processing pulse for account", { accountId });
 
       try {
-        const pulseTopic = `Pulse ${formatPulseDate()}`;
-        const roomId = await getTaskRoomId({ accountId, topic: pulseTopic });
-
-        if (!roomId) {
-          logger.error("Failed to get roomId for pulse", { accountId });
-          failed++;
-          continue;
-        }
-
-        const result = await generateChat({
-          prompt: DEFAULT_PULSE_PROMPT,
+        const result = await executePulseInSandbox({
           accountId,
-          roomId,
-          model: "google/gemini-3-pro-preview",
+          prompt: DEFAULT_PULSE_PROMPT,
         });
 
         if (result) {
           sent++;
         } else {
-          logger.error("Failed to send pulse - generateChat returned undefined", { accountId, roomId });
+          logger.error("Failed to execute pulse in sandbox", { accountId });
           failed++;
         }
       } catch (error) {
