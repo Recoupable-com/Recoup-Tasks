@@ -7,7 +7,10 @@ vi.mock("@trigger.dev/sdk/v3", () => ({
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
-// Must import after mocks are set up
+// Set env var before import so consts.ts picks it up at module load time
+process.env.RECOUP_API_KEY = "test-api-key";
+
+// Must import after mocks and env are set up
 const { executePulseInSandbox } = await import("../executePulseInSandbox");
 
 beforeEach(() => {
@@ -103,7 +106,6 @@ describe("executePulseInSandbox", () => {
     const original = process.env.RECOUP_API_KEY;
     delete process.env.RECOUP_API_KEY;
 
-    // Re-import to get fresh module with no API key
     vi.resetModules();
     vi.mock("@trigger.dev/sdk/v3", () => ({
       logger: { log: vi.fn(), error: vi.fn() },
