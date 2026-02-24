@@ -51,6 +51,15 @@ pnpm run deploy:trigger-prod     # Deploy to production
 - Use Zod for schema validation
 - Use `logger` from `@trigger.dev/sdk/v3` for logging
 
+## Testing
+
+- **TDD (Red-Green-Refactor)**: Follow test-driven development for all changes
+  1. **Red**: Write a failing test first that reproduces the bug or describes the new behavior
+  2. **Green**: Write the minimum code to make the test pass
+  3. **Refactor**: Clean up while keeping tests green
+- When fixing a bug from production logs, write the test case from the exact error message BEFORE writing the fix
+- Run tests with `pnpm test` (vitest)
+
 ## Trigger.dev Patterns
 
 - Use v4 SDK: `task()`, `schemaTask()`, `schedules.task()`

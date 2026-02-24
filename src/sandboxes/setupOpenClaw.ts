@@ -22,9 +22,12 @@ export async function setupOpenClaw(
     throw new Error("Missing RECOUP_API_KEY environment variable");
   }
 
+  const githubToken = process.env.GITHUB_TOKEN;
+
   logger.log("Injecting env vars into openclaw.json", {
     RECOUP_API_KEY: `${process.env.RECOUP_API_KEY.slice(0, 4)}...`,
     RECOUP_ACCOUNT_ID: accountId,
+    GITHUB_TOKEN: githubToken ? "present" : "missing",
   });
 
   const injectEnv = await sandbox.runCommand({
@@ -38,6 +41,7 @@ export async function setupOpenClaw(
         c.env = c.env || {};
         c.env.RECOUP_API_KEY = '${process.env.RECOUP_API_KEY}';
         c.env.RECOUP_ACCOUNT_ID = '${accountId}';
+        ${githubToken ? `c.env.GITHUB_TOKEN = '${githubToken}';` : ""}
         fs.writeFileSync(p, JSON.stringify(c, null, 2));
       "`,
     ],

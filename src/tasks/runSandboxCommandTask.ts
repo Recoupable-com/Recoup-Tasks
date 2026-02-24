@@ -1,4 +1,5 @@
-import { logger, metadata, schemaTask } from "@trigger.dev/sdk/v3";
+import { logger, schemaTask } from "@trigger.dev/sdk/v3";
+import { logStep } from "../sandboxes/logStep";
 import { Sandbox } from "@vercel/sandbox";
 import { installOpenClaw } from "../sandboxes/installOpenClaw";
 import { setupOpenClaw } from "../sandboxes/setupOpenClaw";
@@ -6,6 +7,7 @@ import { ensureGithubRepo } from "../sandboxes/ensureGithubRepo";
 import { getVercelSandboxCredentials } from "../sandboxes/getVercelSandboxCredentials";
 import { snapshotAndPersist } from "../sandboxes/snapshotAndPersist";
 import { writeReadme } from "../sandboxes/writeReadme";
+import { ensureOrgRepos } from "../sandboxes/ensureOrgRepos";
 import { ensureSetupSandbox } from "../sandboxes/ensureSetupSandbox";
 import { pushSandboxToGithub } from "../sandboxes/pushSandboxToGithub";
 import {
@@ -39,39 +41,30 @@ export const runSandboxCommandTask = schemaTask({
 
     const sandbox = await Sandbox.get({ sandboxId, token, teamId, projectId });
 
-    metadata.set("currentStep", "Connected to sandbox");
-    metadata.append("logs", "Connected to sandbox");
-    logger.log("Connected to sandbox", {
-      sandboxId: sandbox.sandboxId,
-      status: sandbox.status,
-    });
+    logStep("Connected to sandbox");
 
     try {
       // Ensure OpenClaw is installed and configured with AI Gateway
       await installOpenClaw(sandbox);
       await setupOpenClaw(sandbox, accountId);
-      metadata.set("currentStep", "OpenClaw configured");
-      metadata.append("logs", "OpenClaw installed and configured");
+      logStep("OpenClaw onboard complete, starting gateway");
 
       // Ensure GitHub repo exists and is cloned in sandbox
       const githubRepo = await ensureGithubRepo(sandbox, accountId);
-      metadata.set("currentStep", "GitHub repo ready");
-      metadata.append("logs", "GitHub repo ready");
+      logStep("GitHub repo ready");
 
       // Write README.md with sandbox details
       await writeReadme(sandbox, sandboxId, accountId, githubRepo ?? undefined);
-      metadata.append("logs", "README written");
+      logStep("README written", false);
+
+      // Ensure org GitHub repos exist and are cloned in workspace
+      await ensureOrgRepos(sandbox, accountId);
 
       // Ensure org/artist folder structure exists (setup via OpenClaw)
-      metadata.set("currentStep", "Setting up sandbox folders");
-      metadata.append("logs", "Checking sandbox setup");
       await ensureSetupSandbox(sandbox, accountId);
-      metadata.append("logs", "Sandbox folders ready");
 
       // Run the command with args
-      metadata.set("currentStep", "Running command");
-      metadata.append("logs", `Running command: ${command}`);
-      logger.log("Running command", { command, args, cwd });
+      logStep("Running command");
 
       const commandResult = await sandbox.runCommand({
         cmd: command,
@@ -87,16 +80,10 @@ export const runSandboxCommandTask = schemaTask({
       const stderr = (await commandResult.stderr()) || "";
       const exitCode = commandResult.exitCode;
 
-      logger.log("Command execution completed", {
-        exitCode,
-        stdoutLength: stdout.length,
-        stderrLength: stderr.length,
-      });
-      metadata.append("logs", `Command finished with exit code ${exitCode}`);
+      logStep("Command execution completed", false);
 
       // Push sandbox files to GitHub repo
-      metadata.set("currentStep", "Pushing to GitHub");
-      metadata.append("logs", "Pushing to GitHub");
+      logStep("Pushing to GitHub");
       await pushSandboxToGithub(sandbox);
 
       const snapshotResult = await snapshotAndPersist(
@@ -115,22 +102,12 @@ export const runSandboxCommandTask = schemaTask({
         },
       };
 
-      metadata.set("currentStep", "Complete");
-      metadata.append("logs", "Sandbox command completed successfully");
-      logger.log("Sandbox command completed successfully", {
-        sandboxId: sandbox.sandboxId,
-        snapshotId: snapshotResult.snapshotId,
-      });
+      logStep("Sandbox command completed successfully");
 
       return result;
     } catch (error) {
-      metadata.set("currentStep", "Failed");
-      metadata.append(
-        "logs",
-        `Error: ${error instanceof Error ? error.message : String(error)}`
-      );
+      logStep("Failed");
       logger.error("Sandbox command failed", {
-        sandboxId: sandbox.sandboxId,
         error: error instanceof Error ? error.message : String(error),
       });
       throw error;

@@ -2,6 +2,9 @@ import type { Sandbox } from "@vercel/sandbox";
 import { logger } from "@trigger.dev/sdk/v3";
 import { runGitCommand } from "./runGitCommand";
 import { copyOpenClawToRepo } from "./copyOpenClawToRepo";
+import { addOrgSubmodules } from "./git/addOrgSubmodules";
+import { stripGitmodulesTokens } from "./git/stripGitmodulesTokens";
+import { pushOrgRepos } from "./git/pushOrgRepos";
 
 /**
  * Commits and pushes all local sandbox files to the GitHub repository.
@@ -38,9 +41,19 @@ export async function pushSandboxToGithub(
     return false;
   }
 
+  // Push org repo changes to their remotes (simple OpenClaw prompt)
+  await pushOrgRepos(sandbox);
+
+  // Copy .openclaw (skip orgs/) into repo
   await copyOpenClawToRepo(sandbox);
 
-  // Stage all files
+  // Register org repos as submodules (deterministic)
+  await addOrgSubmodules(sandbox);
+
+  // Strip auth tokens from .gitmodules
+  await stripGitmodulesTokens(sandbox);
+
+  // Stage all files (.gitmodules + everything else)
   if (!(await runGitCommand(sandbox, ["add", "-A"], "stage files"))) {
     return false;
   }

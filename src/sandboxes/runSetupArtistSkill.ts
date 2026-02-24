@@ -1,5 +1,5 @@
 import type { Sandbox } from "@vercel/sandbox";
-import { logger } from "@trigger.dev/sdk/v3";
+import { runOpenClawAgent } from "./runOpenClawAgent";
 
 /**
  * Runs the /setup-artist skill via OpenClaw for each artist
@@ -12,22 +12,11 @@ export async function runSetupArtistSkill(
   sandbox: Sandbox,
   env: Record<string, string>
 ): Promise<void> {
-  const result = await sandbox.runCommand({
-    cmd: "openclaw",
-    args: [
-      "agent", "--agent", "main", "--message",
+  const result = await runOpenClawAgent(sandbox, {
+    label: "Running setup-artist skill",
+    message:
       "Run the /setup-artist skill for EACH artist folder that exists under orgs/.\n\nRECOUP_API_KEY and RECOUP_ACCOUNT_ID are available as environment variables.",
-    ],
     env,
-  });
-
-  const stdout = (await result.stdout()) || "";
-  const stderr = (await result.stderr()) || "";
-
-  logger.log("Setup-artist result", {
-    exitCode: result.exitCode,
-    stdout,
-    stderr,
   });
 
   if (result.exitCode !== 0) {

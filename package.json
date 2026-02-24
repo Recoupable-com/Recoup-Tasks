@@ -1,7 +1,8 @@
 {
   "scripts": {
     "dev": "pnpm dlx trigger.dev@4.3.3 dev",
-    "deploy:trigger-prod": "trigger deploy"
+    "deploy:trigger-prod": "trigger deploy",
+    "test": "vitest run"
   },
   "dependencies": {
     "@trigger.dev/sdk": "4.3.3",
@@ -15,6 +16,7 @@
   "devDependencies": {
     "@trigger.dev/build": "4.3.3",
     "@types/ms": "^2.1.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
   }
 }
