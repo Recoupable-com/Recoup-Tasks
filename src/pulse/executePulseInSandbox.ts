@@ -30,7 +30,7 @@ export async function executePulseInSandbox({
   accountId: string;
   prompt: string;
 }): Promise<{ sandboxId: string; runId: string | undefined } | undefined> {
-  const url = `${NEW_API_BASE_URL}/api/sandboxes?account_id=${encodeURIComponent(accountId)}`;
+  const url = `${NEW_API_BASE_URL}/api/sandboxes`;
 
   if (!RECOUP_API_KEY) {
     throw new Error("RECOUP_API_KEY not configured");
@@ -45,7 +45,7 @@ export async function executePulseInSandbox({
         "Content-Type": "application/json",
         "x-api-key": RECOUP_API_KEY,
       },
-      body: JSON.stringify({ prompt }),
+      body: JSON.stringify({ account_id: accountId, prompt }),
     });
 
     if (!response.ok) {

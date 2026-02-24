@@ -42,12 +42,14 @@ describe("executePulseInSandbox", () => {
 
     expect(result).toEqual({ sandboxId: "sbx-abc", runId: "run-xyz" });
     expect(mockFetch).toHaveBeenCalledOnce();
-    expect(mockFetch.mock.calls[0][0]).toContain(
-      "/api/sandboxes?account_id=account-123"
-    );
+    expect(mockFetch.mock.calls[0][0]).toContain("/api/sandboxes");
+    expect(mockFetch.mock.calls[0][0]).not.toContain("account_id");
     const fetchOptions = mockFetch.mock.calls[0][1];
     expect(fetchOptions.method).toBe("POST");
-    expect(JSON.parse(fetchOptions.body)).toEqual({ prompt });
+    expect(JSON.parse(fetchOptions.body)).toEqual({
+      account_id: accountId,
+      prompt,
+    });
   });
 
   it("returns sandboxId with undefined runId when no command triggered", async () => {
