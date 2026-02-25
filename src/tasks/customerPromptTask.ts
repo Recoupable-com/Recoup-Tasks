@@ -1,4 +1,4 @@
-import { logger, schedules } from "@trigger.dev/sdk/v3";
+import { logger, schedules, tags } from "@trigger.dev/sdk/v3";
 import { getTaskRoomId } from "../chats/getTaskRoomId";
 import { fetchTask } from "../recoup/fetchTask";
 import { generateChat } from "../recoup/generateChat";
@@ -56,6 +56,8 @@ export const customerPromptTask = schedules.task({
       logger.error("Missing required accountId from task");
       return;
     }
+
+    await tags.add(`account:${accountId}`);
 
     const roomId = await getTaskRoomId({
       roomId: taskConfig?.roomId,
