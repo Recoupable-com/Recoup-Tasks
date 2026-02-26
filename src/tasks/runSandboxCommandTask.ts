@@ -1,4 +1,4 @@
-import { logger, schemaTask } from "@trigger.dev/sdk/v3";
+import { logger, schemaTask, tags } from "@trigger.dev/sdk/v3";
 import { logStep } from "../sandboxes/logStep";
 import { Sandbox } from "@vercel/sandbox";
 import { installOpenClaw } from "../sandboxes/installOpenClaw";
@@ -29,6 +29,7 @@ export const runSandboxCommandTask = schemaTask({
   },
   run: async (payload): Promise<SandboxResult> => {
     const { command, args, cwd, sandboxId, accountId } = payload;
+    await tags.add(`account:${accountId}`);
     const { token, teamId, projectId } = getVercelSandboxCredentials();
 
     logger.log("Starting sandbox command execution", {
