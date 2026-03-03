@@ -39,7 +39,7 @@ describe("createSubmodulePR", () => {
       submodule: "api",
       branch: "agent/fix-bug-123",
       prompt: "Fix the login bug",
-      monorepoDir: "/root/monorepo",
+      monorepoDir: "/home/user/monorepo",
     });
 
     expect(result).toEqual({
@@ -61,7 +61,7 @@ describe("createSubmodulePR", () => {
       submodule: "chat",
       branch: "agent/fix-123",
       prompt: "Fix something",
-      monorepoDir: "/root/monorepo",
+      monorepoDir: "/home/user/monorepo",
     });
 
     // Verify checkout -b uses the branch name
@@ -83,7 +83,7 @@ describe("createSubmodulePR", () => {
       submodule: "tasks",
       branch: "agent/fix-123",
       prompt: "Fix something",
-      monorepoDir: "/root/monorepo",
+      monorepoDir: "/home/user/monorepo",
     });
 
     expect(result?.baseBranch).toBe("main");
@@ -101,7 +101,7 @@ describe("createSubmodulePR", () => {
       submodule: "api",
       branch: "agent/fix-123",
       prompt: "Fix bug",
-      monorepoDir: "/root/monorepo",
+      monorepoDir: "/home/user/monorepo",
     });
 
     expect(result).toBeNull();

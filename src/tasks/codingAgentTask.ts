@@ -11,7 +11,7 @@ import { notifyCodingAgentCallback } from "../sandboxes/notifyCodingAgentCallbac
 import { logStep } from "../sandboxes/logStep";
 import { codingAgentPayloadSchema } from "../schemas/codingAgentSchema";
 
-const MONOREPO_DIR = "/root/monorepo";
+const MONOREPO_DIR = "/home/user/monorepo";
 const CODING_AGENT_ACCOUNT_ID = "coding-agent";
 
 /**

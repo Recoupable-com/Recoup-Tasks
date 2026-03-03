@@ -49,7 +49,7 @@ describe("detectChangedSubmodules", () => {
       stderr: async () => "",
     });
 
-    const result = await detectChangedSubmodules(sandbox, "/root/monorepo");
+    const result = await detectChangedSubmodules(sandbox, "/home/user/monorepo");
 
     expect(result).toEqual(["api", "tasks"]);
   });
@@ -72,7 +72,7 @@ describe("detectChangedSubmodules", () => {
       stderr: async () => "",
     });
 
-    const result = await detectChangedSubmodules(sandbox, "/root/monorepo");
+    const result = await detectChangedSubmodules(sandbox, "/home/user/monorepo");
 
     expect(result).toEqual([]);
   });

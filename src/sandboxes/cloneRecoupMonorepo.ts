@@ -2,8 +2,8 @@ import type { Sandbox } from "@vercel/sandbox";
 import { logger } from "@trigger.dev/sdk/v3";
 import { runGitCommand } from "./runGitCommand";
 
-const MONOREPO_REPO = "recoupable/Recoup-Monorepo";
-const CLONE_DIR = "/root/monorepo";
+const MONOREPO_REPO = "recoupable/mono";
+const CLONE_DIR = "/home/user/monorepo";
 
 /**
  * Clones the Recoup monorepo with submodules into the sandbox.
