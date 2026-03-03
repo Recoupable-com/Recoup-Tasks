@@ -4,6 +4,10 @@ vi.mock("@trigger.dev/sdk/v3", () => ({
   logger: { log: vi.fn(), error: vi.fn() },
 }));
 
+vi.mock("../getSandboxHomeDir", () => ({
+  getSandboxHomeDir: vi.fn().mockResolvedValue("/home/user"),
+}));
+
 const { cloneRecoupMonorepo } = await import("../cloneRecoupMonorepo");
 
 function createMockSandbox() {
@@ -33,7 +37,7 @@ beforeEach(() => {
 });
 
 describe("cloneRecoupMonorepo", () => {
-  it("clones the monorepo with submodules", async () => {
+  it("clones the monorepo and returns the clone directory", async () => {
     const sandbox = createMockSandbox();
     // git clone
     sandbox.runCommand.mockResolvedValueOnce(successResult());
@@ -46,7 +50,7 @@ describe("cloneRecoupMonorepo", () => {
 
     const result = await cloneRecoupMonorepo(sandbox);
 
-    expect(result).toBe(true);
+    expect(result).toBe("/home/user/monorepo");
     // First call should be git clone with --recurse-submodules
     const cloneCall = sandbox.runCommand.mock.calls[0][0];
     expect(cloneCall.cmd).toBe("git");
@@ -67,13 +71,22 @@ describe("cloneRecoupMonorepo", () => {
     expect(emailCall![0].args).toContain("agent@recoupable.com");
   });
 
-  it("returns false when clone fails", async () => {
+  it("returns null when clone fails", async () => {
     const sandbox = createMockSandbox();
     sandbox.runCommand.mockResolvedValueOnce(failResult("auth failed"));
 
     const result = await cloneRecoupMonorepo(sandbox);
 
-    expect(result).toBe(false);
+    expect(result).toBeNull();
+  });
+
+  it("returns null when GITHUB_TOKEN is missing", async () => {
+    delete process.env.GITHUB_TOKEN;
+    const sandbox = createMockSandbox();
+
+    const result = await cloneRecoupMonorepo(sandbox);
+
+    expect(result).toBeNull();
   });
 
   it("uses authenticated URL with GITHUB_TOKEN", async () => {

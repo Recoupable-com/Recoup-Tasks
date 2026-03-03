@@ -7,9 +7,9 @@ import { runOpenClawAgent } from "../sandboxes/runOpenClawAgent";
 import { runGitCommand } from "../sandboxes/runGitCommand";
 import { notifyCodingAgentCallback } from "../sandboxes/notifyCodingAgentCallback";
 import { logStep } from "../sandboxes/logStep";
+import { getSandboxHomeDir } from "../sandboxes/getSandboxHomeDir";
 import { updatePRPayloadSchema } from "../schemas/updatePRSchema";
 
-const MONOREPO_DIR = "/home/user/monorepo";
 const CODING_AGENT_ACCOUNT_ID = "coding-agent";
 
 /**
@@ -44,6 +44,9 @@ export const updatePRTask = schemaTask({
       await installOpenClaw(sandbox);
       await setupOpenClaw(sandbox, CODING_AGENT_ACCOUNT_ID);
 
+      const homeDir = await getSandboxHomeDir(sandbox);
+      const monorepoDir = `${homeDir}/monorepo`;
+
       logStep("Running AI agent with feedback");
       await runOpenClawAgent(sandbox, {
         label: "Apply feedback",
@@ -55,7 +58,7 @@ export const updatePRTask = schemaTask({
         const submodule = pr.repo.split("/").pop()!;
         // Remap repo name to submodule dir name
         const subDir = submodule === "recoup-api" ? "api" : submodule;
-        const fullDir = `${MONOREPO_DIR}/${subDir}`;
+        const fullDir = `${monorepoDir}/${subDir}`;
 
         await runGitCommand(sandbox, ["-C", fullDir, "add", "-A"], "stage changes", fullDir);
         await runGitCommand(

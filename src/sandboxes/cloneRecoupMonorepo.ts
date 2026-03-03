@@ -1,24 +1,27 @@
 import type { Sandbox } from "@vercel/sandbox";
 import { logger } from "@trigger.dev/sdk/v3";
 import { runGitCommand } from "./runGitCommand";
+import { getSandboxHomeDir } from "./getSandboxHomeDir";
 
 const MONOREPO_REPO = "recoupable/mono";
-const CLONE_DIR = "/home/user/monorepo";
 
 /**
  * Clones the Recoup monorepo with submodules into the sandbox.
  * Sets up GitHub auth, git user config, and URL rewriting.
  *
  * @param sandbox - The Vercel Sandbox instance
- * @returns true if clone succeeded, false otherwise
+ * @returns The clone directory path on success, null on failure
  */
-export async function cloneRecoupMonorepo(sandbox: Sandbox): Promise<boolean> {
+export async function cloneRecoupMonorepo(sandbox: Sandbox): Promise<string | null> {
   const githubToken = process.env.GITHUB_TOKEN;
 
   if (!githubToken) {
     logger.error("Missing GITHUB_TOKEN environment variable");
-    return false;
+    return null;
   }
+
+  const homeDir = await getSandboxHomeDir(sandbox);
+  const cloneDir = `${homeDir}/monorepo`;
 
   const authUrl = `https://x-access-token:${githubToken}@github.com/${MONOREPO_REPO}.git`;
 
@@ -26,25 +29,25 @@ export async function cloneRecoupMonorepo(sandbox: Sandbox): Promise<boolean> {
 
   const cloneResult = await sandbox.runCommand({
     cmd: "git",
-    args: ["clone", "--recurse-submodules", authUrl, CLONE_DIR],
+    args: ["clone", "--recurse-submodules", authUrl, cloneDir],
   });
 
   if (cloneResult.exitCode !== 0) {
     const stderr = (await cloneResult.stderr()) || "";
     logger.error("Failed to clone monorepo", { exitCode: cloneResult.exitCode, stderr });
-    return false;
+    return null;
   }
 
   // Configure git user
   await runGitCommand(
     sandbox,
-    ["-C", CLONE_DIR, "config", "user.email", "agent@recoupable.com"],
+    ["-C", cloneDir, "config", "user.email", "agent@recoupable.com"],
     "set git user email",
   );
 
   await runGitCommand(
     sandbox,
-    ["-C", CLONE_DIR, "config", "user.name", "Recoup Agent"],
+    ["-C", cloneDir, "config", "user.name", "Recoup Agent"],
     "set git user name",
   );
 
@@ -52,14 +55,14 @@ export async function cloneRecoupMonorepo(sandbox: Sandbox): Promise<boolean> {
   await runGitCommand(
     sandbox,
     [
-      "-C", CLONE_DIR, "config",
+      "-C", cloneDir, "config",
       `url.https://x-access-token:${githubToken}@github.com/.insteadOf`,
       "https://github.com/",
     ],
     "set URL rewrite for auth",
   );
 
-  logger.log("Monorepo cloned successfully", { dir: CLONE_DIR });
+  logger.log("Monorepo cloned successfully", { dir: cloneDir });
 
-  return true;
+  return cloneDir;
 }

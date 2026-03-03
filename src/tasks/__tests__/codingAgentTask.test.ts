@@ -36,7 +36,7 @@ vi.mock("../../sandboxes/setupOpenClaw", () => ({
 }));
 
 vi.mock("../../sandboxes/cloneRecoupMonorepo", () => ({
-  cloneRecoupMonorepo: vi.fn().mockResolvedValue(true),
+  cloneRecoupMonorepo: vi.fn().mockResolvedValue("/home/user/monorepo"),
 }));
 
 vi.mock("../../sandboxes/runOpenClawAgent", () => ({
@@ -125,7 +125,7 @@ describe("codingAgentTask", () => {
   it("notifies failed when clone fails", async () => {
     const { cloneRecoupMonorepo } = await import("../../sandboxes/cloneRecoupMonorepo");
     const { notifyCodingAgentCallback } = await import("../../sandboxes/notifyCodingAgentCallback");
-    vi.mocked(cloneRecoupMonorepo).mockResolvedValueOnce(false);
+    vi.mocked(cloneRecoupMonorepo).mockResolvedValueOnce(null);
 
     await mockRun(basePayload);
 

@@ -51,6 +51,10 @@ vi.mock("../../sandboxes/logStep", () => ({
   logStep: vi.fn(),
 }));
 
+vi.mock("../../sandboxes/getSandboxHomeDir", () => ({
+  getSandboxHomeDir: vi.fn().mockResolvedValue("/home/user"),
+}));
+
 // Import after mocks
 await import("../updatePRTask");
 

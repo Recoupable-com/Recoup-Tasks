@@ -11,7 +11,6 @@ import { notifyCodingAgentCallback } from "../sandboxes/notifyCodingAgentCallbac
 import { logStep } from "../sandboxes/logStep";
 import { codingAgentPayloadSchema } from "../schemas/codingAgentSchema";
 
-const MONOREPO_DIR = "/home/user/monorepo";
 const CODING_AGENT_ACCOUNT_ID = "coding-agent";
 
 /**
@@ -49,8 +48,8 @@ export const codingAgentTask = schemaTask({
       await sandbox.runCommand({ cmd: "sh", args: ["-c", "which gh || (apt-get update -qq && apt-get install -y -qq gh)"], sudo: true });
 
       logStep("Cloning monorepo");
-      const cloned = await cloneRecoupMonorepo(sandbox);
-      if (!cloned) {
+      const monorepoDir = await cloneRecoupMonorepo(sandbox);
+      if (!monorepoDir) {
         await notifyCodingAgentCallback({
           threadId: callbackThreadId,
           status: "failed",
@@ -66,7 +65,7 @@ export const codingAgentTask = schemaTask({
       });
 
       logStep("Detecting changes");
-      const changedSubmodules = await detectChangedSubmodules(sandbox, MONOREPO_DIR);
+      const changedSubmodules = await detectChangedSubmodules(sandbox, monorepoDir);
 
       if (changedSubmodules.length === 0) {
         await notifyCodingAgentCallback({
@@ -90,7 +89,7 @@ export const codingAgentTask = schemaTask({
           submodule,
           branch,
           prompt,
-          monorepoDir: MONOREPO_DIR,
+          monorepoDir,
         });
         if (pr) {
           prs.push(pr);
