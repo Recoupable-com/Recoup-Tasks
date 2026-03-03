@@ -73,10 +73,12 @@ export async function cloneRecoupMonorepo(sandbox: Sandbox): Promise<string | nu
     "set git user name",
   );
 
-  // Step 3: Init and update submodules with auth in place
+  // Step 3: Init top-level submodules only (no --recursive).
+  // Nested submodules (e.g. skills/) are left to the agent if needed,
+  // following the same delegation pattern used for org submodules.
   await runGitCommand(
     sandbox,
-    ["-C", cloneDir, "submodule", "update", "--init", "--recursive"],
+    ["-C", cloneDir, "submodule", "update", "--init"],
     "init and update submodules",
   );
 

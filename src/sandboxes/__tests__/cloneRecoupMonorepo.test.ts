@@ -172,7 +172,7 @@ describe("cloneRecoupMonorepo", () => {
     expect(sources).toContain("git@github.com:");
   });
 
-  it("runs submodule update --init --recursive", async () => {
+  it("runs submodule update --init without --recursive", async () => {
     const sandbox = createMockSandbox();
     sandbox.runCommand.mockResolvedValue(successResult());
 
@@ -187,6 +187,6 @@ describe("cloneRecoupMonorepo", () => {
     );
     expect(submoduleCall).toBeDefined();
     expect(submoduleCall.args).toContain("--init");
-    expect(submoduleCall.args).toContain("--recursive");
+    expect(submoduleCall.args).not.toContain("--recursive");
   });
 });
