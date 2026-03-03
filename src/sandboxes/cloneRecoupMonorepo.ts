@@ -48,19 +48,19 @@ export async function cloneRecoupMonorepo(sandbox: Sandbox): Promise<string | nu
 
   // Step 2: Configure URL rewriting in the repo's local config
   // so submodule fetches use the auth token (HTTPS + SSH)
-  await runGitCommand(
+  if (!await runGitCommand(
     sandbox,
     ["-C", cloneDir, "config", `url.${authPrefix}.insteadOf`, "https://github.com/"],
     "set HTTPS URL rewrite for auth",
-  );
+  )) return null;
 
-  await runGitCommand(
+  if (!await runGitCommand(
     sandbox,
     ["-C", cloneDir, "config", `url.${authPrefix}.insteadOf`, "git@github.com:"],
     "set SSH URL rewrite for auth",
-  );
+  )) return null;
 
-  // Configure git user
+  // Configure git user (non-critical — don't fail the clone)
   await runGitCommand(
     sandbox,
     ["-C", cloneDir, "config", "user.email", "agent@recoupable.com"],
@@ -76,11 +76,11 @@ export async function cloneRecoupMonorepo(sandbox: Sandbox): Promise<string | nu
   // Step 3: Init top-level submodules only (no --recursive).
   // Nested submodules (e.g. skills/) are left to the agent if needed,
   // following the same delegation pattern used for org submodules.
-  await runGitCommand(
+  if (!await runGitCommand(
     sandbox,
     ["-C", cloneDir, "submodule", "update", "--init"],
     "init and update submodules",
-  );
+  )) return null;
 
   logger.log("Monorepo cloned successfully", { dir: cloneDir });
 

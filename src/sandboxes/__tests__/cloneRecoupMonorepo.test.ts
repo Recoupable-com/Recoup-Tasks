@@ -172,6 +172,34 @@ describe("cloneRecoupMonorepo", () => {
     expect(sources).toContain("git@github.com:");
   });
 
+  it("returns null when URL rewriting fails", async () => {
+    const sandbox = createMockSandbox();
+    // Clone succeeds
+    sandbox.runCommand.mockResolvedValueOnce(successResult());
+    // HTTPS URL rewrite fails
+    sandbox.runCommand.mockResolvedValueOnce(failResult("config failed"));
+
+    const result = await cloneRecoupMonorepo(sandbox);
+
+    expect(result).toBeNull();
+  });
+
+  it("returns null when submodule init fails", async () => {
+    const sandbox = createMockSandbox();
+    // Clone + URL rewrites + user config all succeed
+    sandbox.runCommand.mockResolvedValueOnce(successResult()); // clone
+    sandbox.runCommand.mockResolvedValueOnce(successResult()); // HTTPS rewrite
+    sandbox.runCommand.mockResolvedValueOnce(successResult()); // SSH rewrite
+    sandbox.runCommand.mockResolvedValueOnce(successResult()); // user.email
+    sandbox.runCommand.mockResolvedValueOnce(successResult()); // user.name
+    // Submodule init fails
+    sandbox.runCommand.mockResolvedValueOnce(failResult("submodule failed"));
+
+    const result = await cloneRecoupMonorepo(sandbox);
+
+    expect(result).toBeNull();
+  });
+
   it("runs submodule update --init without --recursive", async () => {
     const sandbox = createMockSandbox();
     sandbox.runCommand.mockResolvedValue(successResult());

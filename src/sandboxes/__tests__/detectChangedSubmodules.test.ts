@@ -76,4 +76,45 @@ describe("detectChangedSubmodules", () => {
 
     expect(result).toEqual([]);
   });
+
+  it("logs 'No changed submodules' when none found", async () => {
+    const { logger } = await import("@trigger.dev/sdk/v3");
+    const sandbox = createMockSandbox();
+    sandbox.runCommand.mockResolvedValueOnce({
+      exitCode: 0,
+      stdout: async () => "api\n",
+      stderr: async () => "",
+    });
+    sandbox.runCommand.mockResolvedValueOnce({
+      exitCode: 0,
+      stdout: async () => "",
+      stderr: async () => "",
+    });
+
+    await detectChangedSubmodules(sandbox, "/home/user/monorepo");
+
+    expect(logger.log).toHaveBeenCalledWith("No changed submodules detected");
+  });
+
+  it("logs changed submodule names when found", async () => {
+    const { logger } = await import("@trigger.dev/sdk/v3");
+    const sandbox = createMockSandbox();
+    sandbox.runCommand.mockResolvedValueOnce({
+      exitCode: 0,
+      stdout: async () => "api\n",
+      stderr: async () => "",
+    });
+    sandbox.runCommand.mockResolvedValueOnce({
+      exitCode: 0,
+      stdout: async () => " M file.ts\n",
+      stderr: async () => "",
+    });
+
+    await detectChangedSubmodules(sandbox, "/home/user/monorepo");
+
+    expect(logger.log).toHaveBeenCalledWith(
+      "Changed submodules detected",
+      { changed: ["api"] },
+    );
+  });
 });

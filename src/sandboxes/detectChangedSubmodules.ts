@@ -43,7 +43,11 @@ export async function detectChangedSubmodules(
     }
   }
 
-  logger.log("Changed submodules detected", { changed });
+  if (changed.length === 0) {
+    logger.log("No changed submodules detected");
+  } else {
+    logger.log("Changed submodules detected", { changed });
+  }
 
   return changed;
 }
