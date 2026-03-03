@@ -7,7 +7,8 @@ const MONOREPO_REPO = "recoupable/mono";
 
 /**
  * Clones the Recoup monorepo with submodules into the sandbox.
- * Sets up GitHub auth, git user config, and URL rewriting.
+ * Sets up GitHub auth (HTTPS + SSH URL rewriting), git user config,
+ * then clones with --recurse-submodules so nested submodules get auth.
  *
  * @param sandbox - The Vercel Sandbox instance
  * @returns The clone directory path on success, null on failure
@@ -22,8 +23,23 @@ export async function cloneRecoupMonorepo(sandbox: Sandbox): Promise<string | nu
 
   const homeDir = await getSandboxHomeDir(sandbox);
   const cloneDir = `${homeDir}/monorepo`;
+  const authPrefix = `https://x-access-token:${githubToken}@github.com/`;
 
-  const authUrl = `https://x-access-token:${githubToken}@github.com/${MONOREPO_REPO}.git`;
+  // Set up global URL rewriting BEFORE cloning so --recurse-submodules
+  // can authenticate nested submodule fetches (e.g. skills/songwriting)
+  await runGitCommand(
+    sandbox,
+    ["config", "--global", `url.${authPrefix}.insteadOf`, "https://github.com/"],
+    "set global HTTPS URL rewrite for auth",
+  );
+
+  await runGitCommand(
+    sandbox,
+    ["config", "--global", `url.${authPrefix}.insteadOf`, "git@github.com:"],
+    "set global SSH URL rewrite for auth",
+  );
+
+  const authUrl = `${authPrefix}${MONOREPO_REPO}.git`;
 
   logger.log("Cloning Recoup monorepo with submodules", { repo: MONOREPO_REPO });
 
@@ -49,17 +65,6 @@ export async function cloneRecoupMonorepo(sandbox: Sandbox): Promise<string | nu
     sandbox,
     ["-C", cloneDir, "config", "user.name", "Recoup Agent"],
     "set git user name",
-  );
-
-  // Set up URL rewriting so submodule pushes use auth
-  await runGitCommand(
-    sandbox,
-    [
-      "-C", cloneDir, "config",
-      `url.https://x-access-token:${githubToken}@github.com/.insteadOf`,
-      "https://github.com/",
-    ],
-    "set URL rewrite for auth",
   );
 
   logger.log("Monorepo cloned successfully", { dir: cloneDir });

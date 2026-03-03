@@ -37,24 +37,63 @@ beforeEach(() => {
 });
 
 describe("cloneRecoupMonorepo", () => {
+  it("sets up global URL rewriting before cloning", async () => {
+    const sandbox = createMockSandbox();
+    sandbox.runCommand.mockResolvedValue(successResult());
+
+    await cloneRecoupMonorepo(sandbox);
+
+    // URL rewrite calls should come BEFORE the clone call
+    const calls = sandbox.runCommand.mock.calls.map((c: any[]) => c[0]);
+    const cloneIdx = calls.findIndex(
+      (c: any) => c.cmd === "git" && c.args?.includes("clone"),
+    );
+    const httpsRewriteIdx = calls.findIndex(
+      (c: any) =>
+        c.cmd === "git" &&
+        c.args?.some((a: string) => a.includes("insteadOf")) &&
+        c.args?.includes("https://github.com/"),
+    );
+    const sshRewriteIdx = calls.findIndex(
+      (c: any) =>
+        c.cmd === "git" &&
+        c.args?.some((a: string) => a.includes("insteadOf")) &&
+        c.args?.includes("git@github.com:"),
+    );
+
+    expect(httpsRewriteIdx).toBeLessThan(cloneIdx);
+    expect(sshRewriteIdx).toBeLessThan(cloneIdx);
+  });
+
+  it("uses --global flag for URL rewriting", async () => {
+    const sandbox = createMockSandbox();
+    sandbox.runCommand.mockResolvedValue(successResult());
+
+    await cloneRecoupMonorepo(sandbox);
+
+    const calls = sandbox.runCommand.mock.calls.map((c: any[]) => c[0]);
+    const rewriteCalls = calls.filter(
+      (c: any) =>
+        c.cmd === "git" &&
+        c.args?.some((a: string) => a.includes("insteadOf")),
+    );
+    for (const call of rewriteCalls) {
+      expect(call.args).toContain("--global");
+    }
+  });
+
   it("clones the monorepo and returns the clone directory", async () => {
     const sandbox = createMockSandbox();
-    // git clone
-    sandbox.runCommand.mockResolvedValueOnce(successResult());
-    // git config user.email
-    sandbox.runCommand.mockResolvedValueOnce(successResult());
-    // git config user.name
-    sandbox.runCommand.mockResolvedValueOnce(successResult());
-    // git config url rewrite
-    sandbox.runCommand.mockResolvedValueOnce(successResult());
+    sandbox.runCommand.mockResolvedValue(successResult());
 
     const result = await cloneRecoupMonorepo(sandbox);
 
     expect(result).toBe("/home/user/monorepo");
-    // First call should be git clone with --recurse-submodules
-    const cloneCall = sandbox.runCommand.mock.calls[0][0];
-    expect(cloneCall.cmd).toBe("git");
-    expect(cloneCall.args).toContain("clone");
+    const calls = sandbox.runCommand.mock.calls.map((c: any[]) => c[0]);
+    const cloneCall = calls.find(
+      (c: any) => c.cmd === "git" && c.args?.includes("clone"),
+    );
+    expect(cloneCall).toBeDefined();
     expect(cloneCall.args).toContain("--recurse-submodules");
   });
 
@@ -73,6 +112,10 @@ describe("cloneRecoupMonorepo", () => {
 
   it("returns null when clone fails", async () => {
     const sandbox = createMockSandbox();
+    // URL rewrites succeed
+    sandbox.runCommand.mockResolvedValueOnce(successResult());
+    sandbox.runCommand.mockResolvedValueOnce(successResult());
+    // Clone fails
     sandbox.runCommand.mockResolvedValueOnce(failResult("auth failed"));
 
     const result = await cloneRecoupMonorepo(sandbox);
@@ -95,10 +138,30 @@ describe("cloneRecoupMonorepo", () => {
 
     await cloneRecoupMonorepo(sandbox);
 
-    const cloneCall = sandbox.runCommand.mock.calls[0][0];
+    const calls = sandbox.runCommand.mock.calls.map((c: any[]) => c[0]);
+    const cloneCall = calls.find(
+      (c: any) => c.cmd === "git" && c.args?.includes("clone"),
+    );
     const urlArg = cloneCall.args.find((a: string) =>
       a.includes("x-access-token"),
     );
     expect(urlArg).toContain("ghp_test123");
+  });
+
+  it("rewrites both HTTPS and SSH GitHub URLs", async () => {
+    const sandbox = createMockSandbox();
+    sandbox.runCommand.mockResolvedValue(successResult());
+
+    await cloneRecoupMonorepo(sandbox);
+
+    const calls = sandbox.runCommand.mock.calls.map((c: any[]) => c[0]);
+    const rewriteCalls = calls.filter(
+      (c: any) =>
+        c.cmd === "git" &&
+        c.args?.some((a: string) => a.includes("insteadOf")),
+    );
+    const sources = rewriteCalls.map((c: any) => c.args[c.args.length - 1]);
+    expect(sources).toContain("https://github.com/");
+    expect(sources).toContain("git@github.com:");
   });
 });
