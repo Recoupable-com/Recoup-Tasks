@@ -93,7 +93,10 @@ describe("detectChangedSubmodules", () => {
 
     await detectChangedSubmodules(sandbox, "/home/user/monorepo");
 
-    expect(logger.log).toHaveBeenCalledWith("No changed submodules detected");
+    expect(logger.log).toHaveBeenCalledWith(
+      "No changed submodules detected",
+      { scanned: ["api"] },
+    );
   });
 
   it("logs changed submodule names when found", async () => {
@@ -116,5 +119,32 @@ describe("detectChangedSubmodules", () => {
       "Changed submodules detected",
       { changed: ["api"] },
     );
+  });
+
+  it("logs git status output for each submodule", async () => {
+    const { logger } = await import("@trigger.dev/sdk/v3");
+    const sandbox = createMockSandbox();
+    sandbox.runCommand.mockResolvedValueOnce({
+      exitCode: 0,
+      stdout: async () => "api\nchat\n",
+      stderr: async () => "",
+    });
+    sandbox.runCommand.mockResolvedValueOnce({
+      exitCode: 0,
+      stdout: async () => " M src/index.ts\n",
+      stderr: async () => "",
+    });
+    sandbox.runCommand.mockResolvedValueOnce({
+      exitCode: 0,
+      stdout: async () => "",
+      stderr: async () => "",
+    });
+
+    await detectChangedSubmodules(sandbox, "/home/user/monorepo");
+
+    expect(logger.log).toHaveBeenCalledWith("Submodule api has changes", {
+      status: "M src/index.ts",
+    });
+    expect(logger.log).toHaveBeenCalledWith("Submodule chat is clean");
   });
 });

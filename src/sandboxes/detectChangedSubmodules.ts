@@ -38,13 +38,15 @@ export async function detectChangedSubmodules(
     const stdout = (await statusResult.stdout()) || "";
 
     if (stdout.trim().length > 0) {
-      logger.log(`Submodule ${dir} has changes`);
+      logger.log(`Submodule ${dir} has changes`, { status: stdout.trim() });
       changed.push(dir);
+    } else {
+      logger.log(`Submodule ${dir} is clean`);
     }
   }
 
   if (changed.length === 0) {
-    logger.log("No changed submodules detected");
+    logger.log("No changed submodules detected", { scanned: allDirs });
   } else {
     logger.log("Changed submodules detected", { changed });
   }

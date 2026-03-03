@@ -64,6 +64,12 @@ export const codingAgentTask = schemaTask({
         message: prompt,
       });
 
+      logStep("Agent completed", true, {
+        exitCode: agentResult.exitCode,
+        stdout: agentResult.stdout.slice(-2000),
+        stderr: agentResult.stderr.slice(-2000),
+      });
+
       logStep("Detecting changes");
       const changedSubmodules = await detectChangedSubmodules(sandbox, monorepoDir);
 
