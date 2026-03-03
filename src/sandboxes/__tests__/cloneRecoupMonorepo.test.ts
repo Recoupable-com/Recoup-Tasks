@@ -37,14 +37,22 @@ beforeEach(() => {
 });
 
 describe("cloneRecoupMonorepo", () => {
-  it("sets up global URL rewriting before cloning", async () => {
+  it("clones without --recurse-submodules, then inits submodules separately", async () => {
     const sandbox = createMockSandbox();
     sandbox.runCommand.mockResolvedValue(successResult());
 
     await cloneRecoupMonorepo(sandbox);
 
-    // URL rewrite calls should come BEFORE the clone call
     const calls = sandbox.runCommand.mock.calls.map((c: any[]) => c[0]);
+
+    // Clone should NOT use --recurse-submodules
+    const cloneCall = calls.find(
+      (c: any) => c.cmd === "git" && c.args?.includes("clone"),
+    );
+    expect(cloneCall).toBeDefined();
+    expect(cloneCall.args).not.toContain("--recurse-submodules");
+
+    // URL rewriting should be set AFTER clone but BEFORE submodule update
     const cloneIdx = calls.findIndex(
       (c: any) => c.cmd === "git" && c.args?.includes("clone"),
     );
@@ -60,12 +68,20 @@ describe("cloneRecoupMonorepo", () => {
         c.args?.some((a: string) => a.includes("insteadOf")) &&
         c.args?.includes("git@github.com:"),
     );
+    const submoduleIdx = calls.findIndex(
+      (c: any) =>
+        c.cmd === "git" &&
+        c.args?.includes("submodule") &&
+        c.args?.includes("update"),
+    );
 
-    expect(httpsRewriteIdx).toBeLessThan(cloneIdx);
-    expect(sshRewriteIdx).toBeLessThan(cloneIdx);
+    expect(cloneIdx).toBeLessThan(httpsRewriteIdx);
+    expect(cloneIdx).toBeLessThan(sshRewriteIdx);
+    expect(httpsRewriteIdx).toBeLessThan(submoduleIdx);
+    expect(sshRewriteIdx).toBeLessThan(submoduleIdx);
   });
 
-  it("uses --global flag for URL rewriting", async () => {
+  it("uses repo-local config (not --global) for URL rewriting", async () => {
     const sandbox = createMockSandbox();
     sandbox.runCommand.mockResolvedValue(successResult());
 
@@ -78,7 +94,8 @@ describe("cloneRecoupMonorepo", () => {
         c.args?.some((a: string) => a.includes("insteadOf")),
     );
     for (const call of rewriteCalls) {
-      expect(call.args).toContain("--global");
+      expect(call.args).not.toContain("--global");
+      expect(call.args).toContain("-C");
     }
   });
 
@@ -89,12 +106,6 @@ describe("cloneRecoupMonorepo", () => {
     const result = await cloneRecoupMonorepo(sandbox);
 
     expect(result).toBe("/home/user/monorepo");
-    const calls = sandbox.runCommand.mock.calls.map((c: any[]) => c[0]);
-    const cloneCall = calls.find(
-      (c: any) => c.cmd === "git" && c.args?.includes("clone"),
-    );
-    expect(cloneCall).toBeDefined();
-    expect(cloneCall.args).toContain("--recurse-submodules");
   });
 
   it("configures git user as Recoup Agent", async () => {
@@ -112,10 +123,6 @@ describe("cloneRecoupMonorepo", () => {
 
   it("returns null when clone fails", async () => {
     const sandbox = createMockSandbox();
-    // URL rewrites succeed
-    sandbox.runCommand.mockResolvedValueOnce(successResult());
-    sandbox.runCommand.mockResolvedValueOnce(successResult());
-    // Clone fails
     sandbox.runCommand.mockResolvedValueOnce(failResult("auth failed"));
 
     const result = await cloneRecoupMonorepo(sandbox);
@@ -163,5 +170,23 @@ describe("cloneRecoupMonorepo", () => {
     const sources = rewriteCalls.map((c: any) => c.args[c.args.length - 1]);
     expect(sources).toContain("https://github.com/");
     expect(sources).toContain("git@github.com:");
+  });
+
+  it("runs submodule update --init --recursive", async () => {
+    const sandbox = createMockSandbox();
+    sandbox.runCommand.mockResolvedValue(successResult());
+
+    await cloneRecoupMonorepo(sandbox);
+
+    const calls = sandbox.runCommand.mock.calls.map((c: any[]) => c[0]);
+    const submoduleCall = calls.find(
+      (c: any) =>
+        c.cmd === "git" &&
+        c.args?.includes("submodule") &&
+        c.args?.includes("update"),
+    );
+    expect(submoduleCall).toBeDefined();
+    expect(submoduleCall.args).toContain("--init");
+    expect(submoduleCall.args).toContain("--recursive");
   });
 });
