@@ -5,6 +5,7 @@ import { getAccount } from "../recoup/getAccount";
 import { createGithubRepo } from "../github/createGithubRepo";
 import { updateAccountSnapshot } from "../recoup/updateAccountSnapshot";
 import { runGitCommand } from "./runGitCommand";
+import { getGitHubAuthPrefix } from "./getGitHubAuthPrefix";
 
 /**
  * Ensures a GitHub repository exists for the account, is persisted, and
@@ -22,9 +23,9 @@ export async function ensureGithubRepo(
   sandbox: Sandbox,
   accountId: string
 ): Promise<string | undefined> {
-  const githubToken = process.env.GITHUB_TOKEN;
+  const authPrefix = getGitHubAuthPrefix();
 
-  if (!githubToken) {
+  if (!authPrefix) {
     logger.error("Missing GITHUB_TOKEN environment variable");
     return undefined;
   }
@@ -73,10 +74,7 @@ export async function ensureGithubRepo(
   // Clone the repo into the sandbox root
   logger.log("Cloning GitHub repo into sandbox root", { githubRepo });
 
-  const repoUrl = githubRepo.replace(
-    "https://github.com/",
-    `https://x-access-token:${githubToken}@github.com/`
-  );
+  const repoUrl = githubRepo.replace("https://github.com/", authPrefix);
 
   if (!(await runGitCommand(sandbox, ["init"], "initialize git"))) {
     return undefined;
@@ -121,7 +119,7 @@ export async function ensureGithubRepo(
         cmd: "git",
         args: [
           "config",
-          `url.https://x-access-token:${githubToken}@github.com/.insteadOf`,
+          `url.${authPrefix}.insteadOf`,
           "https://github.com/",
         ],
       });

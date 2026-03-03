@@ -4,6 +4,10 @@ vi.mock("@trigger.dev/sdk/v3", () => ({
   logger: { log: vi.fn(), error: vi.fn() },
 }));
 
+vi.mock("../getSandboxHomeDir", () => ({
+  getSandboxHomeDir: vi.fn().mockResolvedValue("/root"),
+}));
+
 const { addOrgSubmodules } = await import("../git/addOrgSubmodules");
 
 function createMockSandbox() {
@@ -34,13 +38,6 @@ describe("addOrgSubmodules", () => {
     const sandbox = createMockSandbox();
 
     sandbox.runCommand.mockImplementation(async (opts: any) => {
-      if (opts.cmd === "sh" && opts.args?.[1] === "echo ~") {
-        return {
-          exitCode: 0,
-          stdout: async () => "/root\n",
-          stderr: async () => "",
-        };
-      }
       if (opts.cmd === "sh" && opts.args?.[1]?.includes("find")) {
         return {
           exitCode: 0,
@@ -65,13 +62,6 @@ describe("addOrgSubmodules", () => {
     const sandbox = createMockSandbox();
 
     sandbox.runCommand.mockImplementation(async (opts: any) => {
-      if (opts.cmd === "sh" && opts.args?.[1] === "echo ~") {
-        return {
-          exitCode: 0,
-          stdout: async () => "/root\n",
-          stderr: async () => "",
-        };
-      }
       if (opts.cmd === "sh" && opts.args?.[1]?.includes("find")) {
         return {
           exitCode: 0,
@@ -124,13 +114,6 @@ describe("addOrgSubmodules", () => {
     const sandbox = createMockSandbox();
 
     sandbox.runCommand.mockImplementation(async (opts: any) => {
-      if (opts.cmd === "sh" && opts.args?.[1] === "echo ~") {
-        return {
-          exitCode: 0,
-          stdout: async () => "/root\n",
-          stderr: async () => "",
-        };
-      }
       if (opts.cmd === "sh" && opts.args?.[1]?.includes("find")) {
         return {
           exitCode: 0,
@@ -169,13 +152,6 @@ describe("addOrgSubmodules", () => {
     const sandbox = createMockSandbox();
 
     sandbox.runCommand.mockImplementation(async (opts: any) => {
-      if (opts.cmd === "sh" && opts.args?.[1] === "echo ~") {
-        return {
-          exitCode: 0,
-          stdout: async () => "/root\n",
-          stderr: async () => "",
-        };
-      }
       if (opts.cmd === "sh" && opts.args?.[1]?.includes("find")) {
         return {
           exitCode: 0,

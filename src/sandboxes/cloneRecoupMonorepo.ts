@@ -2,6 +2,7 @@ import type { Sandbox } from "@vercel/sandbox";
 import { logger } from "@trigger.dev/sdk/v3";
 import { runGitCommand } from "./runGitCommand";
 import { getSandboxHomeDir } from "./getSandboxHomeDir";
+import { getGitHubAuthPrefix } from "./getGitHubAuthPrefix";
 
 const MONOREPO_REPO = "recoupable/mono";
 
@@ -14,16 +15,15 @@ const MONOREPO_REPO = "recoupable/mono";
  * @returns The clone directory path on success, null on failure
  */
 export async function cloneRecoupMonorepo(sandbox: Sandbox): Promise<string | null> {
-  const githubToken = process.env.GITHUB_TOKEN;
+  const authPrefix = getGitHubAuthPrefix();
 
-  if (!githubToken) {
+  if (!authPrefix) {
     logger.error("Missing GITHUB_TOKEN environment variable");
     return null;
   }
 
   const homeDir = await getSandboxHomeDir(sandbox);
   const cloneDir = `${homeDir}/monorepo`;
-  const authPrefix = `https://x-access-token:${githubToken}@github.com/`;
 
   // Set up global URL rewriting BEFORE cloning so --recurse-submodules
   // can authenticate nested submodule fetches (e.g. skills/songwriting)
