@@ -4,17 +4,15 @@ import { getVercelSandboxCredentials } from "../sandboxes/getVercelSandboxCreden
 import { installOpenClaw } from "../sandboxes/installOpenClaw";
 import { setupOpenClaw } from "../sandboxes/setupOpenClaw";
 import { runOpenClawAgent } from "../sandboxes/runOpenClawAgent";
-import { runGitCommand } from "../sandboxes/runGitCommand";
 import { notifyCodingAgentCallback } from "../sandboxes/notifyCodingAgentCallback";
 import { logStep } from "../sandboxes/logStep";
-import { getSandboxHomeDir } from "../sandboxes/getSandboxHomeDir";
 import { updatePRPayloadSchema } from "../schemas/updatePRSchema";
 
 const CODING_AGENT_ACCOUNT_ID = "coding-agent";
 
 /**
  * Background task that resumes a sandbox from a snapshot, applies feedback
- * via the AI agent, and pushes updates to existing PR branches.
+ * via the AI agent, and delegates push of updates to the agent.
  */
 export const updatePRTask = schemaTask({
   id: "update-pr",
@@ -44,36 +42,34 @@ export const updatePRTask = schemaTask({
       await installOpenClaw(sandbox);
       await setupOpenClaw(sandbox, CODING_AGENT_ACCOUNT_ID);
 
-      const homeDir = await getSandboxHomeDir(sandbox);
-      const monorepoDir = `${homeDir}/monorepo`;
-
       logStep("Running AI agent with feedback");
       await runOpenClawAgent(sandbox, {
         label: "Apply feedback",
         message: `The following feedback was given on the existing changes on branch "${branch}":\n\n${feedback}\n\nPlease make the requested changes.`,
       });
 
-      logStep("Pushing updates to PR branches");
-      for (const pr of prs) {
-        const submodule = pr.repo.split("/").pop()!;
-        // Remap repo name to submodule dir name
-        const subDir = submodule === "recoup-api" ? "api" : submodule;
-        const fullDir = `${monorepoDir}/${subDir}`;
+      logStep("Pushing updates via agent");
+      const prList = prs
+        .map((pr) => `  - repo=${pr.repo}, branch=${branch}`)
+        .join("\n");
 
-        await runGitCommand(sandbox, ["-C", fullDir, "add", "-A"], "stage changes", fullDir);
-        await runGitCommand(
-          sandbox,
-          ["-C", fullDir, "commit", "-m", `agent: address feedback\n\n${feedback.slice(0, 200)}`],
-          "commit feedback",
-          fullDir,
-        );
-        await runGitCommand(
-          sandbox,
-          ["-C", fullDir, "push", "origin", branch],
-          "push updates",
-          fullDir,
-        );
-      }
+      await runOpenClawAgent(sandbox, {
+        label: "Push feedback changes",
+        message: [
+          `Stage, commit, and push the feedback changes to the existing PR branches.`,
+          ``,
+          `For each of these PRs, find the submodule directory, stage all changes, commit, and push:`,
+          prList,
+          ``,
+          `Commit message: agent: address feedback`,
+          ``,
+          `Steps for each:`,
+          `1. cd into the submodule directory`,
+          `2. git add -A`,
+          `3. git commit -m "agent: address feedback"`,
+          `4. git push origin ${branch}`,
+        ].join("\n"),
+      });
 
       logStep("Taking new snapshot");
       const newSnapshot = await sandbox.snapshot();

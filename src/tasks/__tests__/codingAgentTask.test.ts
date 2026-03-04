@@ -35,23 +35,21 @@ vi.mock("../../sandboxes/setupOpenClaw", () => ({
   setupOpenClaw: vi.fn(),
 }));
 
-vi.mock("../../sandboxes/cloneRecoupMonorepo", () => ({
-  cloneRecoupMonorepo: vi.fn().mockResolvedValue("/home/user/monorepo"),
+vi.mock("../../sandboxes/cloneMonorepoViaAgent", () => ({
+  cloneMonorepoViaAgent: vi.fn(),
 }));
 
 vi.mock("../../sandboxes/runOpenClawAgent", () => ({
   runOpenClawAgent: vi.fn().mockResolvedValue({ exitCode: 0, stdout: "done", stderr: "" }),
 }));
 
-vi.mock("../../sandboxes/detectChangedSubmodules", () => ({
-  detectChangedSubmodules: vi.fn().mockResolvedValue(["api"]),
-}));
-
-vi.mock("../../sandboxes/createSubmodulePR", () => ({
-  createSubmodulePR: vi.fn().mockResolvedValue({
-    repo: "recoupable/recoup-api", number: 42,
-    url: "https://github.com/recoupable/recoup-api/pull/42", baseBranch: "test",
-  }),
+vi.mock("../../sandboxes/pushAndCreatePRsViaAgent", () => ({
+  pushAndCreatePRsViaAgent: vi.fn().mockResolvedValue([
+    {
+      repo: "recoupable/recoup-api", number: 42,
+      url: "https://github.com/recoupable/recoup-api/pull/42", baseBranch: "test",
+    },
+  ]),
 }));
 
 vi.mock("../../sandboxes/notifyCodingAgentCallback", () => ({
@@ -71,11 +69,6 @@ beforeEach(() => {
     sandboxId: "sbx-123",
     stop: mockSandboxStop,
     snapshot: mockSandboxSnapshot,
-    runCommand: vi.fn().mockResolvedValue({
-      exitCode: 0,
-      stdout: async () => "",
-      stderr: async () => "",
-    }),
   });
 });
 
@@ -85,18 +78,18 @@ describe("codingAgentTask", () => {
     callbackThreadId: "slack:C123:123.456",
   };
 
-  it("creates a sandbox, clones monorepo, runs agent, creates PRs, and notifies", async () => {
+  it("creates a sandbox, clones via agent, runs agent, creates PRs via agent, and notifies", async () => {
     const { notifyCodingAgentCallback } = await import("../../sandboxes/notifyCodingAgentCallback");
-    const { cloneRecoupMonorepo } = await import("../../sandboxes/cloneRecoupMonorepo");
+    const { cloneMonorepoViaAgent } = await import("../../sandboxes/cloneMonorepoViaAgent");
     const { runOpenClawAgent } = await import("../../sandboxes/runOpenClawAgent");
-    const { createSubmodulePR } = await import("../../sandboxes/createSubmodulePR");
+    const { pushAndCreatePRsViaAgent } = await import("../../sandboxes/pushAndCreatePRsViaAgent");
 
     await mockRun(basePayload);
 
     expect(mockSandboxCreate).toHaveBeenCalledOnce();
-    expect(cloneRecoupMonorepo).toHaveBeenCalledOnce();
+    expect(cloneMonorepoViaAgent).toHaveBeenCalledOnce();
     expect(runOpenClawAgent).toHaveBeenCalledOnce();
-    expect(createSubmodulePR).toHaveBeenCalledOnce();
+    expect(pushAndCreatePRsViaAgent).toHaveBeenCalledOnce();
     expect(notifyCodingAgentCallback).toHaveBeenCalledWith(
       expect.objectContaining({
         threadId: "slack:C123:123.456",
@@ -105,10 +98,10 @@ describe("codingAgentTask", () => {
     );
   });
 
-  it("notifies no_changes when no submodules are modified", async () => {
-    const { detectChangedSubmodules } = await import("../../sandboxes/detectChangedSubmodules");
+  it("notifies no_changes when no PRs are created", async () => {
+    const { pushAndCreatePRsViaAgent } = await import("../../sandboxes/pushAndCreatePRsViaAgent");
     const { notifyCodingAgentCallback } = await import("../../sandboxes/notifyCodingAgentCallback");
-    vi.mocked(detectChangedSubmodules).mockResolvedValueOnce([]);
+    vi.mocked(pushAndCreatePRsViaAgent).mockResolvedValueOnce([]);
 
     await mockRun(basePayload);
 
@@ -122,15 +115,17 @@ describe("codingAgentTask", () => {
     expect(mockSandboxStop).toHaveBeenCalledOnce();
   });
 
-  it("notifies failed when clone fails", async () => {
-    const { cloneRecoupMonorepo } = await import("../../sandboxes/cloneRecoupMonorepo");
-    const { notifyCodingAgentCallback } = await import("../../sandboxes/notifyCodingAgentCallback");
-    vi.mocked(cloneRecoupMonorepo).mockResolvedValueOnce(null);
+  it("passes prompt and branch to pushAndCreatePRsViaAgent", async () => {
+    const { pushAndCreatePRsViaAgent } = await import("../../sandboxes/pushAndCreatePRsViaAgent");
 
     await mockRun(basePayload);
 
-    expect(notifyCodingAgentCallback).toHaveBeenCalledWith(
-      expect.objectContaining({ status: "failed" }),
+    expect(pushAndCreatePRsViaAgent).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        prompt: "Fix the login bug",
+        branch: expect.stringContaining("agent/"),
+      }),
     );
   });
 });

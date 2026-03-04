@@ -3,10 +3,9 @@ import { Sandbox } from "@vercel/sandbox";
 import { getVercelSandboxCredentials } from "../sandboxes/getVercelSandboxCredentials";
 import { installOpenClaw } from "../sandboxes/installOpenClaw";
 import { setupOpenClaw } from "../sandboxes/setupOpenClaw";
-import { cloneRecoupMonorepo } from "../sandboxes/cloneRecoupMonorepo";
+import { cloneMonorepoViaAgent } from "../sandboxes/cloneMonorepoViaAgent";
 import { runOpenClawAgent } from "../sandboxes/runOpenClawAgent";
-import { detectChangedSubmodules } from "../sandboxes/detectChangedSubmodules";
-import { createSubmodulePR } from "../sandboxes/createSubmodulePR";
+import { pushAndCreatePRsViaAgent } from "../sandboxes/pushAndCreatePRsViaAgent";
 import { notifyCodingAgentCallback } from "../sandboxes/notifyCodingAgentCallback";
 import { logStep } from "../sandboxes/logStep";
 import { codingAgentPayloadSchema } from "../schemas/codingAgentSchema";
@@ -14,8 +13,9 @@ import { codingAgentPayloadSchema } from "../schemas/codingAgentSchema";
 const CODING_AGENT_ACCOUNT_ID = "coding-agent";
 
 /**
- * Background task that spins up a sandbox, clones the Recoup monorepo,
- * runs an AI agent to make changes, and opens PRs for each modified submodule.
+ * Background task that spins up a sandbox, clones the Recoup monorepo
+ * via the AI agent, runs it to make changes, and delegates PR creation
+ * to the agent as well.
  */
 export const codingAgentTask = schemaTask({
   id: "coding-agent",
@@ -44,19 +44,8 @@ export const codingAgentTask = schemaTask({
       await installOpenClaw(sandbox);
       await setupOpenClaw(sandbox, CODING_AGENT_ACCOUNT_ID);
 
-      logStep("Installing gh CLI");
-      await sandbox.runCommand({ cmd: "sh", args: ["-c", "which gh || (apt-get update -qq && apt-get install -y -qq gh)"], sudo: true });
-
-      logStep("Cloning monorepo");
-      const monorepoDir = await cloneRecoupMonorepo(sandbox);
-      if (!monorepoDir) {
-        await notifyCodingAgentCallback({
-          threadId: callbackThreadId,
-          status: "failed",
-          message: "Failed to clone monorepo",
-        });
-        return;
-      }
+      logStep("Cloning monorepo via agent");
+      await cloneMonorepoViaAgent(sandbox);
 
       logStep("Running AI agent");
       const agentResult = await runOpenClawAgent(sandbox, {
@@ -70,37 +59,12 @@ export const codingAgentTask = schemaTask({
         stderr: agentResult.stderr.slice(-2000),
       });
 
-      logStep("Detecting changes");
-      const changedSubmodules = await detectChangedSubmodules(sandbox, monorepoDir);
-
-      if (changedSubmodules.length === 0) {
-        await notifyCodingAgentCallback({
-          threadId: callbackThreadId,
-          status: "no_changes",
-          message: "No files were modified",
-          stdout: agentResult.stdout,
-          stderr: agentResult.stderr,
-        });
-        return;
-      }
-
-      logStep("Creating PRs");
+      logStep("Creating PRs via agent");
       const timestamp = Date.now();
       const slug = prompt.slice(0, 30).replace(/[^a-zA-Z0-9]/g, "-").toLowerCase();
       const branch = `agent/${slug}-${timestamp}`;
 
-      const prs = [];
-      for (const submodule of changedSubmodules) {
-        const pr = await createSubmodulePR(sandbox, {
-          submodule,
-          branch,
-          prompt,
-          monorepoDir,
-        });
-        if (pr) {
-          prs.push(pr);
-        }
-      }
+      const prs = await pushAndCreatePRsViaAgent(sandbox, { prompt, branch });
 
       logStep("Taking snapshot");
       const { snapshotId } = await sandbox.snapshot();

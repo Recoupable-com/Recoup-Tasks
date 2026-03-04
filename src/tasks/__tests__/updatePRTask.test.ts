@@ -39,20 +39,12 @@ vi.mock("../../sandboxes/runOpenClawAgent", () => ({
   runOpenClawAgent: vi.fn().mockResolvedValue({ exitCode: 0, stdout: "done", stderr: "" }),
 }));
 
-vi.mock("../../sandboxes/runGitCommand", () => ({
-  runGitCommand: vi.fn().mockResolvedValue(true),
-}));
-
 vi.mock("../../sandboxes/notifyCodingAgentCallback", () => ({
   notifyCodingAgentCallback: vi.fn(),
 }));
 
 vi.mock("../../sandboxes/logStep", () => ({
   logStep: vi.fn(),
-}));
-
-vi.mock("../../sandboxes/getSandboxHomeDir", () => ({
-  getSandboxHomeDir: vi.fn().mockResolvedValue("/home/user"),
 }));
 
 // Import after mocks
@@ -64,11 +56,6 @@ beforeEach(() => {
     sandboxId: "sbx-456",
     stop: mockSandboxStop,
     snapshot: mockSandboxSnapshot,
-    runCommand: vi.fn().mockResolvedValue({
-      exitCode: 0,
-      stdout: async () => "",
-      stderr: async () => "",
-    }),
   });
 });
 
@@ -106,16 +93,19 @@ describe("updatePRTask", () => {
     );
   });
 
-  it("pushes changes to existing branch", async () => {
-    const { runGitCommand } = await import("../../sandboxes/runGitCommand");
+  it("delegates push to agent instead of using runGitCommand", async () => {
+    const { runOpenClawAgent } = await import("../../sandboxes/runOpenClawAgent");
 
     await mockRun(basePayload);
 
-    expect(runGitCommand).toHaveBeenCalledWith(
+    // Should be called twice: once for feedback, once for push
+    expect(runOpenClawAgent).toHaveBeenCalledTimes(2);
+    expect(runOpenClawAgent).toHaveBeenCalledWith(
       expect.anything(),
-      expect.arrayContaining(["push"]),
-      expect.any(String),
-      expect.any(String),
+      expect.objectContaining({
+        label: "Push feedback changes",
+        message: expect.stringContaining("git push"),
+      }),
     );
   });
 
