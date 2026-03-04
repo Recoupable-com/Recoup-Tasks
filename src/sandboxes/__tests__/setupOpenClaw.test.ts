@@ -101,6 +101,24 @@ describe("setupOpenClaw", () => {
     expect(injectCall).toBeDefined();
   });
 
+  it("enables the runtime tool group (exec) in openclaw.json", async () => {
+    const sandbox = createMockSandbox();
+
+    await setupOpenClaw(sandbox, "account-1");
+
+    const injectCall = sandbox.runCommand.mock.calls.find(
+      (call: any[]) => {
+        const args = call[0]?.args;
+        return args?.[0] === "-c" && args?.[1]?.includes("openclaw.json");
+      }
+    );
+
+    expect(injectCall).toBeDefined();
+    const script = injectCall![0].args[1];
+    expect(script).toContain("tools");
+    expect(script).toContain("group:runtime");
+  });
+
   it("starts the openclaw gateway after env injection", async () => {
     const sandbox = createMockSandbox();
 
