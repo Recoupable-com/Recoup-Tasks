@@ -43,7 +43,7 @@ export async function setupOpenClaw(
         c.env.RECOUP_ACCOUNT_ID = '${accountId}';
         ${githubToken ? `c.env.GITHUB_TOKEN = '${githubToken}';` : ""}
         c.tools = c.tools || {};
-        c.tools.allow = ['group:runtime'];
+        c.tools.profile = 'coding';
         fs.writeFileSync(p, JSON.stringify(c, null, 2));
       "`,
     ],

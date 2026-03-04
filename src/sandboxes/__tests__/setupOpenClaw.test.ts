@@ -101,7 +101,7 @@ describe("setupOpenClaw", () => {
     expect(injectCall).toBeDefined();
   });
 
-  it("enables the runtime tool group (exec) in openclaw.json", async () => {
+  it("sets coding tools profile in openclaw.json", async () => {
     const sandbox = createMockSandbox();
 
     await setupOpenClaw(sandbox, "account-1");
@@ -116,7 +116,7 @@ describe("setupOpenClaw", () => {
     expect(injectCall).toBeDefined();
     const script = injectCall![0].args[1];
     expect(script).toContain("tools");
-    expect(script).toContain("group:runtime");
+    expect(script).toContain("coding");
   });
 
   it("starts the openclaw gateway after env injection", async () => {
