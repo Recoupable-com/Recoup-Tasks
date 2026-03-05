@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { writeFile, unlink, mkdir } from "node:fs/promises";
+import { readFile, writeFile, unlink, mkdir, rm } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -112,7 +112,6 @@ async function clipAndUploadAudio(
       clippedPath,
     ]);
 
-    const { readFile } = await import("node:fs/promises");
     const clippedBuffer = await readFile(clippedPath);
     const file = new File([clippedBuffer], "clip.mp3", { type: "audio/mpeg" });
     const url = await fal.storage.upload(file);
@@ -125,8 +124,7 @@ async function clipAndUploadAudio(
 
     return url;
   } finally {
-    await unlink(inputPath).catch(() => undefined);
-    await unlink(clippedPath).catch(() => undefined);
+    await rm(tempDir, { recursive: true, force: true }).catch(() => undefined);
   }
 }
 

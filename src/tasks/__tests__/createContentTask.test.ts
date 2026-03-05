@@ -64,7 +64,13 @@ vi.mock("../../content/selectAudioClip", () => ({
 
 vi.mock("../../content/generateCaption", () => ({
   generateCaption: vi.fn().mockResolvedValue("this is the vibe 🎵"),
+}));
+
+vi.mock("../../content/fetchArtistContext", () => ({
   fetchArtistContext: vi.fn().mockResolvedValue("Artist identity info"),
+}));
+
+vi.mock("../../content/fetchAudienceContext", () => ({
   fetchAudienceContext: vi.fn().mockResolvedValue("Audience info"),
 }));
 

@@ -115,7 +115,21 @@ IMPORTANT: startSeconds must align with actual word timestamps from the lyrics a
     ];
   }
 
-  const clips = JSON.parse(jsonMatch[0]) as SongClip[];
+  let clips: SongClip[];
+  try {
+    clips = JSON.parse(jsonMatch[0]) as SongClip[];
+  } catch {
+    logger.log("Failed to parse clip JSON, using fallback");
+    return [
+      {
+        startSeconds: 0,
+        lyrics: lyrics.segments.slice(0, 10).map(s => s.text).join(" "),
+        reason: "fallback — JSON parse failed",
+        mood: "unknown",
+        hasLyrics: true,
+      },
+    ];
+  }
   logger.log("Clip analysis complete", {
     songTitle,
     clipCount: clips.length,

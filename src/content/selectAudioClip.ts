@@ -80,9 +80,19 @@ export async function selectAudioClip({
   const clips = await analyzeClips(songTitle, lyrics);
 
   // Step 6: Pick the best unused clip
+  if (clips.length === 0) {
+    // Fallback if analysis returned nothing
+    clips.push({
+      startSeconds: 0,
+      lyrics: "",
+      reason: "fallback — no clips analyzed",
+      mood: "unknown",
+      hasLyrics: true,
+    });
+  }
+
   let selectedClip: SongClip;
   if (lipsync) {
-    // For lipsync, prefer clips that have actual lyrics
     const lyricsClips = clips.filter(c => c.hasLyrics !== false);
     selectedClip = lyricsClips.length > 0 ? lyricsClips[0] : clips[0];
   } else {

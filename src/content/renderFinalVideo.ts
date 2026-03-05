@@ -266,7 +266,9 @@ function buildFfmpegArgs({
       .replace(/\\/g, "\\\\\\\\")
       .replace(/'/g, "\u2019") // replace apostrophe with curly quote
       .replace(/:/g, "\\\\:")
-      .replace(/%/g, "%%%%");
+      .replace(/%/g, "%%%%")
+      .replace(/\n/g, " ")
+      .replace(/\r/g, "");
 
     const yPos = blockStartY + (i * lineHeight);
 

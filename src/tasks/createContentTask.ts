@@ -8,11 +8,9 @@ import { generateAudioVideo } from "../content/generateAudioVideo";
 import { upscaleImage } from "../content/upscaleImage";
 import { upscaleVideo } from "../content/upscaleVideo";
 import { selectAudioClip } from "../content/selectAudioClip";
-import {
-  generateCaption,
-  fetchArtistContext,
-  fetchAudienceContext,
-} from "../content/generateCaption";
+import { generateCaption } from "../content/generateCaption";
+import { fetchArtistContext } from "../content/fetchArtistContext";
+import { fetchAudienceContext } from "../content/fetchAudienceContext";
 import { renderFinalVideo } from "../content/renderFinalVideo";
 import { DEFAULT_PIPELINE_CONFIG } from "../content/defaultPipelineConfig";
 import {
@@ -31,7 +29,7 @@ import { FACE_SWAP_INSTRUCTION, NO_FACE_INSTRUCTION } from "../content/contentPr
  *   2. Fetch face-guide from artist's GitHub repo
  *   3. Select audio clip (fetch songs, transcribe, analyze, pick best clip)
  *   4. Fetch artist + audience context for caption generation
- *   5. Generate image (fal.ai — face-guide + reference + styled prompt)
+ *   5. Generate image (fal.ai — face-guide + template prompt + style guide)
  *   6. Upscale image (fal.ai — 2x detail enhancement)
  *   7. Generate video (fal.ai — animate image, or audio-to-video for lipsync)
  *   8. Upscale video (fal.ai — 720p → 1080p)
