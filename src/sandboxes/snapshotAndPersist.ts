@@ -16,8 +16,10 @@ export async function snapshotAndPersist(
   accountId: string,
   githubRepo?: string
 ) {
+  const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+
   logger.log("Taking sandbox snapshot");
-  const snapshotResult = await sandbox.snapshot();
+  const snapshotResult = await sandbox.snapshot({ expiration: SEVEN_DAYS_MS });
 
   logger.log("Snapshot created", {
     snapshotId: snapshotResult.snapshotId,
