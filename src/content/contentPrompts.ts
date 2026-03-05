@@ -12,7 +12,8 @@
  */
 export const FACE_SWAP_INSTRUCTION = [
   "Replace the person in the scene with the person from the white background headshot.",
-  "Use the face, hair, and features from the headshot.",
+  "Use the face, hair color, hairstyle, and features exactly as they appear in the headshot.",
+  "Do NOT change the hair color. Keep the original hair color from the headshot.",
   "Keep the setting from the reference photo but enhance it with the style rules below.",
   "The setting should feel real like the reference, but with the lighting and mood from the style guide.",
   "Remove any text, captions, watermarks, or overlays. The image should be clean with no text on it.",
