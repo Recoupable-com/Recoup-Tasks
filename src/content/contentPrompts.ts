@@ -4,17 +4,18 @@
  * Future: prompts will be loaded from the template config dynamically.
  */
 
-/** Default image prompt — creates a candid selfie-style portrait. */
-export const DEFAULT_IMAGE_PROMPT = [
-  "Candid front-facing selfie of a person in a dimly lit bedroom.",
-  "Shot on front-facing phone camera, held slightly below face.",
-  "Soft purple glow from LED strip, heavy shadows, grainy low-light photo.",
-  "Real bedroom background — unmade bed, plain walls, clutter.",
-  "Expression: deadpan, slightly bored, not smiling.",
-  "Style rules: phone camera quality, slight noise and grain.",
-  "Lighting: dim purple glow, most of the frame is dark.",
-  "IMPORTANT: must look like a real phone photo, not AI-generated.",
-  "AVOID: smooth skin, perfect hair, studio lighting, clean backgrounds.",
+/**
+ * Universal face-swap instruction prepended to every template's image prompt.
+ * Tells the model how to use the two reference images:
+ *   Image 1 (face-guide): headshot on white/plain background — the artist's identity
+ *   Image 2 (reference): composition with a different person — the scene to recreate
+ */
+export const FACE_SWAP_INSTRUCTION = [
+  "Replace the person in the scene with the person from the white background headshot.",
+  "Use the face, hair, and features from the headshot.",
+  "Keep the setting from the reference photo but enhance it with the style rules below.",
+  "The setting should feel real like the reference, but with the lighting and mood from the style guide.",
+  "Remove any text, captions, watermarks, or overlays. The image should be clean with no text on it.",
 ].join(" ");
 
 /** Default motion prompt — subtle movement for the video. */

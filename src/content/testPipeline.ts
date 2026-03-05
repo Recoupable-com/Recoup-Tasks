@@ -75,7 +75,7 @@ async function testImage(): Promise<void> {
   const { fetchGithubFile } = await import("./fetchGithubFile.js");
   const { generateContentImage } = await import("./generateContentImage.js");
   const { loadTemplate, pickRandomReferenceImage, buildImagePrompt } = await import("./loadTemplate.js");
-  const { DEFAULT_IMAGE_PROMPT } = await import("./contentPrompts.js");
+  const { FACE_SWAP_INSTRUCTION } = await import("./contentPrompts.js");
 
   console.log("\n🎨 Testing: Image Generation\n");
 
@@ -94,8 +94,9 @@ async function testImage(): Promise<void> {
   const refPath = pickRandomReferenceImage(template);
   console.log(`  Reference: ${refPath ? path.basename(refPath) : "none"}`);
 
-  // Generate image
-  const prompt = buildImagePrompt(DEFAULT_IMAGE_PROMPT, template.styleGuide);
+  // Generate image — face-swap instruction + template's scene prompt + style guide
+  const basePrompt = `${FACE_SWAP_INSTRUCTION} ${template.imagePrompt}`;
+  const prompt = buildImagePrompt(basePrompt, template.styleGuide);
   console.log(`  Prompt: "${prompt.slice(0, 80)}..."`);
   console.log("  🔄 Generating image...\n");
 

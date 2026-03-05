@@ -6,6 +6,8 @@ import fs from "node:fs/promises";
  */
 export interface TemplateData {
   name: string;
+  /** Template-specific image prompt describing the scene/setting. */
+  imagePrompt: string;
   styleGuide: Record<string, unknown> | null;
   captionGuide: Record<string, unknown> | null;
   captionExamples: string[];
@@ -52,8 +54,12 @@ export async function loadTemplate(templateName: string): Promise<TemplateData> 
     // No images directory
   }
 
+  // Read imagePrompt from the style guide (each template defines its own scene)
+  const imagePrompt = (styleGuide as Record<string, unknown> | null)?.imagePrompt as string ?? "";
+
   return {
     name: templateName,
+    imagePrompt,
     styleGuide,
     captionGuide,
     captionExamples,

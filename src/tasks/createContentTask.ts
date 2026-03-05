@@ -17,10 +17,11 @@ import { renderFinalVideo } from "../content/renderFinalVideo";
 import { DEFAULT_PIPELINE_CONFIG } from "../content/defaultPipelineConfig";
 import {
   loadTemplate,
+  pickRandomReferenceImage,
   buildImagePrompt,
   buildMotionPrompt,
 } from "../content/loadTemplate";
-import { DEFAULT_IMAGE_PROMPT } from "../content/contentPrompts";
+import { FACE_SWAP_INSTRUCTION } from "../content/contentPrompts";
 
 /**
  * Content-creation task — full pipeline that generates a social-ready video.
@@ -98,9 +99,13 @@ export const createContentTask = schemaTask({
 
     // --- Step 5: Generate image ---
     metadata.set("currentStep", "Generating image");
-    const fullPrompt = buildImagePrompt(DEFAULT_IMAGE_PROMPT, template.styleGuide);
+    const referenceImagePath = pickRandomReferenceImage(template);
+    // Combine: face-swap instruction + template's scene prompt + style guide rules
+    const basePrompt = `${FACE_SWAP_INSTRUCTION} ${template.imagePrompt}`;
+    const fullPrompt = buildImagePrompt(basePrompt, template.styleGuide);
     let imageUrl = await generateContentImage({
       faceGuideUrl,
+      referenceImagePath,
       prompt: fullPrompt,
     });
 

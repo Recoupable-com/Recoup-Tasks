@@ -1,3 +1,4 @@
+import fs from "node:fs/promises";
 import { fal } from "@fal-ai/client";
 import { logger } from "@trigger.dev/sdk/v3";
 import { DEFAULT_PIPELINE_CONFIG } from "./defaultPipelineConfig";
@@ -5,26 +6,41 @@ import { DEFAULT_PIPELINE_CONFIG } from "./defaultPipelineConfig";
 /**
  * Generates an AI image of the artist using fal.ai.
  *
- * IMPORTANT: Only the face-guide is passed as image_urls. Reference images
- * are NOT passed — they confuse the model about whose face to use.
- * The composition/style comes from the text prompt + style guide instead.
+ * Takes two images:
+ *   1. Face-guide (headshot on white/plain background) — the artist's identity
+ *   2. Reference image (composition with a different person) — the scene/setting
  *
- * @param faceGuideUrl - fal storage URL of the artist's face-guide image
- * @param prompt - Full scene/style prompt for image generation
+ * The prompt tells the model to replace the person in the reference scene
+ * with the person from the face-guide headshot.
+ *
+ * @param faceGuideUrl - fal storage URL of the artist's face-guide (headshot)
+ * @param referenceImagePath - local path to a template reference image (or null)
+ * @param prompt - Scene/style prompt that instructs the face swap
  * @returns URL of the generated image
  */
 export async function generateContentImage({
   faceGuideUrl,
+  referenceImagePath,
   prompt,
 }: {
   faceGuideUrl: string;
+  referenceImagePath: string | null;
   prompt: string;
 }): Promise<string> {
   const config = DEFAULT_PIPELINE_CONFIG;
 
-  // Only pass face-guide — passing reference images with different people
-  // causes the model to lose the artist's face identity.
+  // Build image_urls: face-guide first, reference second
   const imageUrls: string[] = [faceGuideUrl];
+
+  if (referenceImagePath) {
+    logger.log("Uploading reference image to fal storage", {
+      path: referenceImagePath,
+    });
+    const refBuffer = await fs.readFile(referenceImagePath);
+    const refFile = new File([refBuffer], "reference.png", { type: "image/png" });
+    const refUrl = await fal.storage.upload(refFile);
+    imageUrls.push(refUrl);
+  }
 
   logger.log("Generating image", {
     model: config.imageModel,

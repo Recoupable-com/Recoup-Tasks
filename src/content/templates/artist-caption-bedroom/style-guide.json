@@ -1,6 +1,7 @@
 {
   "name": "artist-caption-bedroom",
   "description": "Candid front-facing selfie with text caption overlay — the kind of post Gen Z artists make on TikTok/IG",
+  "imagePrompt": "A candid front-facing selfie in a dimly lit bedroom with purple LED strip lights. Phone camera, low light, grainy. The person is wearing a hoodie, looking at the camera with a deadpan expression.",
 
   "camera": {
     "type": "front-facing phone camera",
