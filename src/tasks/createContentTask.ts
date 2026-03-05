@@ -113,9 +113,11 @@ export const createContentTask = schemaTask({
       prompt: fullPrompt,
     });
 
-    // --- Step 6: Upscale image ---
-    metadata.set("currentStep", "Upscaling image");
-    imageUrl = await upscaleImage(imageUrl);
+    // --- Step 6: Upscale image (optional) ---
+    if (payload.upscale) {
+      metadata.set("currentStep", "Upscaling image");
+      imageUrl = await upscaleImage(imageUrl);
+    }
 
     // --- Step 7: Generate video ---
     let videoUrl: string;
@@ -140,9 +142,11 @@ export const createContentTask = schemaTask({
       });
     }
 
-    // --- Step 8: Upscale video ---
-    metadata.set("currentStep", "Upscaling video");
-    videoUrl = await upscaleVideo(videoUrl);
+    // --- Step 8: Upscale video (optional) ---
+    if (payload.upscale) {
+      metadata.set("currentStep", "Upscaling video");
+      videoUrl = await upscaleVideo(videoUrl);
+    }
 
     // --- Step 9: Generate caption ---
     metadata.set("currentStep", "Generating caption");
