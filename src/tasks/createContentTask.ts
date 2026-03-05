@@ -56,7 +56,13 @@ export const createContentTask = schemaTask({
     metadata.set("template", payload.template);
     metadata.set("lipsync", payload.lipsync);
 
-    logger.log("create-content task started", payload);
+    logger.log("create-content task started", {
+      artistSlug: payload.artistSlug,
+      template: payload.template,
+      lipsync: payload.lipsync,
+      captionLength: payload.captionLength,
+      upscale: payload.upscale,
+    });
 
     // --- Configure fal.ai ---
     const falKey = process.env.FAL_KEY;

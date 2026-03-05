@@ -54,8 +54,8 @@ export async function generateContentImage({
     input: {
       prompt,
       image_urls: imageUrls,
-      aspect_ratio: config.aspectRatio as "16:9",
-      resolution: config.resolution as "2K",
+      aspect_ratio: config.aspectRatio,
+      resolution: config.resolution,
       output_format: "png",
       num_images: 1,
     },
