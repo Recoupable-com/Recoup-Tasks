@@ -39,6 +39,26 @@ vi.mock("../../content/generateContentVideo", () => ({
   generateContentVideo: (...args: unknown[]) => mockGenerateContentVideo(...args),
 }));
 
+const mockSelectAudioClip = vi.fn();
+vi.mock("../../content/selectAudioClip", () => ({
+  selectAudioClip: (...args: unknown[]) => mockSelectAudioClip(...args),
+}));
+
+vi.mock("../../content/loadTemplate", () => ({
+  loadTemplate: vi.fn().mockResolvedValue({
+    name: "artist-caption-bedroom",
+    styleGuide: null,
+    captionGuide: null,
+    captionExamples: [],
+    videoMoods: [],
+    videoMovements: [],
+    referenceImagePaths: [],
+  }),
+  pickRandomReferenceImage: vi.fn().mockReturnValue(null),
+  buildImagePrompt: vi.fn().mockReturnValue("test prompt"),
+  buildMotionPrompt: vi.fn().mockReturnValue("test motion prompt"),
+}));
+
 await import("../createContentTask");
 
 const VALID_PAYLOAD = {
@@ -55,24 +75,36 @@ describe("createContentTask", () => {
     process.env.FAL_KEY = "test-fal-key";
   });
 
-  it("runs full pipeline and returns video URL", async () => {
+  it("runs full pipeline with audio and returns video URL", async () => {
     mockFetchGithubFile.mockResolvedValue(Buffer.from("fake-png"));
     mockFalStorageUpload.mockResolvedValue("https://fal.storage/face-guide.png");
-    mockGenerateContentImage.mockResolvedValue("https://fal.ai/generated-image.png");
-    mockGenerateContentVideo.mockResolvedValue("https://fal.ai/generated-video.mp4");
+    mockSelectAudioClip.mockResolvedValue({
+      songFilename: "song.mp3",
+      songTitle: "Test Song",
+      songBuffer: Buffer.from("fake-mp3"),
+      startSeconds: 30,
+      durationSeconds: 8,
+      lyrics: { title: "Test Song", fullLyrics: "lyrics", segments: [] },
+      clipLyrics: "clip lyrics here",
+      clipReason: "great hook",
+      clipMood: "energetic",
+    });
+    mockGenerateContentImage.mockResolvedValue("https://fal.ai/image.png");
+    mockGenerateContentVideo.mockResolvedValue("https://fal.ai/video.mp4");
 
     const result = await mockRun(VALID_PAYLOAD);
 
     expect(mockTagsAdd).toHaveBeenCalledWith("account:acc_123");
-    expect(mockFetchGithubFile).toHaveBeenCalledWith(
-      "https://github.com/recoupable/test-repo",
-      "artists/gatsby-grace/context/images/face-guide.png",
+    expect(mockSelectAudioClip).toHaveBeenCalledWith(
+      expect.objectContaining({
+        githubRepo: "https://github.com/recoupable/test-repo",
+        artistSlug: "gatsby-grace",
+      }),
     );
-    expect(mockGenerateContentImage).toHaveBeenCalled();
-    expect(mockGenerateContentVideo).toHaveBeenCalled();
-    expect(result.videoSourceUrl).toBe("https://fal.ai/generated-video.mp4");
-    expect(result.imageUrl).toBe("https://fal.ai/generated-image.png");
-    expect(result.status).toBe("completed");
+    expect(result.videoSourceUrl).toBe("https://fal.ai/video.mp4");
+    expect(result.audio.songTitle).toBe("Test Song");
+    expect(result.audio.startSeconds).toBe(30);
+    expect(result.audio.clipLyrics).toBe("clip lyrics here");
   });
 
   it("throws when face-guide is not found in repo", async () => {
