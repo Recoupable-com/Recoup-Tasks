@@ -8,6 +8,7 @@ describe("createContentPayloadSchema", () => {
       artistSlug: "gatsby-grace",
       template: "artist-caption-bedroom",
       lipsync: true,
+      githubRepo: "https://github.com/recoupable/test-repo",
     });
 
     expect(result.success).toBe(true);
@@ -18,6 +19,7 @@ describe("createContentPayloadSchema", () => {
       accountId: "acc_123",
       artistSlug: "gatsby-grace",
       template: "artist-caption-bedroom",
+      githubRepo: "https://github.com/recoupable/test-repo",
     });
 
     expect(result.success).toBe(true);
@@ -31,6 +33,7 @@ describe("createContentPayloadSchema", () => {
       accountId: "acc_123",
       template: "artist-caption-bedroom",
       lipsync: false,
+      githubRepo: "https://github.com/recoupable/test-repo",
     });
 
     expect(result.success).toBe(false);

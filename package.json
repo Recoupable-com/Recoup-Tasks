@@ -5,6 +5,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@fal-ai/client": "^1.9.4",
     "@trigger.dev/sdk": "4.3.3",
     "@vercel/sandbox": "^1.8.0",
     "ai": "^5.0.87",
