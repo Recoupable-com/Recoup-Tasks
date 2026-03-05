@@ -79,6 +79,8 @@ vi.mock("../../content/renderFinalVideo", () => ({
 vi.mock("../../content/loadTemplate", () => ({
   loadTemplate: vi.fn().mockResolvedValue({
     name: "artist-caption-bedroom",
+    imagePrompt: "test scene prompt",
+    usesFaceGuide: true,
     styleGuide: null,
     captionGuide: null,
     captionExamples: [],

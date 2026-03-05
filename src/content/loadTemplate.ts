@@ -8,6 +8,8 @@ export interface TemplateData {
   name: string;
   /** Template-specific image prompt describing the scene/setting. */
   imagePrompt: string;
+  /** Whether this template uses the artist's face-guide for identity. Defaults to true. */
+  usesFaceGuide: boolean;
   styleGuide: Record<string, unknown> | null;
   captionGuide: Record<string, unknown> | null;
   captionExamples: string[];
@@ -54,12 +56,16 @@ export async function loadTemplate(templateName: string): Promise<TemplateData> 
     // No images directory
   }
 
-  // Read imagePrompt from the style guide (each template defines its own scene)
-  const imagePrompt = (styleGuide as Record<string, unknown> | null)?.imagePrompt as string ?? "";
+  // Read template-level fields from the style guide
+  const sg = styleGuide as Record<string, unknown> | null;
+  const imagePrompt = (sg?.imagePrompt as string) ?? "";
+  // Default to true — most templates use the artist's face
+  const usesFaceGuide = (sg?.usesFaceGuide as boolean) ?? true;
 
   return {
     name: templateName,
     imagePrompt,
+    usesFaceGuide,
     styleGuide,
     captionGuide,
     captionExamples,

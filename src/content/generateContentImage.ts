@@ -23,14 +23,16 @@ export async function generateContentImage({
   referenceImagePath,
   prompt,
 }: {
-  faceGuideUrl: string;
+  /** Face-guide URL — omit for templates that don't use the artist's face. */
+  faceGuideUrl?: string;
   referenceImagePath: string | null;
   prompt: string;
 }): Promise<string> {
   const config = DEFAULT_PIPELINE_CONFIG;
 
-  // Build image_urls: face-guide first, reference second
-  const imageUrls: string[] = [faceGuideUrl];
+  // Build image_urls: face-guide (if provided) + reference image (if provided)
+  const imageUrls: string[] = [];
+  if (faceGuideUrl) imageUrls.push(faceGuideUrl);
 
   if (referenceImagePath) {
     logger.log("Uploading reference image to fal storage", {

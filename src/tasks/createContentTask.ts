@@ -21,7 +21,7 @@ import {
   buildImagePrompt,
   buildMotionPrompt,
 } from "../content/loadTemplate";
-import { FACE_SWAP_INSTRUCTION } from "../content/contentPrompts";
+import { FACE_SWAP_INSTRUCTION, NO_FACE_INSTRUCTION } from "../content/contentPrompts";
 
 /**
  * Content-creation task — full pipeline that generates a social-ready video.
@@ -67,17 +67,20 @@ export const createContentTask = schemaTask({
     metadata.set("currentStep", "Loading template");
     const template = await loadTemplate(payload.template);
 
-    // --- Step 2: Fetch face-guide ---
-    metadata.set("currentStep", "Fetching face-guide");
-    const faceGuideBuffer = await fetchGithubFile(
-      payload.githubRepo,
-      `artists/${payload.artistSlug}/context/images/face-guide.png`,
-    );
-    if (!faceGuideBuffer) {
-      throw new Error(`face-guide.png not found for artist ${payload.artistSlug}`);
+    // --- Step 2: Fetch face-guide (only if template uses it) ---
+    let faceGuideUrl: string | null = null;
+    if (template.usesFaceGuide) {
+      metadata.set("currentStep", "Fetching face-guide");
+      const faceGuideBuffer = await fetchGithubFile(
+        payload.githubRepo,
+        `artists/${payload.artistSlug}/context/images/face-guide.png`,
+      );
+      if (!faceGuideBuffer) {
+        throw new Error(`face-guide.png not found for artist ${payload.artistSlug}`);
+      }
+      const faceGuideFile = new File([faceGuideBuffer], "face-guide.png", { type: "image/png" });
+      faceGuideUrl = await fal.storage.upload(faceGuideFile);
     }
-    const faceGuideFile = new File([faceGuideBuffer], "face-guide.png", { type: "image/png" });
-    const faceGuideUrl = await fal.storage.upload(faceGuideFile);
 
     // --- Step 3: Select audio clip ---
     metadata.set("currentStep", "Selecting audio clip");
@@ -100,11 +103,12 @@ export const createContentTask = schemaTask({
     // --- Step 5: Generate image ---
     metadata.set("currentStep", "Generating image");
     const referenceImagePath = pickRandomReferenceImage(template);
-    // Combine: face-swap instruction + template's scene prompt + style guide rules
-    const basePrompt = `${FACE_SWAP_INSTRUCTION} ${template.imagePrompt}`;
+    // Build prompt: face-swap instruction (if needed) + template scene + style guide
+    const instruction = template.usesFaceGuide ? FACE_SWAP_INSTRUCTION : NO_FACE_INSTRUCTION;
+    const basePrompt = `${instruction} ${template.imagePrompt}`;
     const fullPrompt = buildImagePrompt(basePrompt, template.styleGuide);
     let imageUrl = await generateContentImage({
-      faceGuideUrl,
+      faceGuideUrl: faceGuideUrl ?? undefined,
       referenceImagePath,
       prompt: fullPrompt,
     });
