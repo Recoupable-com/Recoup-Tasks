@@ -1,6 +1,13 @@
 import { logger } from "@trigger.dev/sdk/v3";
 import type { TemplateData } from "./loadTemplate";
 import type { SongLyrics } from "./transcribeSong";
+import type { CaptionLength } from "../schemas/contentCreationSchema";
+
+const CAPTION_LENGTH_INSTRUCTIONS: Record<CaptionLength, string> = {
+  short: "Write a SHORT caption (max 10 words). Punchy, minimal, like a text message. Think: one phrase that hits.",
+  medium: "Write a MEDIUM caption (15-30 words). A complete thought with feeling. 1-2 sentences max.",
+  long: "Write a LONG caption (40-80 words). A mini-story or stream of consciousness. Vulnerable, raw, the kind of caption people screenshot.",
+};
 
 /**
  * Generates a TikTok-style caption using the Recoup Chat API.
@@ -15,6 +22,7 @@ export async function generateCaption({
   clipLyrics,
   artistContext,
   audienceContext,
+  captionLength = "short",
 }: {
   template: TemplateData;
   songTitle: string;
@@ -22,6 +30,7 @@ export async function generateCaption({
   clipLyrics: string;
   artistContext: string;
   audienceContext: string;
+  captionLength?: CaptionLength;
 }): Promise<string> {
   const recoupApiKey = process.env.RECOUP_API_KEY;
   if (!recoupApiKey) {
@@ -36,7 +45,12 @@ export async function generateCaption({
     ? template.captionExamples.map(c => `- "${c}"`).join("\n")
     : "(no examples)";
 
+  const lengthInstruction = CAPTION_LENGTH_INSTRUCTIONS[captionLength];
+
   const prompt = `Generate ONE caption for a TikTok post.
+
+## LENGTH REQUIREMENT
+${lengthInstruction}
 
 ## Content Style
 ${captionGuide}
@@ -54,7 +68,7 @@ ${audienceContext}
 Full lyrics: ${fullLyrics}
 What the viewer hears (first 8 seconds): "${clipLyrics}"
 
-Generate ONE caption. Return ONLY the caption text, nothing else. No quotes around it.`;
+Generate ONE caption. ${lengthInstruction} Return ONLY the caption text, nothing else. No quotes around it. No hashtags unless the caption naturally calls for them.`;
 
   logger.log("Generating caption", { songTitle });
 

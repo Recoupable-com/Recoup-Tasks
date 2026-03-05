@@ -1,5 +1,5 @@
 import { logger } from "@trigger.dev/sdk/v3";
-import { listArtistSongs } from "./listArtistSongs";
+import { listArtistSongs, parseSongPath } from "./listArtistSongs";
 import { fetchGithubFile } from "./fetchGithubFile";
 import { transcribeSong } from "./transcribeSong";
 import { analyzeClips, type SongClip } from "./analyzeClips";
@@ -61,13 +61,14 @@ export async function selectAudioClip({
   }
 
   // Step 2: Pick a random song
-  const songPath = songPaths[Math.floor(Math.random() * songPaths.length)];
+  const encodedPath = songPaths[Math.floor(Math.random() * songPaths.length)];
+  const { repoUrl, filePath: songPath } = parseSongPath(encodedPath);
   const songFilename = songPath.split("/").pop() ?? "unknown.mp3";
   const songTitle = songFilename.replace(/\.mp3$/i, "");
   logger.log("Selected song", { songTitle, songPath });
 
-  // Step 3: Download the mp3
-  const songBuffer = await fetchGithubFile(githubRepo, songPath);
+  // Step 3: Download the mp3 (use org repo URL if the song was found there)
+  const songBuffer = await fetchGithubFile(repoUrl ?? githubRepo, songPath);
   if (!songBuffer) {
     throw new Error(`Failed to download song: ${songPath}`);
   }

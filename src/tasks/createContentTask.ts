@@ -147,6 +147,7 @@ export const createContentTask = schemaTask({
       clipLyrics: audioClip.clipLyrics,
       artistContext,
       audienceContext,
+      captionLength: payload.captionLength,
     });
 
     // --- Step 10: Final render (ffmpeg) ---

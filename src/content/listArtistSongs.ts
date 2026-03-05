@@ -2,7 +2,9 @@ import { logger } from "@trigger.dev/sdk/v3";
 
 /**
  * Lists mp3 files available in an artist's GitHub repo.
- * Returns the file paths relative to the repo root.
+ * Checks main repo first, then submodule org repos.
+ *
+ * @returns Array of file paths relative to the repo root.
  */
 export async function listArtistSongs(
   githubRepoUrl: string,
@@ -13,13 +15,52 @@ export async function listArtistSongs(
     throw new Error("GITHUB_TOKEN is required to list artist songs");
   }
 
-  const match = githubRepoUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
-  if (!match) {
-    throw new Error(`Invalid GitHub repo URL: ${githubRepoUrl}`);
+  // Try main repo first
+  const mainSongs = await listMp3sInRepo(githubRepoUrl, artistSlug, token);
+  if (mainSongs.length > 0) return mainSongs;
+
+  // Check submodule org repos
+  logger.log("No songs in main repo, checking org submodules");
+  const orgRepos = await getOrgRepoUrls(githubRepoUrl, token);
+  for (const orgRepoUrl of orgRepos) {
+    const orgSongs = await listMp3sInRepo(orgRepoUrl, artistSlug, token);
+    if (orgSongs.length > 0) {
+      logger.log("Found songs in org repo", {
+        orgRepo: orgRepoUrl.split("/").pop(),
+        count: orgSongs.length,
+      });
+      // Store the org repo URL so fetchGithubFile can use it later
+      return orgSongs.map(path => `__ORG_REPO__${orgRepoUrl}__${path}`);
+    }
   }
+
+  return [];
+}
+
+/**
+ * Parses an encoded song path to extract the actual repo URL and file path.
+ * Song paths from org repos are encoded as: __ORG_REPO__{url}__{path}
+ */
+export function parseSongPath(encodedPath: string): {
+  repoUrl: string | null;
+  filePath: string;
+} {
+  if (encodedPath.startsWith("__ORG_REPO__")) {
+    const parts = encodedPath.replace("__ORG_REPO__", "").split("__");
+    return { repoUrl: parts[0], filePath: parts.slice(1).join("__") };
+  }
+  return { repoUrl: null, filePath: encodedPath };
+}
+
+async function listMp3sInRepo(
+  githubRepoUrl: string,
+  artistSlug: string,
+  token: string,
+): Promise<string[]> {
+  const match = githubRepoUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
+  if (!match) return [];
   const [, owner, repo] = match;
 
-  // Get the full recursive file tree
   const response = await fetch(
     `https://api.github.com/repos/${owner}/${repo}/git/trees/main?recursive=1`,
     {
@@ -31,17 +72,14 @@ export async function listArtistSongs(
     },
   );
 
-  if (!response.ok) {
-    throw new Error(`GitHub API error listing files: ${response.status}`);
-  }
+  if (!response.ok) return [];
 
   const data = (await response.json()) as {
     tree: Array<{ path: string; type: string }>;
   };
 
-  // Find mp3 files under the artist's directory
   const artistPrefix = `artists/${artistSlug}/`;
-  const mp3Files = data.tree
+  return data.tree
     .filter(
       entry =>
         entry.type === "blob" &&
@@ -49,12 +87,34 @@ export async function listArtistSongs(
         entry.path.toLowerCase().endsWith(".mp3"),
     )
     .map(entry => entry.path);
+}
 
-  logger.log("Found artist songs", {
-    artistSlug,
-    songCount: mp3Files.length,
-    songs: mp3Files.map(p => p.split("/").pop()),
-  });
+async function getOrgRepoUrls(
+  githubRepoUrl: string,
+  token: string,
+): Promise<string[]> {
+  const match = githubRepoUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
+  if (!match) return [];
+  const [, owner, repo] = match;
 
-  return mp3Files;
+  const response = await fetch(
+    `https://api.github.com/repos/${owner}/${repo}/contents/.gitmodules`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github.v3.raw",
+        "User-Agent": "Recoup-Tasks",
+      },
+    },
+  );
+
+  if (!response.ok) return [];
+
+  const content = await response.text();
+  const urls: string[] = [];
+  const urlMatches = content.matchAll(/url\s*=\s*(https:\/\/github\.com\/[^\s]+)/g);
+  for (const m of urlMatches) {
+    urls.push(m[1]);
+  }
+  return urls;
 }

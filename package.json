@@ -17,6 +17,7 @@
   "devDependencies": {
     "@trigger.dev/build": "4.3.3",
     "@types/ms": "^2.1.0",
+    "dotenv": "^17.3.1",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"
   }
