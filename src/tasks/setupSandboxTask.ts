@@ -1,7 +1,5 @@
-import { logger, schemaTask } from "@trigger.dev/sdk/v3";
-import { Sandbox } from "@vercel/sandbox";
-import { createAccountSandbox } from "../recoup/createAccountSandbox";
-import { getVercelSandboxCredentials } from "../sandboxes/getVercelSandboxCredentials";
+import { schemaTask } from "@trigger.dev/sdk/v3";
+import { getOrCreateSandbox } from "../sandboxes/getOrCreateSandbox";
 import { logStep } from "../sandboxes/logStep";
 import { snapshotAndPersist } from "../sandboxes/snapshotAndPersist";
 import { provisionSandbox } from "../sandboxes/provisionSandbox";
@@ -21,27 +19,10 @@ export const setupSandboxTask = schemaTask({
   },
   run: async (payload) => {
     const { accountId } = payload;
-    const { token, teamId, projectId } = getVercelSandboxCredentials();
 
     logStep("Starting sandbox setup", true, { accountId });
 
-    logStep("Creating sandbox");
-
-    const created = await createAccountSandbox(accountId);
-    if (!created) {
-      logStep("Failed to create sandbox");
-      throw new Error(`Failed to create sandbox for account ${accountId}`);
-    }
-
-    const { sandboxId } = created;
-    logStep("Sandbox created", true, { sandboxId });
-
-    const sandbox = await Sandbox.get({ sandboxId, token, teamId, projectId });
-
-    logStep("Connected to sandbox", true, {
-      sandboxId: sandbox.sandboxId,
-      status: sandbox.status,
-    });
+    const { sandboxId, sandbox } = await getOrCreateSandbox(accountId);
 
     try {
       logStep("Provisioning sandbox");

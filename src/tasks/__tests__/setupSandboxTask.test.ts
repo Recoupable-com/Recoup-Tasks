@@ -5,32 +5,21 @@ vi.mock("@trigger.dev/sdk/v3", () => ({
   schemaTask: vi.fn((config) => config),
 }));
 
-vi.mock("../../sandboxes/logStep", () => ({
-  logStep: vi.fn(),
-}));
+const mockStop = vi.fn().mockResolvedValue(undefined);
 
-vi.mock("@vercel/sandbox", () => ({
-  Sandbox: {
-    get: vi.fn().mockResolvedValue({
+vi.mock("../../sandboxes/getOrCreateSandbox", () => ({
+  getOrCreateSandbox: vi.fn().mockResolvedValue({
+    sandboxId: "sbx_123",
+    sandbox: {
       sandboxId: "sbx_123",
       status: "running",
-      stop: vi.fn().mockResolvedValue(undefined),
-    }),
-  },
-}));
-
-vi.mock("../../recoup/createAccountSandbox", () => ({
-  createAccountSandbox: vi
-    .fn()
-    .mockResolvedValue({ sandboxId: "sbx_123" }),
-}));
-
-vi.mock("../../sandboxes/getVercelSandboxCredentials", () => ({
-  getVercelSandboxCredentials: vi.fn().mockReturnValue({
-    token: "tok",
-    teamId: "team",
-    projectId: "proj",
+      stop: mockStop,
+    },
   }),
+}));
+
+vi.mock("../../sandboxes/logStep", () => ({
+  logStep: vi.fn(),
 }));
 
 vi.mock("../../sandboxes/provisionSandbox", () => ({
@@ -47,8 +36,8 @@ vi.mock("../../sandboxes/snapshotAndPersist", () => ({
 }));
 
 const { setupSandboxTask } = await import("../setupSandboxTask");
-const { createAccountSandbox } = await import(
-  "../../recoup/createAccountSandbox"
+const { getOrCreateSandbox } = await import(
+  "../../sandboxes/getOrCreateSandbox"
 );
 const { provisionSandbox } = await import(
   "../../sandboxes/provisionSandbox"
@@ -56,7 +45,6 @@ const { provisionSandbox } = await import(
 const { snapshotAndPersist } = await import(
   "../../sandboxes/snapshotAndPersist"
 );
-const { Sandbox } = await import("@vercel/sandbox");
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -64,6 +52,12 @@ beforeEach(() => {
 
 describe("setupSandboxTask", () => {
   const run = setupSandboxTask.run;
+
+  it("calls getOrCreateSandbox with accountId", async () => {
+    await run({ accountId: "acc_1" });
+
+    expect(getOrCreateSandbox).toHaveBeenCalledWith("acc_1");
+  });
 
   it("calls provisionSandbox with sandbox, sandboxId, and accountId", async () => {
     await run({ accountId: "acc_1" });
@@ -94,21 +88,12 @@ describe("setupSandboxTask", () => {
     });
   });
 
-  it("throws when createAccountSandbox returns null", async () => {
-    vi.mocked(createAccountSandbox).mockResolvedValueOnce(null);
-
-    await expect(run({ accountId: "acc_1" })).rejects.toThrow(
-      "Failed to create sandbox for account acc_1",
-    );
-  });
-
   it("stops the sandbox even when provisionSandbox throws", async () => {
     vi.mocked(provisionSandbox).mockRejectedValueOnce(new Error("boom"));
-    const mockSandbox = await Sandbox.get({} as any);
 
     await expect(run({ accountId: "acc_1" })).rejects.toThrow("boom");
 
-    expect(mockSandbox.stop).toHaveBeenCalled();
+    expect(mockStop).toHaveBeenCalled();
   });
 
   it("has maxDuration of 15 minutes", () => {
