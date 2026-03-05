@@ -1,4 +1,5 @@
 .trigger
 .env
 node_modules
-tsconfig.tsbuildinfo
+tsconfig.tsbuildinfo.env.local
+.env
