@@ -1,7 +1,6 @@
 import { schemaTask } from "@trigger.dev/sdk/v3";
 import { getOrCreateSandbox } from "../sandboxes/getOrCreateSandbox";
 import { logStep } from "../sandboxes/logStep";
-import { pushSandboxToGithub } from "../sandboxes/pushSandboxToGithub";
 import { snapshotAndPersist } from "../sandboxes/snapshotAndPersist";
 import { provisionSandbox } from "../sandboxes/provisionSandbox";
 import { setupSandboxPayloadSchema } from "../schemas/setupSandboxSchema";
@@ -29,9 +28,6 @@ export const setupSandboxTask = schemaTask({
       logStep("Provisioning sandbox");
       const { githubRepo } = await provisionSandbox(sandbox, sandboxId, accountId);
       logStep("Provisioning complete", false);
-
-      logStep("Pushing to GitHub");
-      await pushSandboxToGithub(sandbox);
 
       logStep("Taking snapshot");
       const snapshotResult = await snapshotAndPersist(

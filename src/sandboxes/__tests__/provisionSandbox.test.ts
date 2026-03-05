@@ -29,6 +29,10 @@ vi.mock("../ensureSetupSandbox", () => ({
   ensureSetupSandbox: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock("../pushSandboxToGithub", () => ({
+  pushSandboxToGithub: vi.fn().mockResolvedValue(undefined),
+}));
+
 const { provisionSandbox } = await import("../provisionSandbox");
 const { installOpenClaw } = await import("../installOpenClaw");
 const { setupOpenClaw } = await import("../setupOpenClaw");
@@ -36,6 +40,7 @@ const { ensureGithubRepo } = await import("../ensureGithubRepo");
 const { writeReadme } = await import("../writeReadme");
 const { ensureOrgRepos } = await import("../ensureOrgRepos");
 const { ensureSetupSandbox } = await import("../ensureSetupSandbox");
+const { pushSandboxToGithub } = await import("../pushSandboxToGithub");
 
 const mockSandbox = {} as any;
 
@@ -58,6 +63,7 @@ describe("provisionSandbox", () => {
     );
     expect(ensureOrgRepos).toHaveBeenCalledWith(mockSandbox, "acc_456");
     expect(ensureSetupSandbox).toHaveBeenCalledWith(mockSandbox, "acc_456");
+    expect(pushSandboxToGithub).toHaveBeenCalledWith(mockSandbox);
   });
 
   it("returns the github repo URL", async () => {
