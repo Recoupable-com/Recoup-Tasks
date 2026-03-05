@@ -28,10 +28,6 @@ vi.mock("../../sandboxes/provisionSandbox", () => ({
     .mockResolvedValue({ githubRepo: "https://github.com/org/repo" }),
 }));
 
-vi.mock("../../sandboxes/pushSandboxToGithub", () => ({
-  pushSandboxToGithub: vi.fn().mockResolvedValue(true),
-}));
-
 vi.mock("../../sandboxes/snapshotAndPersist", () => ({
   snapshotAndPersist: vi.fn().mockResolvedValue({
     snapshotId: "snap_abc",
@@ -45,9 +41,6 @@ const { getOrCreateSandbox } = await import(
 );
 const { provisionSandbox } = await import(
   "../../sandboxes/provisionSandbox"
-);
-const { pushSandboxToGithub } = await import(
-  "../../sandboxes/pushSandboxToGithub"
 );
 const { snapshotAndPersist } = await import(
   "../../sandboxes/snapshotAndPersist"
@@ -101,14 +94,6 @@ describe("setupSandboxTask", () => {
     await expect(run({ accountId: "acc_1" })).rejects.toThrow("boom");
 
     expect(mockStop).toHaveBeenCalled();
-  });
-
-  it("pushes to GitHub after provisioning and before snapshot", async () => {
-    await run({ accountId: "acc_1" });
-
-    expect(pushSandboxToGithub).toHaveBeenCalledWith(
-      expect.objectContaining({ sandboxId: "sbx_123" }),
-    );
   });
 
   it("has maxDuration of 15 minutes", () => {
