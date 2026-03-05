@@ -27,11 +27,13 @@ export async function runOpenClawAgent(
 ): Promise<RunOpenClawAgentResult> {
   const { label, message, env } = options;
 
-  logStep(label);
+  const args = ["agent", "--agent", "main", "--message", message];
+
+  logStep(label, true, { cmd: "openclaw", args });
 
   const commandOpts: Record<string, unknown> = {
     cmd: "openclaw",
-    args: ["agent", "--agent", "main", "--message", message],
+    args,
   };
 
   if (env) {
