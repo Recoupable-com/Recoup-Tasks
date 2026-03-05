@@ -1,7 +1,8 @@
-import { logger, metadata, schemaTask } from "@trigger.dev/sdk/v3";
+import { logger, schemaTask } from "@trigger.dev/sdk/v3";
 import { Sandbox } from "@vercel/sandbox";
 import { createAccountSandbox } from "../recoup/createAccountSandbox";
 import { getVercelSandboxCredentials } from "../sandboxes/getVercelSandboxCredentials";
+import { logStep } from "../sandboxes/logStep";
 import { snapshotAndPersist } from "../sandboxes/snapshotAndPersist";
 import { provisionSandbox } from "../sandboxes/provisionSandbox";
 import { setupSandboxPayloadSchema } from "../schemas/setupSandboxSchema";
@@ -22,48 +23,39 @@ export const setupSandboxTask = schemaTask({
     const { accountId } = payload;
     const { token, teamId, projectId } = getVercelSandboxCredentials();
 
-    logger.log("Starting sandbox setup", { accountId });
+    logStep("Starting sandbox setup", true, { accountId });
 
-    metadata.set("currentStep", "Creating sandbox");
-    metadata.append("logs", "Creating sandbox");
+    logStep("Creating sandbox");
 
     const created = await createAccountSandbox(accountId);
     if (!created) {
-      metadata.set("currentStep", "Failed");
-      metadata.append("logs", "Failed to create sandbox");
+      logStep("Failed to create sandbox");
       throw new Error(`Failed to create sandbox for account ${accountId}`);
     }
 
     const { sandboxId } = created;
-    logger.log("Sandbox created via API", { sandboxId });
-    metadata.append("logs", `Sandbox created: ${sandboxId}`);
+    logStep("Sandbox created", true, { sandboxId });
 
     const sandbox = await Sandbox.get({ sandboxId, token, teamId, projectId });
 
-    metadata.set("currentStep", "Connected to sandbox");
-    metadata.append("logs", "Connected to sandbox");
-    logger.log("Connected to sandbox", {
+    logStep("Connected to sandbox", true, {
       sandboxId: sandbox.sandboxId,
       status: sandbox.status,
     });
 
     try {
-      metadata.set("currentStep", "Provisioning sandbox");
-      metadata.append("logs", "Provisioning sandbox");
+      logStep("Provisioning sandbox");
       const { githubRepo } = await provisionSandbox(sandbox, sandboxId, accountId);
-      metadata.append("logs", "Provisioning complete");
+      logStep("Provisioning complete", false);
 
-      metadata.set("currentStep", "Taking snapshot");
-      metadata.append("logs", "Taking snapshot");
+      logStep("Taking snapshot");
       const snapshotResult = await snapshotAndPersist(
         sandbox,
         accountId,
         githubRepo,
       );
 
-      metadata.set("currentStep", "Complete");
-      metadata.append("logs", "Sandbox setup complete");
-      logger.log("Sandbox setup complete", {
+      logStep("Sandbox setup complete", true, {
         sandboxId: sandbox.sandboxId,
         githubRepo: githubRepo ?? null,
         snapshotId: snapshotResult.snapshotId,
@@ -74,7 +66,7 @@ export const setupSandboxTask = schemaTask({
         snapshotId: snapshotResult.snapshotId,
       };
     } finally {
-      logger.log("Stopping sandbox", { sandboxId: sandbox.sandboxId });
+      logStep("Stopping sandbox", false, { sandboxId: sandbox.sandboxId });
       await sandbox.stop();
     }
   },

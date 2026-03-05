@@ -2,8 +2,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@trigger.dev/sdk/v3", () => ({
   logger: { log: vi.fn(), error: vi.fn() },
-  metadata: { set: vi.fn(), append: vi.fn() },
   schemaTask: vi.fn((config) => config),
+}));
+
+vi.mock("../../sandboxes/logStep", () => ({
+  logStep: vi.fn(),
 }));
 
 vi.mock("@vercel/sandbox", () => ({
