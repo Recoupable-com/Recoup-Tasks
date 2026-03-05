@@ -1,19 +1,20 @@
 import { logger, metadata, schemaTask } from "@trigger.dev/sdk/v3";
 import { Sandbox } from "@vercel/sandbox";
 import { createAccountSandbox } from "../recoup/createAccountSandbox";
-import { ensureGithubRepo } from "../sandboxes/ensureGithubRepo";
 import { getVercelSandboxCredentials } from "../sandboxes/getVercelSandboxCredentials";
 import { snapshotAndPersist } from "../sandboxes/snapshotAndPersist";
+import { provisionSandbox } from "../sandboxes/provisionSandbox";
 import { setupSandboxPayloadSchema } from "../schemas/setupSandboxSchema";
 
 /**
  * Background task that creates a personal Vercel Sandbox for an account,
- * provisions it with a GitHub repository, takes a snapshot, and shuts it down.
+ * fully provisions it (OpenClaw, GitHub repo, org repos, folder structure),
+ * takes a snapshot, and shuts it down.
  */
 export const setupSandboxTask = schemaTask({
   id: "setup-sandbox",
   schema: setupSandboxPayloadSchema,
-  maxDuration: 60 * 5, // 5 minutes max
+  maxDuration: 60 * 15, // 15 minutes max to accommodate OpenClaw install
   retry: {
     maxAttempts: 0, // Zero retries — run once only
   },
@@ -47,17 +48,17 @@ export const setupSandboxTask = schemaTask({
     });
 
     try {
-      metadata.set("currentStep", "Setting up GitHub repo");
-      metadata.append("logs", "Setting up GitHub repo");
-      const githubRepo = await ensureGithubRepo(sandbox, accountId);
-      metadata.append("logs", "GitHub repo ready");
+      metadata.set("currentStep", "Provisioning sandbox");
+      metadata.append("logs", "Provisioning sandbox");
+      const { githubRepo } = await provisionSandbox(sandbox, sandboxId, accountId);
+      metadata.append("logs", "Provisioning complete");
 
       metadata.set("currentStep", "Taking snapshot");
       metadata.append("logs", "Taking snapshot");
       const snapshotResult = await snapshotAndPersist(
         sandbox,
         accountId,
-        githubRepo ?? undefined
+        githubRepo,
       );
 
       metadata.set("currentStep", "Complete");
