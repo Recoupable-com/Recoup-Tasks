@@ -5,7 +5,6 @@ import { ensureGithubRepo } from "./ensureGithubRepo";
 import { writeReadme } from "./writeReadme";
 import { ensureOrgRepos } from "./ensureOrgRepos";
 import { ensureSetupSandbox } from "./ensureSetupSandbox";
-import { pushSandboxToGithub } from "./pushSandboxToGithub";
 import { logStep } from "./logStep";
 
 interface ProvisionSandboxResult {
@@ -39,9 +38,6 @@ export async function provisionSandbox(
   await ensureOrgRepos(sandbox, accountId);
 
   await ensureSetupSandbox(sandbox, accountId);
-
-  logStep("Pushing to GitHub");
-  await pushSandboxToGithub(sandbox);
 
   return { githubRepo: githubRepo ?? undefined };
 }
