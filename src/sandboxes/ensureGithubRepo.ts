@@ -66,6 +66,31 @@ export async function ensureGithubRepo(
   });
 
   if (gitCheck.exitCode === 0) {
+    // Verify origin points to the correct repo
+    const remoteResult = await sandbox.runCommand({
+      cmd: "git",
+      args: ["remote", "get-url", "origin"],
+    });
+    const currentRemote = ((await remoteResult.stdout()) || "").trim();
+    const expectedRepoPath = githubRepo.replace("https://github.com/", "");
+
+    if (!currentRemote.includes(expectedRepoPath)) {
+      logger.log("Origin remote points to wrong repo, updating", {
+        currentRemote,
+        expectedRepo: githubRepo,
+      });
+
+      const repoUrl = githubRepo.replace(
+        "https://github.com/",
+        `https://x-access-token:${githubToken}@github.com/`,
+      );
+
+      await sandbox.runCommand({
+        cmd: "git",
+        args: ["remote", "set-url", "origin", repoUrl],
+      });
+    }
+
     logger.log("GitHub repo already cloned in sandbox", { githubRepo });
     return githubRepo;
   }

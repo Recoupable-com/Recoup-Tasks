@@ -38,7 +38,13 @@ export async function provisionSandbox(
 
   await ensureOrgRepos(sandbox, accountId);
 
-  await ensureSetupSandbox(sandbox, accountId);
+  try {
+    await ensureSetupSandbox(sandbox, accountId);
+  } catch (error) {
+    logStep("ensureSetupSandbox failed, continuing with push", false, {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
 
   logStep("Pushing to GitHub");
   await pushSandboxToGithub(sandbox);

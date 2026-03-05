@@ -76,4 +76,12 @@ describe("provisionSandbox", () => {
     const result = await provisionSandbox(mockSandbox, "sbx_123", "acc_456");
     expect(result.githubRepo).toBeUndefined();
   });
+
+  it("still calls pushSandboxToGithub when ensureSetupSandbox throws", async () => {
+    vi.mocked(ensureSetupSandbox).mockRejectedValueOnce(new Error("skill timeout"));
+    const result = await provisionSandbox(mockSandbox, "sbx_123", "acc_456");
+
+    expect(pushSandboxToGithub).toHaveBeenCalledWith(mockSandbox);
+    expect(result.githubRepo).toBe("https://github.com/org/repo");
+  });
 });

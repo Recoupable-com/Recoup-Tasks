@@ -1,5 +1,4 @@
 import type { Sandbox } from "@vercel/sandbox";
-import { logger } from "@trigger.dev/sdk/v3";
 import { installSkill } from "./installSkill";
 import { runSetupSandboxSkill } from "./runSetupSandboxSkill";
 import { runSetupArtistSkill } from "./runSetupArtistSkill";
@@ -16,16 +15,6 @@ export async function ensureSetupSandbox(
   sandbox: Sandbox,
   accountId: string
 ): Promise<void> {
-  const check = await sandbox.runCommand({
-    cmd: "test",
-    args: ["-d", "orgs/"],
-  });
-
-  if (check.exitCode === 0) {
-    logger.log("Sandbox already set up, skipping");
-    return;
-  }
-
   logStep("Installing skills");
 
   await installSkill(sandbox, "recoupable/setup-sandbox");

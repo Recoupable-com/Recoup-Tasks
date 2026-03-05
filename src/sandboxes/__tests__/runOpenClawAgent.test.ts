@@ -136,4 +136,5 @@ describe("runOpenClawAgent", () => {
     expect(result.stdout).toBe("output\n");
     expect(result.stderr).toBe("warn\n");
   });
+
 });
