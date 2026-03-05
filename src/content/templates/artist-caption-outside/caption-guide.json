@@ -1,0 +1,31 @@
+{
+  "templateStyle": "deadpan selfie with music playing — artist staring at camera, too cool to care",
+  "captionRole": "the caption is the hook. short, blunt, makes someone stop scrolling. inspired by the songs vibe, not a quote from it.",
+  "tone": "deadpan, low effort, like you typed it with one thumb while bored",
+  "rules": [
+    "lowercase only",
+    "SHORTER IS ALWAYS BETTER. aim for 20-50 characters. never exceed 60",
+    "no punctuation at the end",
+    "no apostrophes or quotes — write whats up not what's up, write dont not don't",
+    "never promotional",
+    "never describe whats in the video",
+    "dont quote the lyrics directly — riff on the vibe instead",
+    "dont try to be clever or poetic. be blunt and simple",
+    "if it sounds like an AI wrote it, its too long and too try-hard. simplify",
+    "think: what would a bored teenager type as a caption in 3 seconds"
+  ],
+  "formats": [
+    "a blunt confession (6-10 words max)",
+    "a 'date idea:' or 'pov:' setup (keep it short)",
+    "a self-deprecating one-liner",
+    "a hyper-specific relatable moment in as few words as possible",
+    "something dumb that somehow hits hard"
+  ],
+  "examples_of_good_length": [
+    "if anyone couldve saved me",
+    "i keep your photos in my hidden folder",
+    "my brain has a junk drawer",
+    "this song ruined me",
+    "i wrote this about you and you dont even know"
+  ]
+}

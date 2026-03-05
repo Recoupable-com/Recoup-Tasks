@@ -1,33 +1,52 @@
+import fs from "node:fs/promises";
 import { fal } from "@fal-ai/client";
 import { logger } from "@trigger.dev/sdk/v3";
 import { DEFAULT_PIPELINE_CONFIG } from "./defaultPipelineConfig";
 
 /**
  * Generates an AI image of the artist using fal.ai.
- * Uses the face-guide as identity reference and a text prompt for the scene.
+ * Uses the face-guide as identity reference, a compositional reference image
+ * for the scene layout, and a text prompt with style guide rules.
  *
  * @param faceGuideUrl - fal storage URL of the artist's face-guide image
- * @param prompt - Scene/style prompt for image generation
+ * @param referenceImagePath - local path to a template reference image (or null to skip)
+ * @param prompt - Full scene/style prompt for image generation
  * @returns URL of the generated image
  */
 export async function generateContentImage({
   faceGuideUrl,
+  referenceImagePath,
   prompt,
 }: {
   faceGuideUrl: string;
+  referenceImagePath: string | null;
   prompt: string;
 }): Promise<string> {
   const config = DEFAULT_PIPELINE_CONFIG;
 
+  // Build image_urls array: always include face-guide, optionally add reference
+  const imageUrls: string[] = [faceGuideUrl];
+
+  if (referenceImagePath) {
+    logger.log("Uploading reference image to fal storage", {
+      path: referenceImagePath,
+    });
+    const refBuffer = await fs.readFile(referenceImagePath);
+    const refFile = new File([refBuffer], "reference.png", { type: "image/png" });
+    const refUrl = await fal.storage.upload(refFile);
+    imageUrls.push(refUrl);
+  }
+
   logger.log("Generating image", {
     model: config.imageModel,
     prompt: prompt.slice(0, 100),
+    imageCount: imageUrls.length,
   });
 
   const result = await fal.subscribe(config.imageModel, {
     input: {
       prompt,
-      image_urls: [faceGuideUrl],
+      image_urls: imageUrls,
       aspect_ratio: config.aspectRatio as "16:9",
       resolution: config.resolution as "2K",
       output_format: "png",
@@ -49,9 +68,7 @@ export async function generateContentImage({
   return imageUrl;
 }
 
-/**
- * Extracts a media URL from various fal.ai response shapes.
- */
+/** Extracts a media URL from various fal.ai response shapes. */
 function extractFalUrl(data: Record<string, unknown>): string | undefined {
   for (const key of ["image", "video"]) {
     if (data[key] && typeof data[key] === "object") {

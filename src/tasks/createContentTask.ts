@@ -4,17 +4,24 @@ import { createContentPayloadSchema } from "../schemas/contentCreationSchema";
 import { fetchGithubFile } from "../content/fetchGithubFile";
 import { generateContentImage } from "../content/generateContentImage";
 import { generateContentVideo } from "../content/generateContentVideo";
-import { DEFAULT_IMAGE_PROMPT, DEFAULT_MOTION_PROMPT } from "../content/contentPrompts";
+import {
+  loadTemplate,
+  pickRandomReferenceImage,
+  buildImagePrompt,
+  buildMotionPrompt,
+} from "../content/loadTemplate";
+import { DEFAULT_IMAGE_PROMPT } from "../content/contentPrompts";
 
 /**
  * Content-creation task — generates a real AI video for an artist.
  *
  * Pipeline steps:
- *   1. Fetch face-guide from artist's GitHub repo
- *   2. Upload face-guide to fal.ai storage
- *   3. Generate image with fal.ai (face-guide + scene prompt)
- *   4. Generate video with fal.ai (animate the image)
- *   5. Return video URL for API to persist
+ *   1. Load template (style guide, reference images, moods)
+ *   2. Fetch face-guide from artist's GitHub repo
+ *   3. Upload face-guide to fal.ai storage
+ *   4. Generate image (fal.ai — face-guide + reference + styled prompt)
+ *   5. Generate video (fal.ai — animate the image with motion prompt)
+ *   6. Return video URL for API to persist
  *
  * This task intentionally avoids direct Supabase access. Storage and
  * file-record writes are handled by the API layer.
@@ -43,45 +50,52 @@ export const createContentTask = schemaTask({
     }
     fal.config({ credentials: falKey });
 
-    // --- Step 1: Fetch face-guide from GitHub ---
-    metadata.set("currentStep", "Fetching face-guide from GitHub");
-    logger.log("Fetching face-guide from GitHub repo", {
-      repo: payload.githubRepo,
+    // --- Step 1: Load template ---
+    metadata.set("currentStep", "Loading template");
+    const template = await loadTemplate(payload.template);
+    logger.log("Template loaded", {
+      name: template.name,
+      hasStyleGuide: !!template.styleGuide,
+      referenceImages: template.referenceImagePaths.length,
+      moods: template.videoMoods.length,
     });
 
+    // --- Step 2: Fetch face-guide from GitHub ---
+    metadata.set("currentStep", "Fetching face-guide from GitHub");
     const faceGuideBuffer = await fetchGithubFile(
       payload.githubRepo,
       `artists/${payload.artistSlug}/context/images/face-guide.png`,
     );
-
     if (!faceGuideBuffer) {
       throw new Error(
         `face-guide.png not found in repo for artist ${payload.artistSlug}`,
       );
     }
 
-    // --- Step 2: Upload face-guide to fal storage ---
+    // --- Step 3: Upload face-guide to fal storage ---
     metadata.set("currentStep", "Uploading face-guide to fal storage");
     const faceGuideFile = new File([faceGuideBuffer], "face-guide.png", {
       type: "image/png",
     });
     const faceGuideUrl = await fal.storage.upload(faceGuideFile);
-    logger.log("Face-guide uploaded to fal storage", {
-      url: faceGuideUrl.slice(0, 80),
-    });
+    logger.log("Face-guide uploaded", { url: faceGuideUrl.slice(0, 80) });
 
-    // --- Step 3: Generate image ---
+    // --- Step 4: Generate image ---
     metadata.set("currentStep", "Generating image with fal.ai");
+    const referenceImagePath = pickRandomReferenceImage(template);
+    const fullPrompt = buildImagePrompt(DEFAULT_IMAGE_PROMPT, template.styleGuide);
     const imageUrl = await generateContentImage({
       faceGuideUrl,
-      prompt: DEFAULT_IMAGE_PROMPT,
+      referenceImagePath,
+      prompt: fullPrompt,
     });
 
-    // --- Step 4: Generate video ---
+    // --- Step 5: Generate video ---
     metadata.set("currentStep", "Generating video with fal.ai");
+    const motionPrompt = buildMotionPrompt(template);
     const videoUrl = await generateContentVideo({
       imageUrl,
-      motionPrompt: DEFAULT_MOTION_PROMPT,
+      motionPrompt,
     });
 
     // --- Return result for API to persist ---
