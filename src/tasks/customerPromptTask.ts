@@ -3,6 +3,7 @@ import { getTaskRoomId } from "../chats/getTaskRoomId";
 import { fetchTask } from "../recoup/fetchTask";
 import { generateChat } from "../recoup/generateChat";
 import { chatSchema, type ChatConfig } from "../schemas/chatSchema";
+import { setupSandboxTask } from "./setupSandboxTask";
 
 type TaskPayload = {
   // Provided automatically by Trigger.dev schedules
@@ -58,6 +59,14 @@ export const customerPromptTask = schedules.task({
     }
 
     await tags.add(`account:${accountId}`);
+
+    // Ensure sandbox is provisioned before generating chat
+    const setupResult = await setupSandboxTask.triggerAndWait({ accountId });
+    if (!setupResult.ok) {
+      logger.error("Sandbox setup failed, continuing without sandbox", {
+        accountId,
+      });
+    }
 
     const roomId = await getTaskRoomId({
       roomId: taskConfig?.roomId,
