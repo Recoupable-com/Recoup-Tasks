@@ -22,7 +22,9 @@ export interface AccountSandboxesInfo {
 export async function getAccountSandboxes(
   accountId: string
 ): Promise<AccountSandboxesInfo | undefined> {
-  const url = `${NEW_API_BASE_URL}/api/sandboxes?account_id=${encodeURIComponent(accountId)}`;
+  const url = `${NEW_API_BASE_URL}/api/sandboxes?account_id=${encodeURIComponent(
+    accountId
+  )}`;
 
   logger.log("Fetching account sandboxes", { accountId, url });
 
@@ -56,8 +58,7 @@ export async function getAccountSandboxes(
 
     logger.log("Account sandboxes fetched", {
       accountId,
-      snapshotId: validation.data.snapshot_id,
-      githubRepo: validation.data.github_repo,
+      validation,
     });
 
     return {
