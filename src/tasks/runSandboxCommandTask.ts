@@ -1,14 +1,9 @@
 import { logger, schemaTask, tags } from "@trigger.dev/sdk/v3";
 import { logStep } from "../sandboxes/logStep";
 import { Sandbox } from "@vercel/sandbox";
-import { installOpenClaw } from "../sandboxes/installOpenClaw";
-import { setupOpenClaw } from "../sandboxes/setupOpenClaw";
-import { ensureGithubRepo } from "../sandboxes/ensureGithubRepo";
 import { getVercelSandboxCredentials } from "../sandboxes/getVercelSandboxCredentials";
 import { snapshotAndPersist } from "../sandboxes/snapshotAndPersist";
-import { writeReadme } from "../sandboxes/writeReadme";
-import { ensureOrgRepos } from "../sandboxes/ensureOrgRepos";
-import { ensureSetupSandbox } from "../sandboxes/ensureSetupSandbox";
+import { provisionSandbox } from "../sandboxes/provisionSandbox";
 import { pushSandboxToGithub } from "../sandboxes/pushSandboxToGithub";
 import {
   runSandboxCommandPayloadSchema,
@@ -16,9 +11,9 @@ import {
 } from "../schemas/sandboxSchema";
 
 /**
- * Background task that connects to an existing Vercel Sandbox, ensures OpenClaw
- * is installed with AI Gateway, runs a command with arguments, captures
- * output, takes a snapshot, and updates the account's snapshot ID.
+ * Background task that connects to an existing Vercel Sandbox, ensures it is
+ * fully provisioned, runs a command with arguments, captures output, takes a
+ * snapshot, and updates the account's snapshot ID.
  */
 export const runSandboxCommandTask = schemaTask({
   id: "run-sandbox-command",
@@ -45,24 +40,8 @@ export const runSandboxCommandTask = schemaTask({
     logStep("Connected to sandbox");
 
     try {
-      // Ensure OpenClaw is installed and configured with AI Gateway
-      await installOpenClaw(sandbox);
-      await setupOpenClaw(sandbox, accountId);
-      logStep("OpenClaw onboard complete, starting gateway");
-
-      // Ensure GitHub repo exists and is cloned in sandbox
-      const githubRepo = await ensureGithubRepo(sandbox, accountId);
-      logStep("GitHub repo ready");
-
-      // Write README.md with sandbox details
-      await writeReadme(sandbox, sandboxId, accountId, githubRepo ?? undefined);
-      logStep("README written", false);
-
-      // Ensure org GitHub repos exist and are cloned in workspace
-      await ensureOrgRepos(sandbox, accountId);
-
-      // Ensure org/artist folder structure exists (setup via OpenClaw)
-      await ensureSetupSandbox(sandbox, accountId);
+      // Provision sandbox with full Recoup environment
+      const { githubRepo } = await provisionSandbox(sandbox, sandboxId, accountId);
 
       // Run the command with args
       logStep("Running command");
@@ -90,7 +69,7 @@ export const runSandboxCommandTask = schemaTask({
       const snapshotResult = await snapshotAndPersist(
         sandbox,
         accountId,
-        githubRepo ?? undefined
+        githubRepo,
       );
 
       const result: SandboxResult = {
