@@ -10,11 +10,9 @@ import { runOpenClawAgent } from "./runOpenClawAgent";
  */
 export async function cloneMonorepoViaAgent(
   sandbox: Sandbox,
-  env?: Record<string, string>,
 ): Promise<void> {
   await runOpenClawAgent(sandbox, {
     label: "Clone monorepo via agent",
-    env,
     message: [
       "Clone the Recoup monorepo and init its submodules:",
       "1. Run: git clone https://github.com/recoupable/Recoup-Monorepo.git",

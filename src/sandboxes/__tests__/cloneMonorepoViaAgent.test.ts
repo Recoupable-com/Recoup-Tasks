@@ -52,16 +52,4 @@ describe("cloneMonorepoViaAgent", () => {
     expect(message).not.toContain("git config");
   });
 
-  it("forwards env to runOpenClawAgent when provided", async () => {
-    const { runOpenClawAgent } = await import("../runOpenClawAgent");
-    const sandbox = {} as any;
-    const env = { GITHUB_TOKEN: "tok", RECOUP_API_KEY: "key", RECOUP_ACCOUNT_ID: "acc" };
-
-    await cloneMonorepoViaAgent(sandbox, env);
-
-    expect(runOpenClawAgent).toHaveBeenCalledWith(
-      sandbox,
-      expect.objectContaining({ env }),
-    );
-  });
 });

@@ -64,14 +64,6 @@ vi.mock("../../sandboxes/logStep", () => ({
   logStep: vi.fn(),
 }));
 
-vi.mock("../../sandboxes/getSandboxEnv", () => ({
-  getSandboxEnv: vi.fn().mockReturnValue({
-    RECOUP_API_KEY: "test-key",
-    RECOUP_ACCOUNT_ID: "coding-agent",
-    GITHUB_TOKEN: "test-gh-token",
-  }),
-}));
-
 // Import after mocks
 await import("../codingAgentTask");
 
@@ -149,35 +141,4 @@ describe("codingAgentTask", () => {
     expect(configureGitAuth).toHaveBeenCalledOnce();
   });
 
-  it("passes sandbox env to cloneMonorepoViaAgent, runOpenClawAgent, and pushAndCreatePRsViaAgent", async () => {
-    const { cloneMonorepoViaAgent } = await import("../../sandboxes/cloneMonorepoViaAgent");
-    const { runOpenClawAgent } = await import("../../sandboxes/runOpenClawAgent");
-    const { pushAndCreatePRsViaAgent } = await import("../../sandboxes/pushAndCreatePRsViaAgent");
-    const { getSandboxEnv } = await import("../../sandboxes/getSandboxEnv");
-
-    await mockRun(basePayload);
-
-    const expectedEnv = {
-      RECOUP_API_KEY: "test-key",
-      RECOUP_ACCOUNT_ID: "coding-agent",
-      GITHUB_TOKEN: "test-gh-token",
-    };
-
-    expect(getSandboxEnv).toHaveBeenCalledWith("coding-agent");
-
-    expect(cloneMonorepoViaAgent).toHaveBeenCalledWith(
-      expect.anything(),
-      expectedEnv,
-    );
-
-    expect(runOpenClawAgent).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({ env: expectedEnv }),
-    );
-
-    expect(pushAndCreatePRsViaAgent).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({ env: expectedEnv }),
-    );
-  });
 });

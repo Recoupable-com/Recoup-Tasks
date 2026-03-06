@@ -6,7 +6,6 @@ import { SUBMODULE_CONFIG } from "./submoduleConfig";
 interface PushAndCreatePRsOptions {
   prompt: string;
   branch: string;
-  env?: Record<string, string>;
 }
 
 /**
@@ -22,7 +21,7 @@ export async function pushAndCreatePRsViaAgent(
   sandbox: Sandbox,
   options: PushAndCreatePRsOptions,
 ): Promise<ParsedPR[]> {
-  const { prompt, branch, env } = options;
+  const { prompt, branch } = options;
 
   const submoduleInstructions = Object.entries(SUBMODULE_CONFIG)
     .map(([name, { repo, baseBranch }]) => `  - ${name}: repo=${repo}, base branch=${baseBranch}`)
@@ -30,7 +29,6 @@ export async function pushAndCreatePRsViaAgent(
 
   const result = await runOpenClawAgent(sandbox, {
     label: "Push and create PRs via agent",
-    env,
     message: [
       `For each submodule that has uncommitted changes, create a branch, commit, push, and open a PR.`,
       ``,
