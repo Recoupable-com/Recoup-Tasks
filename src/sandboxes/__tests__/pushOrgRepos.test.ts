@@ -5,6 +5,10 @@ vi.mock("@trigger.dev/sdk/v3", () => ({
   metadata: { set: vi.fn(), append: vi.fn() },
 }));
 
+vi.mock("../getSandboxHomeDir", () => ({
+  getSandboxHomeDir: vi.fn().mockResolvedValue("/root"),
+}));
+
 vi.mock("../logStep", () => ({
   logStep: vi.fn(),
 }));
@@ -36,13 +40,6 @@ describe("pushOrgRepos", () => {
     const sandbox = createMockSandbox();
 
     sandbox.runCommand.mockImplementation(async (opts: any) => {
-      if (opts.cmd === "sh" && opts.args?.[1] === "echo ~") {
-        return {
-          exitCode: 0,
-          stdout: async () => "/root\n",
-          stderr: async () => "",
-        };
-      }
       if (opts.cmd === "sh" && opts.args?.[1]?.includes("find")) {
         return {
           exitCode: 0,
@@ -66,13 +63,6 @@ describe("pushOrgRepos", () => {
     const sandbox = createMockSandbox();
 
     sandbox.runCommand.mockImplementation(async (opts: any) => {
-      if (opts.cmd === "sh" && opts.args?.[1] === "echo ~") {
-        return {
-          exitCode: 0,
-          stdout: async () => "/root\n",
-          stderr: async () => "",
-        };
-      }
       if (opts.cmd === "sh" && opts.args?.[1]?.includes("find")) {
         return {
           exitCode: 0,
@@ -109,13 +99,6 @@ describe("pushOrgRepos", () => {
     const sandbox = createMockSandbox();
 
     sandbox.runCommand.mockImplementation(async (opts: any) => {
-      if (opts.cmd === "sh" && opts.args?.[1] === "echo ~") {
-        return {
-          exitCode: 0,
-          stdout: async () => "/root\n",
-          stderr: async () => "",
-        };
-      }
       if (opts.cmd === "sh" && opts.args?.[1]?.includes("find")) {
         return {
           exitCode: 0,
@@ -144,16 +127,12 @@ describe("pushOrgRepos", () => {
   });
 
   it("uses resolved home dir for workspace path (no tilde)", async () => {
+    const { getSandboxHomeDir } = await import("../getSandboxHomeDir");
+    vi.mocked(getSandboxHomeDir).mockResolvedValueOnce("/home/sandbox");
+
     const sandbox = createMockSandbox();
 
     sandbox.runCommand.mockImplementation(async (opts: any) => {
-      if (opts.cmd === "sh" && opts.args?.[1] === "echo ~") {
-        return {
-          exitCode: 0,
-          stdout: async () => "/home/sandbox\n",
-          stderr: async () => "",
-        };
-      }
       if (opts.cmd === "sh" && opts.args?.[1]?.includes("find")) {
         return {
           exitCode: 0,
@@ -180,13 +159,6 @@ describe("pushOrgRepos", () => {
     const sandbox = createMockSandbox();
 
     sandbox.runCommand.mockImplementation(async (opts: any) => {
-      if (opts.cmd === "sh" && opts.args?.[1] === "echo ~") {
-        return {
-          exitCode: 0,
-          stdout: async () => "/root\n",
-          stderr: async () => "",
-        };
-      }
       if (opts.cmd === "sh" && opts.args?.[1]?.includes("find")) {
         return {
           exitCode: 0,

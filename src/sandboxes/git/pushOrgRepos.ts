@@ -1,6 +1,7 @@
 import type { Sandbox } from "@vercel/sandbox";
 import { logger } from "@trigger.dev/sdk/v3";
 import { runOpenClawAgent } from "../runOpenClawAgent";
+import { getSandboxHomeDir } from "../getSandboxHomeDir";
 
 /**
  * Pushes changes in each org repo to its GitHub remote via OpenClaw.
@@ -21,12 +22,7 @@ export async function pushOrgRepos(
     return;
   }
 
-  // Resolve ~ to absolute path
-  const homeResult = await sandbox.runCommand({
-    cmd: "sh",
-    args: ["-c", "echo ~"],
-  });
-  const homeDir = ((await homeResult.stdout()) || "").trim() || "/root";
+  const homeDir = await getSandboxHomeDir(sandbox);
   const workspaceOrgs = `${homeDir}/.openclaw/workspace/orgs`;
 
   // Find org directories that are git repos
