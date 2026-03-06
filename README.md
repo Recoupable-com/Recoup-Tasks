@@ -39,6 +39,15 @@ Deploy to production:
 pnpm run deploy:trigger-prod
 ```
 
+## Tasks
+
+| Task | Schedule | Description |
+|------|----------|-------------|
+| `send-pulses-task` | Daily 9 AM ET | Sends personalized Pulse emails to accounts with active subscriptions (powered by Gemini) |
+| `pro-artist-social-profiles-scrape` | Daily midnight ET | Scrapes social profiles for all pro artists in batches |
+| `customer-prompt-task` | Dynamic | Runs scheduled prompts configured per-customer via the Recoup Tasks API |
+| `run-sandbox-command` | On-demand | Executes commands in a Vercel Sandbox with OpenCode + AI Gateway, snapshots results, and pushes to GitHub |
+
 ## Project Structure
 
 - `src/tasks/` - Task definitions
