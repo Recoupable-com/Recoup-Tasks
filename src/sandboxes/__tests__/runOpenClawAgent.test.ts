@@ -5,7 +5,12 @@ vi.mock("@trigger.dev/sdk/v3", () => ({
   metadata: { set: vi.fn(), append: vi.fn() },
 }));
 
+vi.mock("../logStep", () => ({
+  logStep: vi.fn(),
+}));
+
 const { runOpenClawAgent } = await import("../runOpenClawAgent");
+const { logStep } = await import("../logStep");
 
 function createMockSandbox() {
   const runCommand = vi.fn();
@@ -57,8 +62,7 @@ describe("runOpenClawAgent", () => {
     });
   });
 
-  it("logs result with label, exitCode, stdout, stderr", async () => {
-    const { logger } = await import("@trigger.dev/sdk/v3");
+  it("logs command start with cmd and args via logStep", async () => {
     const sandbox = createMockSandbox();
     sandbox.runCommand.mockResolvedValueOnce({
       exitCode: 0,
@@ -71,20 +75,18 @@ describe("runOpenClawAgent", () => {
       message: "Clone these repos",
     });
 
-    expect(logger.log).toHaveBeenCalledWith("Clone org repos", {
-      exitCode: 0,
-      stdout: "output here\n",
-      stderr: "warning\n",
+    expect(logStep).toHaveBeenCalledWith("Clone org repos", true, {
+      cmd: "openclaw",
+      args: ["agent", "--agent", "main", "--message", "Clone these repos"],
     });
   });
 
-  it("updates metadata with label", async () => {
-    const { metadata } = await import("@trigger.dev/sdk/v3");
+  it("logs completion with exitCode, stdout, stderr via logStep", async () => {
     const sandbox = createMockSandbox();
     sandbox.runCommand.mockResolvedValueOnce({
       exitCode: 0,
-      stdout: async () => "",
-      stderr: async () => "",
+      stdout: async () => "output here\n",
+      stderr: async () => "warning\n",
     });
 
     await runOpenClawAgent(sandbox, {
@@ -92,12 +94,14 @@ describe("runOpenClawAgent", () => {
       message: "Clone these repos",
     });
 
-    expect(metadata.set).toHaveBeenCalledWith("currentStep", "Clone org repos");
-    expect(metadata.append).toHaveBeenCalledWith("logs", "Clone org repos");
+    expect(logStep).toHaveBeenCalledWith("Clone org repos completed", false, {
+      exitCode: 0,
+      stdout: "output here\n",
+      stderr: "warning\n",
+    });
   });
 
-  it("logs error on non-zero exit code", async () => {
-    const { logger } = await import("@trigger.dev/sdk/v3");
+  it("logs error on non-zero exit code via logStep", async () => {
     const sandbox = createMockSandbox();
     sandbox.runCommand.mockResolvedValueOnce({
       exitCode: 1,
@@ -110,7 +114,7 @@ describe("runOpenClawAgent", () => {
       message: "Clone these repos",
     });
 
-    expect(logger.error).toHaveBeenCalledWith("Clone org repos failed", {
+    expect(logStep).toHaveBeenCalledWith("Clone org repos failed", false, {
       stderr: "fatal error\n",
     });
   });
@@ -132,4 +136,5 @@ describe("runOpenClawAgent", () => {
     expect(result.stdout).toBe("output\n");
     expect(result.stderr).toBe("warn\n");
   });
+
 });

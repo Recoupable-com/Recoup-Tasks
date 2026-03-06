@@ -9,7 +9,12 @@ vi.mock("../getSandboxHomeDir", () => ({
   getSandboxHomeDir: vi.fn().mockResolvedValue("/root"),
 }));
 
+vi.mock("../logStep", () => ({
+  logStep: vi.fn(),
+}));
+
 const { pushOrgRepos } = await import("../git/pushOrgRepos");
+const { logStep } = await import("../logStep");
 
 function createMockSandbox() {
   const runCommand = vi.fn();
@@ -174,8 +179,9 @@ describe("pushOrgRepos", () => {
 
     await pushOrgRepos(sandbox);
 
-    expect(logger.error).toHaveBeenCalledWith(
+    expect(logStep).toHaveBeenCalledWith(
       expect.stringContaining("failed"),
+      false,
       expect.objectContaining({ stderr: expect.any(String) })
     );
   });

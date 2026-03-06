@@ -6,20 +6,16 @@ import { logger, metadata } from "@trigger.dev/sdk/v3";
  *
  * @param message - The step message
  * @param isStep - If true, also sets currentStep metadata (default: true)
- * @param details - Optional JSON object included in logger.log but NOT in metadata
+ * @param extra - Optional JSON object included in logger.log but NOT in metadata
  */
 export function logStep(
   message: string,
   isStep = true,
-  details?: Record<string, unknown>,
+  extra?: Record<string, unknown>,
 ): void {
   if (isStep) {
     metadata.set("currentStep", message);
   }
   metadata.append("logs", message);
-  if (details) {
-    logger.log(message, details);
-  } else {
-    logger.log(message);
-  }
+  logger.log(message, extra);
 }

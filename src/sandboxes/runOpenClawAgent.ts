@@ -1,5 +1,4 @@
 import type { Sandbox } from "@vercel/sandbox";
-import { logger } from "@trigger.dev/sdk/v3";
 import { logStep } from "./logStep";
 
 interface RunOpenClawAgentOptions {
@@ -27,11 +26,13 @@ export async function runOpenClawAgent(
 ): Promise<RunOpenClawAgentResult> {
   const { label, message, env } = options;
 
-  logStep(label);
+  const args = ["agent", "--agent", "main", "--message", message];
+
+  logStep(label, true, { cmd: "openclaw", args });
 
   const commandOpts: Record<string, unknown> = {
     cmd: "openclaw",
-    args: ["agent", "--agent", "main", "--message", message],
+    args,
   };
 
   if (env) {
@@ -43,14 +44,14 @@ export async function runOpenClawAgent(
   const stdout = (await result.stdout()) || "";
   const stderr = (await result.stderr()) || "";
 
-  logger.log(label, {
+  logStep(`${label} completed`, false, {
     exitCode: result.exitCode,
     stdout,
     stderr,
   });
 
   if (result.exitCode !== 0) {
-    logger.error(`${label} failed`, { stderr });
+    logStep(`${label} failed`, false, { stderr });
   }
 
   return {
