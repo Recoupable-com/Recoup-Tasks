@@ -1,4 +1,4 @@
-import { logger, metadata, schemaTask } from "@trigger.dev/sdk/v3";
+import { metadata, schemaTask } from "@trigger.dev/sdk/v3";
 import { Sandbox } from "@vercel/sandbox";
 import { getVercelSandboxCredentials } from "../sandboxes/getVercelSandboxCredentials";
 import { installOpenClaw } from "../sandboxes/installOpenClaw";
@@ -37,7 +37,7 @@ export const updatePRTask = schemaTask({
       timeoutMs: 30 * 60 * 1000,
     });
 
-    logger.log("Sandbox resumed", { sandboxId: sandbox.sandboxId, snapshotId });
+    logStep("Sandbox resumed", false, { sandboxId: sandbox.sandboxId, snapshotId });
 
     try {
       logStep("Ensuring OpenClaw is running");
@@ -85,7 +85,7 @@ export const updatePRTask = schemaTask({
 
       return { snapshotId: newSnapshot.snapshotId };
     } finally {
-      logger.log("Stopping sandbox", { sandboxId: sandbox.sandboxId });
+      logStep("Stopping sandbox", false, { sandboxId: sandbox.sandboxId });
       await sandbox.stop();
     }
   },
