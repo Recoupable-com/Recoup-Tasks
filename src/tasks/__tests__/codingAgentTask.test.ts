@@ -50,8 +50,8 @@ vi.mock("../../sandboxes/runOpenClawAgent", () => ({
 vi.mock("../../sandboxes/pushAndCreatePRsViaAgent", () => ({
   pushAndCreatePRsViaAgent: vi.fn().mockResolvedValue([
     {
-      repo: "recoupable/recoup-api", number: 42,
-      url: "https://github.com/recoupable/recoup-api/pull/42", baseBranch: "test",
+      repo: "recoupable/api", number: 42,
+      url: "https://github.com/recoupable/api/pull/42", baseBranch: "test",
     },
   ]),
 }));

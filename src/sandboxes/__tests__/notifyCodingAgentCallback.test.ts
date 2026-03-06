@@ -24,7 +24,7 @@ describe("notifyCodingAgentCallback", () => {
       status: "pr_created",
       branch: "agent/fix-123",
       snapshotId: "snap_abc",
-      prs: [{ repo: "recoupable/recoup-api", number: 42, url: "url", baseBranch: "test" }],
+      prs: [{ repo: "recoupable/api", number: 42, url: "url", baseBranch: "test" }],
     });
 
     expect(mockFetch).toHaveBeenCalledWith(

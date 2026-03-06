@@ -22,7 +22,7 @@ describe("pushAndCreatePRsViaAgent", () => {
       exitCode: 0,
       stdout: [
         "Creating branch...",
-        "PR_CREATED: https://github.com/recoupable/recoup-api/pull/42",
+        "PR_CREATED: https://github.com/recoupable/api/pull/42",
         "Creating another PR...",
         "PR_CREATED: https://github.com/recoupable/tasks/pull/10",
         "",
@@ -38,9 +38,9 @@ describe("pushAndCreatePRsViaAgent", () => {
 
     expect(result).toEqual([
       {
-        repo: "recoupable/recoup-api",
+        repo: "recoupable/api",
         number: 42,
-        url: "https://github.com/recoupable/recoup-api/pull/42",
+        url: "https://github.com/recoupable/api/pull/42",
         baseBranch: "test",
       },
       {
@@ -103,7 +103,7 @@ describe("pushAndCreatePRsViaAgent", () => {
     });
 
     const message = vi.mocked(runOpenClawAgent).mock.calls[0][1].message;
-    expect(message).toContain("recoupable/recoup-api");
+    expect(message).toContain("recoupable/api");
     expect(message).toContain("base branch=test");
     expect(message).toContain("recoupable/tasks");
     expect(message).toContain("base branch=main");
