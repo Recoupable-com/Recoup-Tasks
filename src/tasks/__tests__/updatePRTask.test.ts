@@ -76,9 +76,7 @@ describe("updatePRTask", () => {
     feedback: "Make the button blue instead",
     snapshotId: "snap_old",
     branch: "agent/fix-bug-123",
-    prs: [
-      { repo: "recoupable/recoup-api", number: 42, url: "url", baseBranch: "test" },
-    ],
+    repo: "recoupable/api",
     callbackThreadId: "slack:C123:123.456",
   };
 

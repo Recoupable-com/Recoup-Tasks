@@ -24,7 +24,7 @@ export const updatePRTask = schemaTask({
     maxAttempts: 0,
   },
   run: async (payload) => {
-    const { feedback, snapshotId, branch, prs, callbackThreadId } = payload;
+    const { feedback, snapshotId, branch, repo, callbackThreadId } = payload;
     const { token, teamId, projectId } = getVercelSandboxCredentials();
 
     logStep("Resuming sandbox from snapshot");
@@ -55,23 +55,16 @@ export const updatePRTask = schemaTask({
       });
 
       logStep("Pushing updates via agent");
-      const prList = prs
-        .map((pr) => `  - repo=${pr.repo}, branch=${branch}`)
-        .join("\n");
-
       await runOpenClawAgent(sandbox, {
         label: "Push feedback changes",
         env,
         message: [
-          `Stage, commit, and push the feedback changes to the existing PR branches.`,
+          `Stage, commit, and push the feedback changes to the existing PR branch.`,
           ``,
-          `For each of these PRs, find the submodule directory, stage all changes, commit, and push:`,
-          prList,
+          `Repo: ${repo}, branch: ${branch}`,
           ``,
-          `Commit message: agent: address feedback`,
-          ``,
-          `Steps for each:`,
-          `1. cd into the submodule directory`,
+          `Steps:`,
+          `1. cd into the submodule directory for ${repo}`,
           `2. git add -A`,
           `3. git commit -m "agent: address feedback"`,
           `4. git push origin ${branch}`,
