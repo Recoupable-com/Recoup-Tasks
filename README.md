@@ -39,20 +39,15 @@ Deploy to production:
 pnpm run deploy:trigger-prod
 ```
 
+## Tasks
+
+- **`customer-prompt-task`** — Scheduled prompt execution for customer accounts. Fetches task config from the Recoup API, creates a chat room, and generates a response using a configurable model and prompt.
+- **`pro-artist-social-profiles-scrape`** — Daily social profile scraping for pro artists. Runs at midnight ET, fetches all pro artists, collects their social profiles, and scrapes them in batches.
+- **`run-sandbox-command`** — Runs commands inside Vercel Sandboxes with OpenCode and Vercel AI Gateway. Installs tooling, executes the command, pushes results to GitHub, and snapshots the sandbox.
+- **`send-pulses-task`** — Daily personalized Pulse emails sent at 9 AM ET. Gathers artist data, conversations, and connected services to generate a prioritized email digest via Gemini.
+
 ## Project Structure
 
-- `src/tasks/` - Trigger.dev task definitions
-  - `customerPromptTask` - Scheduled prompt execution for customer accounts
-  - `proArtistSocialProfilesScrape` - Daily social profile scraping for pro artists
-  - `runSandboxCommandTask` - Run commands in Vercel Sandboxes with OpenCode + AI Gateway
-  - `sendPulsesTask` - Daily personalized Pulse emails (9 AM ET via Gemini)
+- `src/tasks/` - Task definitions
 - `src/recoup/` - Recoup API client functions
-- `src/sandboxes/` - Vercel Sandbox helpers (OpenCode install, GitHub sync, snapshots)
-- `src/github/` - GitHub repo creation and management
-- `src/artists/` - Artist social data fetching
-- `src/socials/` - Social profile scraping and polling
-- `src/chats/` - Chat room utilities
-- `src/pulse/` - Pulse formatting helpers
-- `src/schemas/` - Zod validation schemas
-- `types/` - TypeScript type definitions
 - `trigger.config.ts` - Trigger.dev configuration
