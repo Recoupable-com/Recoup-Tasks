@@ -1,5 +1,5 @@
 export const SUBMODULE_CONFIG: Record<string, { repo: string; baseBranch: string }> = {
-  api: { repo: "recoupable/recoup-api", baseBranch: "test" },
+  api: { repo: "recoupable/api", baseBranch: "test" },
   chat: { repo: "recoupable/chat", baseBranch: "test" },
   tasks: { repo: "recoupable/tasks", baseBranch: "main" },
   docs: { repo: "recoupable/docs", baseBranch: "main" },

@@ -1,5 +1,7 @@
 import type { Sandbox } from "@vercel/sandbox";
 import { logger } from "@trigger.dev/sdk/v3";
+import { getSandboxHomeDir } from "../getSandboxHomeDir";
+import { getGitHubAuthPrefix } from "../getGitHubAuthPrefix";
 
 /**
  * Registers each org repo as a git submodule in the sandbox working directory.
@@ -13,13 +15,10 @@ import { logger } from "@trigger.dev/sdk/v3";
  * @param sandbox - The Vercel Sandbox instance
  */
 export async function addOrgSubmodules(sandbox: Sandbox): Promise<void> {
-  if (!process.env.GITHUB_TOKEN) return;
+  const authPrefix = getGitHubAuthPrefix();
+  if (!authPrefix) return;
 
-  const homeResult = await sandbox.runCommand({
-    cmd: "sh",
-    args: ["-c", "echo ~"],
-  });
-  const homeDir = ((await homeResult.stdout()) || "").trim() || "/root";
+  const homeDir = await getSandboxHomeDir(sandbox);
   const workspaceOrgs = `${homeDir}/.openclaw/workspace/orgs`;
 
   const findResult = await sandbox.runCommand({
@@ -72,10 +71,7 @@ export async function addOrgSubmodules(sandbox: Sandbox): Promise<void> {
       ],
     });
 
-    const authedUrl = remoteUrl.replace(
-      "https://github.com/",
-      `https://x-access-token:${process.env.GITHUB_TOKEN}@github.com/`
-    );
+    const authedUrl = remoteUrl.replace("https://github.com/", authPrefix);
     await sandbox.runCommand({
       cmd: "git",
       args: ["submodule", "add", authedUrl, orgPath],

@@ -5,7 +5,7 @@ describe("parsePRUrls", () => {
   it("parses multiple PR_CREATED lines", () => {
     const stdout = [
       "Some log output",
-      "PR_CREATED: https://github.com/recoupable/recoup-api/pull/42",
+      "PR_CREATED: https://github.com/recoupable/api/pull/42",
       "More log output",
       "PR_CREATED: https://github.com/recoupable/chat/pull/7",
       "",
@@ -15,9 +15,9 @@ describe("parsePRUrls", () => {
 
     expect(result).toEqual([
       {
-        repo: "recoupable/recoup-api",
+        repo: "recoupable/api",
         number: 42,
-        url: "https://github.com/recoupable/recoup-api/pull/42",
+        url: "https://github.com/recoupable/api/pull/42",
         baseBranch: "test",
       },
       {
