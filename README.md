@@ -39,6 +39,15 @@ Deploy to production:
 pnpm run deploy:trigger-prod
 ```
 
+## Tasks
+
+| Task | Schedule | Description |
+|------|----------|-------------|
+| `customer-prompt-task` | Dynamic (per-customer) | Runs a customer-configured prompt on a schedule |
+| `pro-artist-social-profiles-scrape` | Daily at midnight ET | Scrapes social profiles for all pro artists |
+| `run-sandbox-command` | On-demand | Runs a command in a Vercel Sandbox with OpenCode + AI Gateway |
+| `send-pulses` | Daily at 9 AM ET | Generates and sends daily Pulse digest emails |
+
 ## Project Structure
 
 - `src/tasks/` - Task definitions
