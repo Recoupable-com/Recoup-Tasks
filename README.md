@@ -39,8 +39,23 @@ Deploy to production:
 pnpm run deploy:trigger-prod
 ```
 
+## Tasks
+
+- **`sendPulsesTask`** — Daily personalized pulse emails for active accounts (9 AM ET)
+- **`proArtistSocialProfilesScrape`** — Nightly social profile scraping for pro artists
+- **`customerPromptTask`** — Scheduled customer prompt generation via dynamic schedules
+- **`runSandboxCommandTask`** — Run commands in Vercel Sandboxes with OpenCode + AI Gateway, snapshot results, and push to GitHub
+
 ## Project Structure
 
-- `src/tasks/` - Task definitions
-- `src/recoup/` - Recoup API client functions
-- `trigger.config.ts` - Trigger.dev configuration
+- `src/tasks/` — Task definitions (Trigger.dev scheduled & schema tasks)
+- `src/recoup/` — Recoup API client functions
+- `src/sandboxes/` — Vercel Sandbox helpers (OpenCode install, GitHub sync, snapshots)
+- `src/github/` — GitHub repo creation and naming utilities
+- `src/pulse/` — Pulse email formatting
+- `src/socials/` — Social profile filtering and scrape orchestration
+- `src/artists/` — Artist social data fetching
+- `src/chats/` — Chat room ID resolution
+- `src/polling/` — Scraper result polling
+- `src/schemas/` — Zod schemas for task payloads
+- `trigger.config.ts` — Trigger.dev configuration
