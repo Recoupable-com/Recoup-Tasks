@@ -8,15 +8,18 @@ import { runOpenClawAgent } from "./runOpenClawAgent";
  *
  * @param sandbox - The Vercel Sandbox instance
  */
-export async function cloneMonorepoViaAgent(sandbox: Sandbox): Promise<void> {
+export async function cloneMonorepoViaAgent(
+  sandbox: Sandbox,
+  env?: Record<string, string>,
+): Promise<void> {
   await runOpenClawAgent(sandbox, {
     label: "Clone monorepo via agent",
+    env,
     message: [
       "Clone the Recoup monorepo and init its submodules:",
       "1. Run: git clone https://github.com/recoupable/Recoup-Monorepo.git",
       "2. cd into the cloned directory",
       "3. Run: git submodule update --init (do NOT use --recursive)",
-      "4. Configure git user: git config user.email agent@recoupable.com && git config user.name 'Recoup Agent'",
     ].join("\n"),
   });
 }

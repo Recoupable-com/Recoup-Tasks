@@ -19,7 +19,7 @@ describe("logStep", () => {
 
     expect(metadata.set).toHaveBeenCalledWith("currentStep", "Installing deps");
     expect(metadata.append).toHaveBeenCalledWith("logs", "Installing deps");
-    expect(logger.log).toHaveBeenCalledWith("Installing deps");
+    expect(logger.log).toHaveBeenCalledWith("Installing deps", undefined);
   });
 
   it("skips currentStep metadata when isStep is false", async () => {
@@ -49,6 +49,6 @@ describe("logStep", () => {
 
     logStep("Simple step");
 
-    expect(logger.log).toHaveBeenCalledWith("Simple step");
+    expect(logger.log).toHaveBeenCalledWith("Simple step", undefined);
   });
 });

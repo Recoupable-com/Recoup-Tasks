@@ -8,6 +8,8 @@ import { runOpenClawAgent } from "../sandboxes/runOpenClawAgent";
 import { pushAndCreatePRsViaAgent } from "../sandboxes/pushAndCreatePRsViaAgent";
 import { notifyCodingAgentCallback } from "../sandboxes/notifyCodingAgentCallback";
 import { logStep } from "../sandboxes/logStep";
+import { getSandboxEnv } from "../sandboxes/getSandboxEnv";
+import { configureGitAuth } from "../sandboxes/configureGitAuth";
 import { codingAgentPayloadSchema } from "../schemas/codingAgentSchema";
 
 const CODING_AGENT_ACCOUNT_ID = "coding-agent";
@@ -43,14 +45,18 @@ export const codingAgentTask = schemaTask({
       logStep("Installing OpenClaw");
       await installOpenClaw(sandbox);
       await setupOpenClaw(sandbox, CODING_AGENT_ACCOUNT_ID);
+      await configureGitAuth(sandbox);
+
+      const env = getSandboxEnv(CODING_AGENT_ACCOUNT_ID);
 
       logStep("Cloning monorepo via agent");
-      await cloneMonorepoViaAgent(sandbox);
+      await cloneMonorepoViaAgent(sandbox, env);
 
       logStep("Running AI agent");
       const agentResult = await runOpenClawAgent(sandbox, {
         label: "Coding agent",
         message: prompt,
+        env,
       });
 
       logStep("Agent completed", true, {
@@ -64,7 +70,7 @@ export const codingAgentTask = schemaTask({
       const slug = prompt.slice(0, 30).replace(/[^a-zA-Z0-9]/g, "-").toLowerCase();
       const branch = `agent/${slug}-${timestamp}`;
 
-      const prs = await pushAndCreatePRsViaAgent(sandbox, { prompt, branch });
+      const prs = await pushAndCreatePRsViaAgent(sandbox, { prompt, branch, env });
 
       logStep("Taking snapshot");
       const { snapshotId } = await sandbox.snapshot();

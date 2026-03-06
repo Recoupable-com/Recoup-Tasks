@@ -6,6 +6,7 @@ import { setupOpenClaw } from "../sandboxes/setupOpenClaw";
 import { ensureGithubRepo } from "../sandboxes/ensureGithubRepo";
 import { getVercelSandboxCredentials } from "../sandboxes/getVercelSandboxCredentials";
 import { snapshotAndPersist } from "../sandboxes/snapshotAndPersist";
+import { getSandboxEnv } from "../sandboxes/getSandboxEnv";
 import { writeReadme } from "../sandboxes/writeReadme";
 import { ensureOrgRepos } from "../sandboxes/ensureOrgRepos";
 import { ensureSetupSandbox } from "../sandboxes/ensureSetupSandbox";
@@ -71,10 +72,7 @@ export const runSandboxCommandTask = schemaTask({
         cmd: command,
         args: args || [],
         cwd,
-        env: {
-          RECOUP_API_KEY: process.env.RECOUP_API_KEY!,
-          RECOUP_ACCOUNT_ID: accountId,
-        },
+        env: getSandboxEnv(accountId),
       });
 
       const stdout = (await commandResult.stdout()) || "";
