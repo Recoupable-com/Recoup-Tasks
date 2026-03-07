@@ -39,6 +39,15 @@ Deploy to production:
 pnpm run deploy:trigger-prod
 ```
 
+## Tasks
+
+| Task | Description |
+| --- | --- |
+| `sendPulsesTask` | Generate and deliver recurring Pulse reports for artists |
+| `customerPromptTask` | Run a customer-facing prompt through the AI pipeline |
+| `proArtistSocialProfilesScrape` | Scrape and ingest social profiles for pro-tier artists |
+| `runSandboxCommandTask` | Execute commands inside a Vercel Sandbox with OpenCode + Vercel AI Gateway, snapshot the result, and push to GitHub |
+
 ## Project Structure
 
 - `src/tasks/` - Task definitions
