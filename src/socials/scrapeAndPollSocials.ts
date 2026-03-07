@@ -59,17 +59,28 @@ export async function scrapeAndPollSocials(
         continue;
       }
 
+      if (!scrapeResult.runId || !scrapeResult.datasetId) {
+        logger.warn("Scrape returned null runId or datasetId", {
+          artistId: social.artistId,
+          socialId: social.socialId,
+          username: social.username,
+          runId: scrapeResult.runId,
+          datasetId: scrapeResult.datasetId,
+        });
+        continue;
+      }
+
       batchRuns.push({
-        runId: scrapeResult.runId!,
-        datasetId: scrapeResult.datasetId!,
+        runId: scrapeResult.runId,
+        datasetId: scrapeResult.datasetId,
       });
 
       startedScrapes.push({
         artistId: social.artistId,
         socialId: social.socialId,
         username: social.username,
-        runId: scrapeResult.runId!,
-        datasetId: scrapeResult.datasetId!,
+        runId: scrapeResult.runId,
+        datasetId: scrapeResult.datasetId,
       });
     }
 
