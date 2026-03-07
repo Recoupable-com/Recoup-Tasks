@@ -1,6 +1,7 @@
 import { metadata } from "@trigger.dev/sdk/v3";
 import { scrapeSocial } from "../recoup/scrapeSocial";
 import { pollScraperResults } from "../polling/pollScraperResults";
+import { logStep } from "../sandboxes/logStep";
 import type { ScrapableSocial } from "./filterScrapableSocials";
 import type { PollResult } from "../polling/pollScraperResults";
 
@@ -41,35 +42,34 @@ export async function scrapeAndPollSocials(
       const social = socialBatch[j];
 
       if (!scrapeResult) {
-        metadata.append("skippedSocials", {
-          reason: "scrape_failed",
-          artistId: social.artistId,
-          socialId: social.socialId,
-          username: social.username,
-        });
+        logStep(
+          `Skipped ${social.username} (${social.socialId}): scrape failed to start`,
+          false,
+          { artistId: social.artistId, socialId: social.socialId },
+        );
         continue;
       }
 
       if (scrapeResult.error) {
-        metadata.append("skippedSocials", {
-          reason: "scrape_error",
-          artistId: social.artistId,
-          socialId: social.socialId,
-          username: social.username,
-          error: scrapeResult.error,
-        });
+        logStep(
+          `Skipped ${social.username} (${social.socialId}): ${scrapeResult.error}`,
+          false,
+          { artistId: social.artistId, socialId: social.socialId, error: scrapeResult.error },
+        );
         continue;
       }
 
       if (!scrapeResult.runId || !scrapeResult.datasetId) {
-        metadata.append("skippedSocials", {
-          reason: "null_run_or_dataset_id",
-          artistId: social.artistId,
-          socialId: social.socialId,
-          username: social.username,
-          runId: scrapeResult.runId,
-          datasetId: scrapeResult.datasetId,
-        });
+        logStep(
+          `Skipped ${social.username} (${social.socialId}): null runId or datasetId`,
+          false,
+          {
+            artistId: social.artistId,
+            socialId: social.socialId,
+            runId: scrapeResult.runId,
+            datasetId: scrapeResult.datasetId,
+          },
+        );
         continue;
       }
 
@@ -89,25 +89,24 @@ export async function scrapeAndPollSocials(
 
     // Track successfully started scrapes for this batch
     if (startedScrapes.length > 0) {
-      metadata.set(`batch_${batchNumber}`, {
-        status: "started",
-        totalBatches,
-        count: startedScrapes.length,
-        scrapes: startedScrapes,
-      });
+      logStep(
+        `Started batch ${batchNumber}/${totalBatches} (${startedScrapes.length} scrapes)`,
+        true,
+        { scrapes: startedScrapes },
+      );
     }
 
     // Poll this batch to completion before moving to next batch
     const batchResults = await pollScraperResults(batchRuns);
 
-    metadata.set(`batch_${batchNumber}`, {
-      status: "completed",
-      totalBatches,
-      total: batchResults.length,
-      succeeded: batchResults.filter((r) => r.status === "SUCCEEDED").length,
-      failed: batchResults.filter((r) => r.status === "FAILED").length,
-      results: batchResults,
-    });
+    const succeeded = batchResults.filter((r) => r.status === "SUCCEEDED").length;
+    const failed = batchResults.filter((r) => r.status === "FAILED").length;
+
+    logStep(
+      `Batch ${batchNumber}/${totalBatches} completed: ${succeeded} succeeded, ${failed} failed`,
+      true,
+      { total: batchResults.length, succeeded, failed, results: batchResults },
+    );
 
     allResults.push(...batchResults);
   }
