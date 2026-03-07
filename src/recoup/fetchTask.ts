@@ -1,7 +1,8 @@
-import { logger } from "../lib/logger";
+import { logger } from "@trigger.dev/sdk/v3";
 import { z } from "zod";
 import { NEW_API_BASE_URL } from "../consts";
 import { type ChatConfig } from "../schemas/chatSchema";
+import { logStep } from "../sandboxes/logStep";
 
 // Zod schema for validating task response from Recoup Tasks API
 const taskResponseSchema = z.object({
@@ -75,7 +76,7 @@ export async function fetchTask(
     }
 
     if (task.enabled === false) {
-      logger.warn("Task is disabled, skipping", { externalId });
+      logStep("Task is disabled, skipping", false, { externalId });
       return undefined;
     }
 
