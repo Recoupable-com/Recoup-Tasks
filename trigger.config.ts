@@ -20,7 +20,7 @@ export default defineConfig({
       randomize: true,
     },
   },
-  dirs: ["src"],
+  dirs: ["src/tasks"],
   build: {
     extensions: [
       ffmpeg(),
