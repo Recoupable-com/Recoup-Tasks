@@ -50,12 +50,6 @@ pnpm run deploy:trigger-prod
 
 ## Project Structure
 
-- `src/tasks/` - Task definitions (see table above)
+- `src/tasks/` - Task definitions
 - `src/recoup/` - Recoup API client functions
-- `src/sandboxes/` - Vercel Sandbox helpers (OpenCode install, config, GitHub push, snapshots)
-- `src/github/` - GitHub repo creation and utilities
-- `src/chats/` - Chat room helpers
-- `src/pulse/` - Pulse email formatting
-- `src/schemas/` - Zod schemas for task payloads
-- `types/` - Shared TypeScript types
 - `trigger.config.ts` - Trigger.dev configuration
