@@ -39,8 +39,23 @@ Deploy to production:
 pnpm run deploy:trigger-prod
 ```
 
+## Tasks
+
+| Task | Description |
+| --- | --- |
+| `customerPromptTask` | Scheduled task that runs customer-configured prompts on a dynamic cron via `schedules.task`. |
+| `proArtistSocialProfilesScrape` | Daily scrape of social profiles for all pro-tier artists (midnight ET). |
+| `sendPulsesTask` | Generates and sends daily Pulse email digests with artist insights and metrics. |
+| `runSandboxCommandTask` | Runs a command inside a Vercel Sandbox with OpenCode + Vercel AI Gateway, snapshots the result, and pushes to GitHub. |
+
 ## Project Structure
 
-- `src/tasks/` - Task definitions
+- `src/tasks/` - Task definitions (see table above)
 - `src/recoup/` - Recoup API client functions
+- `src/sandboxes/` - Vercel Sandbox helpers (OpenCode install, config, GitHub push)
+- `src/schemas/` - Zod schemas for task payloads
+- `src/artists/` - Artist data helpers
+- `src/socials/` - Social profile scraping and filtering
+- `src/chats/` - Chat room utilities
+- `src/pulse/` - Pulse email formatting
 - `trigger.config.ts` - Trigger.dev configuration
