@@ -1,4 +1,4 @@
-import { logger } from "@trigger.dev/sdk/v3";
+import { metadata } from "@trigger.dev/sdk/v3";
 import { scrapeSocial } from "../recoup/scrapeSocial";
 import { pollScraperResults } from "../polling/pollScraperResults";
 import type { ScrapableSocial } from "./filterScrapableSocials";
@@ -41,7 +41,8 @@ export async function scrapeAndPollSocials(
       const social = socialBatch[j];
 
       if (!scrapeResult) {
-        logger.warn("Failed to start scrape for social", {
+        metadata.append("skippedSocials", {
+          reason: "scrape_failed",
           artistId: social.artistId,
           socialId: social.socialId,
           username: social.username,
@@ -50,7 +51,8 @@ export async function scrapeAndPollSocials(
       }
 
       if (scrapeResult.error) {
-        logger.warn("Scrape error for social", {
+        metadata.append("skippedSocials", {
+          reason: "scrape_error",
           artistId: social.artistId,
           socialId: social.socialId,
           username: social.username,
@@ -59,40 +61,48 @@ export async function scrapeAndPollSocials(
         continue;
       }
 
+      if (!scrapeResult.runId || !scrapeResult.datasetId) {
+        metadata.append("skippedSocials", {
+          reason: "null_run_or_dataset_id",
+          artistId: social.artistId,
+          socialId: social.socialId,
+          username: social.username,
+          runId: scrapeResult.runId,
+          datasetId: scrapeResult.datasetId,
+        });
+        continue;
+      }
+
       batchRuns.push({
-        runId: scrapeResult.runId!,
-        datasetId: scrapeResult.datasetId!,
+        runId: scrapeResult.runId,
+        datasetId: scrapeResult.datasetId,
       });
 
       startedScrapes.push({
         artistId: social.artistId,
         socialId: social.socialId,
         username: social.username,
-        runId: scrapeResult.runId!,
-        datasetId: scrapeResult.datasetId!,
+        runId: scrapeResult.runId,
+        datasetId: scrapeResult.datasetId,
       });
     }
 
-    // Log all successfully started scrapes for this batch
+    // Track successfully started scrapes for this batch
     if (startedScrapes.length > 0) {
-      logger.log(
-        `Started scrapes for batch ${batchNumber} of ${totalBatches}`,
-        {
-          count: startedScrapes.length,
-          scrapes: startedScrapes,
-        }
-      );
+      metadata.set(`batch_${batchNumber}`, {
+        status: "started",
+        totalBatches,
+        count: startedScrapes.length,
+        scrapes: startedScrapes,
+      });
     }
 
     // Poll this batch to completion before moving to next batch
-    logger.log(`Polling batch ${batchNumber} runs to completion`, {
-      batchRuns: batchRuns.length,
-      runIds: batchRuns.map((r) => r.runId),
-    });
-
     const batchResults = await pollScraperResults(batchRuns);
 
-    logger.log(`Batch ${batchNumber} completed`, {
+    metadata.set(`batch_${batchNumber}`, {
+      status: "completed",
+      totalBatches,
       total: batchResults.length,
       succeeded: batchResults.filter((r) => r.status === "SUCCEEDED").length,
       failed: batchResults.filter((r) => r.status === "FAILED").length,
