@@ -15,7 +15,15 @@ export type PollResult = ScrapeRun & {
 const MAX_POLL_FAILURES = 5;
 
 /**
+ * Builds a PollResult marking a run as failed.
+ */
+function failedResult(run: ScrapeRun): PollResult {
+  return { runId: run.runId, datasetId: run.datasetId, status: "FAILED" };
+}
+
+/**
  * Polls each scraper run in parallel until all are completed (SUCCEEDED or FAILED).
+ * Marks a run as FAILED after MAX_POLL_FAILURES consecutive poll errors.
  * Returns an array of results for each run.
  */
 export async function pollScraperResults(
@@ -35,18 +43,16 @@ export async function pollScraperResults(
       if (!result) {
         const failures = (failureCounts.get(run.runId) ?? 0) + 1;
         failureCounts.set(run.runId, failures);
-        logger.warn("Failed to get scraper result", { runId: run.runId, consecutiveFailures: failures });
+        logger.warn("Failed to get scraper result", {
+          runId: run.runId,
+          consecutiveFailures: failures,
+        });
 
         if (failures >= MAX_POLL_FAILURES) {
-          logger.error("Max poll failures reached, marking run as FAILED", { runId: run.runId });
-          return {
-            run,
-            pollResult: {
-              runId: run.runId,
-              datasetId: run.datasetId,
-              status: "FAILED",
-            },
-          };
+          logger.error("Max poll failures reached, marking run as FAILED", {
+            runId: run.runId,
+          });
+          return { run, pollResult: failedResult(run) };
         }
 
         return null;
@@ -68,17 +74,10 @@ export async function pollScraperResults(
             datasetId: completedResult.datasetId,
             status: completedResult.status,
             data: completedResult.data,
-          },
+          } as PollResult,
         };
       } else if (result.status === "FAILED") {
-        return {
-          run,
-          pollResult: {
-            runId: run.runId,
-            datasetId: result.datasetId,
-            status: result.status,
-          },
-        };
+        return { run, pollResult: failedResult(run) };
       }
 
       return null; // Still running
