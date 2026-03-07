@@ -1,5 +1,6 @@
-import { logger, wait } from "@trigger.dev/sdk/v3";
+import { wait } from "@trigger.dev/sdk/v3";
 import { getScraperResults } from "../recoup/getScraperResults";
+import { logStep } from "../utils/logStep";
 
 // Base type with shared fields
 type ScrapeRun = {
@@ -37,7 +38,7 @@ export async function pollScraperResults(
         retryCounts.set(run.runId, retries);
 
         if (retries >= MAX_POLL_RETRIES) {
-          logger.error("Max retries reached for scraper result, marking as FAILED", { runId: run.runId, retries });
+          logStep("poll-scraper", "Max retries reached, marking as FAILED", { runId: run.runId, retries }, "error");
           return {
             run,
             pollResult: {
@@ -48,7 +49,7 @@ export async function pollScraperResults(
           };
         }
 
-        logger.warn("Failed to get scraper result", { runId: run.runId, retry: retries });
+        logStep("poll-scraper", "Failed to get scraper result", { runId: run.runId, retry: retries }, "warn");
         return null;
       }
 
