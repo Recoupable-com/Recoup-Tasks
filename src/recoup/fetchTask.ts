@@ -74,6 +74,11 @@ export async function fetchTask(
       return undefined;
     }
 
+    if (task.enabled === false) {
+      logger.warn("Task is disabled, skipping", { externalId });
+      return undefined;
+    }
+
     // Map task data to task config format
     return {
       prompt: task.prompt,
