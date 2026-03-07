@@ -1,4 +1,4 @@
-import { logger } from "@trigger.dev/sdk/v3";
+import { logger } from "../lib/logger";
 import { z } from "zod";
 import { NEW_API_BASE_URL } from "../consts";
 import { type ChatConfig } from "../schemas/chatSchema";
