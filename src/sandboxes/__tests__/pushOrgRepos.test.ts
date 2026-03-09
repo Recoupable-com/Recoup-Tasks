@@ -70,11 +70,7 @@ describe("pushOrgRepos", () => {
           stderr: async () => "",
         };
       }
-      const finished = { exitCode: 0, stdout: async () => "", stderr: async () => "" };
-      if (opts.cmd === "openclaw") {
-        return { wait: vi.fn().mockResolvedValue(finished) };
-      }
-      return finished;
+      return { exitCode: 0, stdout: async () => "", stderr: async () => "" };
     });
 
     await pushOrgRepos(sandbox);
@@ -110,11 +106,7 @@ describe("pushOrgRepos", () => {
           stderr: async () => "",
         };
       }
-      const finished = { exitCode: 0, stdout: async () => "", stderr: async () => "" };
-      if (opts.cmd === "openclaw") {
-        return { wait: vi.fn().mockResolvedValue(finished) };
-      }
-      return finished;
+      return { exitCode: 0, stdout: async () => "", stderr: async () => "" };
     });
 
     await pushOrgRepos(sandbox);
@@ -148,11 +140,7 @@ describe("pushOrgRepos", () => {
           stderr: async () => "",
         };
       }
-      const finished = { exitCode: 0, stdout: async () => "", stderr: async () => "" };
-      if (opts.cmd === "openclaw") {
-        return { wait: vi.fn().mockResolvedValue(finished) };
-      }
-      return finished;
+      return { exitCode: 0, stdout: async () => "", stderr: async () => "" };
     });
 
     await pushOrgRepos(sandbox);
@@ -180,12 +168,11 @@ describe("pushOrgRepos", () => {
       }
       // OpenClaw fails
       if (opts.cmd === "openclaw") {
-        const failed = {
+        return {
           exitCode: 1,
           stdout: async () => "",
           stderr: async () => "OpenClaw error\n",
         };
-        return { wait: vi.fn().mockResolvedValue(failed) };
       }
       return { exitCode: 0, stdout: async () => "", stderr: async () => "" };
     });
