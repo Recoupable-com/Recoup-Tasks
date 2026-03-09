@@ -10,7 +10,7 @@ import { configureGitAuth } from "../sandboxes/configureGitAuth";
 import { getSandboxEnv } from "../sandboxes/getSandboxEnv";
 import { updatePRPayloadSchema } from "../schemas/updatePRSchema";
 
-const CODING_AGENT_ACCOUNT_ID = "coding-agent";
+const CODING_AGENT_ACCOUNT_ID = "04e3aba9-c130-4fb8-8b92-34e95d43e66b";
 
 /**
  * Background task that resumes a sandbox from a snapshot, applies feedback
@@ -34,7 +34,7 @@ export const updatePRTask = schemaTask({
       teamId,
       projectId,
       source: { type: "snapshot", snapshotId },
-      timeoutMs: 30 * 60 * 1000,
+      timeout: 30 * 60 * 1000,
     });
 
     logStep("Sandbox resumed", false, { sandboxId: sandbox.sandboxId, snapshotId });
