@@ -19,10 +19,16 @@ vi.mock("../../github/createOrgGithubRepo", () => ({
 const { ensureOrgRepos } = await import("../ensureOrgRepos");
 
 function createMockSandbox() {
-  const runCommand = vi.fn().mockResolvedValue({
-    exitCode: 0,
-    stdout: async () => "",
-    stderr: async () => "",
+  const runCommand = vi.fn().mockImplementation((opts: any) => {
+    const finished = {
+      exitCode: 0,
+      stdout: async () => "",
+      stderr: async () => "",
+    };
+    if (opts?.cmd === "openclaw") {
+      return Promise.resolve({ wait: vi.fn().mockResolvedValue(finished) });
+    }
+    return Promise.resolve(finished);
   });
 
   return { runCommand } as any;
