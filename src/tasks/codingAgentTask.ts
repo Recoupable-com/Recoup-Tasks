@@ -1,6 +1,4 @@
-import { logger, metadata, schemaTask } from "@trigger.dev/sdk/v3";
-import { Sandbox } from "@vercel/sandbox";
-import { getVercelSandboxCredentials } from "../sandboxes/getVercelSandboxCredentials";
+import { metadata, schemaTask } from "@trigger.dev/sdk/v3";
 import { installOpenClaw } from "../sandboxes/installOpenClaw";
 import { setupOpenClaw } from "../sandboxes/setupOpenClaw";
 import { cloneMonorepoViaAgent } from "../sandboxes/cloneMonorepoViaAgent";
@@ -10,7 +8,7 @@ import { notifyCodingAgentCallback } from "../sandboxes/notifyCodingAgentCallbac
 import { logStep } from "../sandboxes/logStep";
 import { configureGitAuth } from "../sandboxes/configureGitAuth";
 import { codingAgentPayloadSchema } from "../schemas/codingAgentSchema";
-import { createAccountSandbox } from "../recoup/createAccountSandbox";
+import { getOrCreateSandbox } from "../sandboxes/getOrCreateSandbox";
 
 const CODING_AGENT_ACCOUNT_ID = "04e3aba9-c130-4fb8-8b92-34e95d43e66b";
 
@@ -28,23 +26,10 @@ export const codingAgentTask = schemaTask({
   },
   run: async (payload) => {
     const { prompt, callbackThreadId } = payload;
-    const { token, teamId, projectId } = getVercelSandboxCredentials();
 
-    logStep("Creating sandbox");
+    const { sandboxId, sandbox } = await getOrCreateSandbox(CODING_AGENT_ACCOUNT_ID);
 
-    const result = await createAccountSandbox(CODING_AGENT_ACCOUNT_ID);
-    if (!result) {
-      throw new Error("Failed to create sandbox via API");
-    }
-
-    const sandbox = await Sandbox.get({
-      sandboxId: result.sandboxId,
-      token,
-      teamId,
-      projectId,
-    } as any);
-
-    logger.log("Sandbox created", { sandboxId: sandbox.sandboxId });
+    logStep("Sandbox created", false, { sandboxId });
 
     try {
       logStep("Installing OpenClaw");
@@ -92,7 +77,7 @@ export const codingAgentTask = schemaTask({
 
       return { branch, snapshotId, prs, stdout: agentResult.stdout, stderr: agentResult.stderr };
     } finally {
-      logger.log("Stopping sandbox", { sandboxId: sandbox.sandboxId });
+      logStep("Stopping sandbox", false, { sandboxId: sandbox.sandboxId });
       await sandbox.stop();
     }
   },

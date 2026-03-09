@@ -11,25 +11,12 @@ vi.mock("@trigger.dev/sdk/v3", () => ({
   },
 }));
 
-const mockSandboxGet = vi.fn();
 const mockSandboxStop = vi.fn();
 const mockSandboxSnapshot = vi.fn().mockResolvedValue({ snapshotId: "snap_123" });
-const mockCreateAccountSandbox = vi.fn();
+const mockGetOrCreateSandbox = vi.fn();
 
-vi.mock("@vercel/sandbox", () => ({
-  Sandbox: {
-    get: (...args: unknown[]) => mockSandboxGet(...args),
-  },
-}));
-
-vi.mock("../../recoup/createAccountSandbox", () => ({
-  createAccountSandbox: (...args: unknown[]) => mockCreateAccountSandbox(...args),
-}));
-
-vi.mock("../../sandboxes/getVercelSandboxCredentials", () => ({
-  getVercelSandboxCredentials: vi.fn().mockReturnValue({
-    token: "tok", teamId: "team", projectId: "proj",
-  }),
+vi.mock("../../sandboxes/getOrCreateSandbox", () => ({
+  getOrCreateSandbox: (...args: unknown[]) => mockGetOrCreateSandbox(...args),
 }));
 
 vi.mock("../../sandboxes/installOpenClaw", () => ({
@@ -74,11 +61,13 @@ await import("../codingAgentTask");
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockCreateAccountSandbox.mockResolvedValue({ sandboxId: "sbx-123" });
-  mockSandboxGet.mockResolvedValue({
+  mockGetOrCreateSandbox.mockResolvedValue({
     sandboxId: "sbx-123",
-    stop: mockSandboxStop,
-    snapshot: mockSandboxSnapshot,
+    sandbox: {
+      sandboxId: "sbx-123",
+      stop: mockSandboxStop,
+      snapshot: mockSandboxSnapshot,
+    },
   });
 });
 
@@ -96,8 +85,7 @@ describe("codingAgentTask", () => {
 
     await mockRun(basePayload);
 
-    expect(mockCreateAccountSandbox).toHaveBeenCalledOnce();
-    expect(mockSandboxGet).toHaveBeenCalledOnce();
+    expect(mockGetOrCreateSandbox).toHaveBeenCalledOnce();
     expect(cloneMonorepoViaAgent).toHaveBeenCalledOnce();
     expect(runOpenClawAgent).toHaveBeenCalledOnce();
     expect(pushAndCreatePRsViaAgent).toHaveBeenCalledOnce();
