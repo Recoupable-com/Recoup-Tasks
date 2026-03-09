@@ -146,13 +146,26 @@ describe("updatePRTask", () => {
     expect(configureGitAuth).toHaveBeenCalledOnce();
   });
 
+  it("creates sandbox with correct timeout param (not timeoutMs)", async () => {
+    await mockRun(basePayload);
+
+    expect(mockSandboxCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        timeout: 30 * 60 * 1000,
+      }),
+    );
+    // Ensure the wrong param name is NOT used
+    const callArgs = mockSandboxCreate.mock.calls[0][0];
+    expect(callArgs).not.toHaveProperty("timeoutMs");
+  });
+
   it("passes sandbox env to both agent calls", async () => {
     const { runOpenClawAgent } = await import("../../sandboxes/runOpenClawAgent");
     const { getSandboxEnv } = await import("../../sandboxes/getSandboxEnv");
 
     await mockRun(basePayload);
 
-    expect(getSandboxEnv).toHaveBeenCalledWith("coding-agent");
+    expect(getSandboxEnv).toHaveBeenCalledWith("04e3aba9-c130-4fb8-8b92-34e95d43e66b");
 
     const expectedEnv = {
       RECOUP_API_KEY: "test-key",

@@ -12,6 +12,14 @@ vi.mock("../logStep", () => ({
 const { runOpenClawAgent } = await import("../runOpenClawAgent");
 const { logStep } = await import("../logStep");
 
+function mockDetachedCommand(finished: {
+  exitCode: number;
+  stdout: () => Promise<string>;
+  stderr: () => Promise<string>;
+}) {
+  return { wait: vi.fn().mockResolvedValue(finished) };
+}
+
 function createMockSandbox() {
   const runCommand = vi.fn();
   return { runCommand } as any;
@@ -24,11 +32,13 @@ beforeEach(() => {
 describe("runOpenClawAgent", () => {
   it("calls openclaw agent with correct args", async () => {
     const sandbox = createMockSandbox();
-    sandbox.runCommand.mockResolvedValueOnce({
-      exitCode: 0,
-      stdout: async () => "done\n",
-      stderr: async () => "",
-    });
+    sandbox.runCommand.mockResolvedValueOnce(
+      mockDetachedCommand({
+        exitCode: 0,
+        stdout: async () => "done\n",
+        stderr: async () => "",
+      }),
+    );
 
     await runOpenClawAgent(sandbox, {
       label: "Clone org repos",
@@ -38,16 +48,19 @@ describe("runOpenClawAgent", () => {
     expect(sandbox.runCommand).toHaveBeenCalledWith({
       cmd: "openclaw",
       args: ["agent", "--agent", "main", "--message", "Clone these repos"],
+      detached: true,
     });
   });
 
   it("passes env vars when provided", async () => {
     const sandbox = createMockSandbox();
-    sandbox.runCommand.mockResolvedValueOnce({
-      exitCode: 0,
-      stdout: async () => "",
-      stderr: async () => "",
-    });
+    sandbox.runCommand.mockResolvedValueOnce(
+      mockDetachedCommand({
+        exitCode: 0,
+        stdout: async () => "",
+        stderr: async () => "",
+      }),
+    );
 
     await runOpenClawAgent(sandbox, {
       label: "Setup sandbox",
@@ -58,17 +71,20 @@ describe("runOpenClawAgent", () => {
     expect(sandbox.runCommand).toHaveBeenCalledWith({
       cmd: "openclaw",
       args: ["agent", "--agent", "main", "--message", "Run setup"],
+      detached: true,
       env: { RECOUP_API_KEY: "key123" },
     });
   });
 
   it("logs command start with cmd and args via logStep", async () => {
     const sandbox = createMockSandbox();
-    sandbox.runCommand.mockResolvedValueOnce({
-      exitCode: 0,
-      stdout: async () => "output here\n",
-      stderr: async () => "warning\n",
-    });
+    sandbox.runCommand.mockResolvedValueOnce(
+      mockDetachedCommand({
+        exitCode: 0,
+        stdout: async () => "output here\n",
+        stderr: async () => "warning\n",
+      }),
+    );
 
     await runOpenClawAgent(sandbox, {
       label: "Clone org repos",
@@ -83,11 +99,13 @@ describe("runOpenClawAgent", () => {
 
   it("logs completion with exitCode, stdout, stderr via logStep", async () => {
     const sandbox = createMockSandbox();
-    sandbox.runCommand.mockResolvedValueOnce({
-      exitCode: 0,
-      stdout: async () => "output here\n",
-      stderr: async () => "warning\n",
-    });
+    sandbox.runCommand.mockResolvedValueOnce(
+      mockDetachedCommand({
+        exitCode: 0,
+        stdout: async () => "output here\n",
+        stderr: async () => "warning\n",
+      }),
+    );
 
     await runOpenClawAgent(sandbox, {
       label: "Clone org repos",
@@ -103,11 +121,13 @@ describe("runOpenClawAgent", () => {
 
   it("logs error on non-zero exit code via logStep", async () => {
     const sandbox = createMockSandbox();
-    sandbox.runCommand.mockResolvedValueOnce({
-      exitCode: 1,
-      stdout: async () => "",
-      stderr: async () => "fatal error\n",
-    });
+    sandbox.runCommand.mockResolvedValueOnce(
+      mockDetachedCommand({
+        exitCode: 1,
+        stdout: async () => "",
+        stderr: async () => "fatal error\n",
+      }),
+    );
 
     await runOpenClawAgent(sandbox, {
       label: "Clone org repos",
@@ -119,13 +139,35 @@ describe("runOpenClawAgent", () => {
     });
   });
 
+  it("uses detached mode and waits for completion", async () => {
+    const sandbox = createMockSandbox();
+    const waitMock = vi.fn().mockResolvedValueOnce({
+      exitCode: 0,
+      stdout: async () => "done\n",
+      stderr: async () => "",
+    });
+    sandbox.runCommand.mockResolvedValueOnce({ wait: waitMock });
+
+    await runOpenClawAgent(sandbox, {
+      label: "Coding agent",
+      message: "Make changes",
+    });
+
+    expect(sandbox.runCommand).toHaveBeenCalledWith(
+      expect.objectContaining({ detached: true }),
+    );
+    expect(waitMock).toHaveBeenCalled();
+  });
+
   it("returns stdout and stderr", async () => {
     const sandbox = createMockSandbox();
-    sandbox.runCommand.mockResolvedValueOnce({
-      exitCode: 0,
-      stdout: async () => "output\n",
-      stderr: async () => "warn\n",
-    });
+    sandbox.runCommand.mockResolvedValueOnce(
+      mockDetachedCommand({
+        exitCode: 0,
+        stdout: async () => "output\n",
+        stderr: async () => "warn\n",
+      }),
+    );
 
     const result = await runOpenClawAgent(sandbox, {
       label: "Test",

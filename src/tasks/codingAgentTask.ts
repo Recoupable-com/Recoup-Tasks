@@ -1,6 +1,4 @@
-import { logger, metadata, schemaTask } from "@trigger.dev/sdk/v3";
-import { Sandbox } from "@vercel/sandbox";
-import { getVercelSandboxCredentials } from "../sandboxes/getVercelSandboxCredentials";
+import { metadata, schemaTask } from "@trigger.dev/sdk/v3";
 import { installOpenClaw } from "../sandboxes/installOpenClaw";
 import { setupOpenClaw } from "../sandboxes/setupOpenClaw";
 import { cloneMonorepoViaAgent } from "../sandboxes/cloneMonorepoViaAgent";
@@ -10,8 +8,8 @@ import { notifyCodingAgentCallback } from "../sandboxes/notifyCodingAgentCallbac
 import { logStep } from "../sandboxes/logStep";
 import { configureGitAuth } from "../sandboxes/configureGitAuth";
 import { codingAgentPayloadSchema } from "../schemas/codingAgentSchema";
-
-const CODING_AGENT_ACCOUNT_ID = "coding-agent";
+import { getOrCreateSandbox } from "../sandboxes/getOrCreateSandbox";
+import { CODING_AGENT_ACCOUNT_ID } from "../consts";
 
 /**
  * Background task that spins up a sandbox, clones the Recoup monorepo
@@ -27,18 +25,10 @@ export const codingAgentTask = schemaTask({
   },
   run: async (payload) => {
     const { prompt, callbackThreadId } = payload;
-    const { token, teamId, projectId } = getVercelSandboxCredentials();
 
-    logStep("Creating sandbox");
+    const { sandboxId, sandbox } = await getOrCreateSandbox(CODING_AGENT_ACCOUNT_ID);
 
-    const sandbox = await Sandbox.create({
-      token,
-      teamId,
-      projectId,
-      timeoutMs: 30 * 60 * 1000,
-    });
-
-    logger.log("Sandbox created", { sandboxId: sandbox.sandboxId });
+    logStep("Sandbox created", false, { sandboxId });
 
     try {
       logStep("Installing OpenClaw");
@@ -86,7 +76,7 @@ export const codingAgentTask = schemaTask({
 
       return { branch, snapshotId, prs, stdout: agentResult.stdout, stderr: agentResult.stderr };
     } finally {
-      logger.log("Stopping sandbox", { sandboxId: sandbox.sandboxId });
+      logStep("Stopping sandbox", false, { sandboxId: sandbox.sandboxId });
       await sandbox.stop();
     }
   },
