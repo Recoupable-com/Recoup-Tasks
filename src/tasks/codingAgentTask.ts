@@ -10,8 +10,9 @@ import { notifyCodingAgentCallback } from "../sandboxes/notifyCodingAgentCallbac
 import { logStep } from "../sandboxes/logStep";
 import { configureGitAuth } from "../sandboxes/configureGitAuth";
 import { codingAgentPayloadSchema } from "../schemas/codingAgentSchema";
+import { createAccountSandbox } from "../recoup/createAccountSandbox";
 
-const CODING_AGENT_ACCOUNT_ID = "coding-agent";
+const CODING_AGENT_ACCOUNT_ID = "04e3aba9-c130-4fb8-8b92-34e95d43e66b";
 
 /**
  * Background task that spins up a sandbox, clones the Recoup monorepo
@@ -31,12 +32,17 @@ export const codingAgentTask = schemaTask({
 
     logStep("Creating sandbox");
 
-    const sandbox = await Sandbox.create({
+    const result = await createAccountSandbox(CODING_AGENT_ACCOUNT_ID);
+    if (!result) {
+      throw new Error("Failed to create sandbox via API");
+    }
+
+    const sandbox = await Sandbox.get({
+      sandboxId: result.sandboxId,
       token,
       teamId,
       projectId,
-      timeoutMs: 30 * 60 * 1000,
-    });
+    } as any);
 
     logger.log("Sandbox created", { sandboxId: sandbox.sandboxId });
 
