@@ -9,8 +9,7 @@ import { logStep } from "../sandboxes/logStep";
 import { configureGitAuth } from "../sandboxes/configureGitAuth";
 import { getSandboxEnv } from "../sandboxes/getSandboxEnv";
 import { updatePRPayloadSchema } from "../schemas/updatePRSchema";
-
-const CODING_AGENT_ACCOUNT_ID = "04e3aba9-c130-4fb8-8b92-34e95d43e66b";
+import { CODING_AGENT_ACCOUNT_ID } from "../consts";
 
 /**
  * Background task that resumes a sandbox from a snapshot, applies feedback
