@@ -9,6 +9,7 @@ import { logStep } from "../sandboxes/logStep";
 import { configureGitAuth } from "../sandboxes/configureGitAuth";
 import { codingAgentPayloadSchema } from "../schemas/codingAgentSchema";
 import { getOrCreateSandbox } from "../sandboxes/getOrCreateSandbox";
+import { syncMonorepoSubmodules } from "../sandboxes/git/syncMonorepoSubmodules";
 import { CODING_AGENT_ACCOUNT_ID } from "../consts";
 
 /**
@@ -38,6 +39,9 @@ export const codingAgentTask = schemaTask({
 
       logStep("Cloning monorepo via agent");
       await cloneMonorepoViaAgent(sandbox);
+
+      logStep("Syncing submodules to latest base branches");
+      await syncMonorepoSubmodules(sandbox);
 
       logStep("Running AI agent");
       const agentResult = await runOpenClawAgent(sandbox, {
