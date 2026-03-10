@@ -129,6 +129,8 @@ describe("updatePRTask", () => {
         threadId: "slack:C123:123.456",
         status: "updated",
         snapshotId: "snap_new",
+        stdout: "done",
+        stderr: "",
       }),
     );
   });

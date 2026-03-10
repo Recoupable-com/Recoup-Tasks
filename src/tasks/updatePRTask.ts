@@ -48,7 +48,7 @@ export const updatePRTask = schemaTask({
       const env = getSandboxEnv(CODING_AGENT_ACCOUNT_ID);
 
       logStep("Running AI agent with feedback");
-      await runOpenClawAgent(sandbox, {
+      const agentResult = await runOpenClawAgent(sandbox, {
         label: "Apply feedback",
         message: `The following feedback was given on the existing changes on branch "${branch}":\n\n${feedback}\n\nPlease make the requested changes.`,
         env,
@@ -74,12 +74,15 @@ export const updatePRTask = schemaTask({
       logStep("Taking new snapshot");
       const newSnapshot = await sandbox.snapshot();
 
-      logStep("Notifying bot");
-      await notifyCodingAgentCallback({
+      const callbackPayload = {
         threadId: callbackThreadId,
-        status: "updated",
+        status: "updated" as const,
         snapshotId: newSnapshot.snapshotId,
-      });
+        stdout: agentResult.stdout,
+        stderr: agentResult.stderr,
+      };
+      logStep("Notifying bot", true, callbackPayload);
+      await notifyCodingAgentCallback(callbackPayload);
 
       metadata.set("currentStep", "Complete");
 
