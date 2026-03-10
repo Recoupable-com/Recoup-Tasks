@@ -1,6 +1,7 @@
 import type { Sandbox } from "@vercel/sandbox";
 import { logger } from "@trigger.dev/sdk/v3";
 import { onboardOpenClaw } from "./onboardOpenClaw";
+import { CODING_AGENT_MODEL } from "../consts";
 
 /**
  * Ensures OpenClaw is onboarded, seeds env vars into the config,
@@ -44,6 +45,8 @@ export async function setupOpenClaw(
         ${githubToken ? `c.env.GITHUB_TOKEN = '${githubToken}';` : ""}
         c.tools = c.tools || {};
         c.tools.profile = 'coding';
+        c.model = 'vercel-ai-gateway/${CODING_AGENT_MODEL}';
+        c.defaultModel = 'vercel-ai-gateway/${CODING_AGENT_MODEL}';
         fs.writeFileSync(p, JSON.stringify(c, null, 2));
       "`,
     ],
