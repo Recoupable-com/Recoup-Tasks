@@ -1,5 +1,4 @@
 import type { Sandbox } from "@vercel/sandbox";
-import { logger } from "@trigger.dev/sdk/v3";
 import { runOpenClawAgent } from "../runOpenClawAgent";
 import { getSandboxHomeDir } from "../getSandboxHomeDir";
 import { logStep } from "../logStep";
@@ -20,7 +19,7 @@ export async function syncOrgRepos(sandbox: Sandbox): Promise<void> {
   const githubToken = process.env.GITHUB_TOKEN;
 
   if (!githubToken) {
-    logger.log("No GITHUB_TOKEN, skipping org repo sync");
+    logStep("No GITHUB_TOKEN, skipping org repo sync", false);
     return;
   }
 
@@ -43,7 +42,7 @@ export async function syncOrgRepos(sandbox: Sandbox): Promise<void> {
     .filter(Boolean);
 
   if (orgNames.length === 0) {
-    logger.log("No org repos found, skipping sync");
+    logStep("No org repos found, skipping sync", false);
     return;
   }
 
@@ -66,6 +65,5 @@ export async function syncOrgRepos(sandbox: Sandbox): Promise<void> {
     message,
   });
 
-  logger.log("Org repo sync complete", { orgNames });
-  logStep("Org repos synced");
+  logStep("Org repos synced", false, { orgNames });
 }
