@@ -9,6 +9,11 @@ const { syncOrgRepos } = await import("../git/syncOrgRepos");
 
 function createMockSandbox() {
   const runCommand = vi.fn().mockResolvedValue({
+    wait: vi.fn().mockResolvedValue({
+      exitCode: 0,
+      stdout: async () => "",
+      stderr: async () => "",
+    }),
     exitCode: 0,
     stdout: async () => "",
     stderr: async () => "",
