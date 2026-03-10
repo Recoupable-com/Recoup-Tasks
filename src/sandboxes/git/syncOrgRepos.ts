@@ -1,6 +1,5 @@
 import type { Sandbox } from "@vercel/sandbox";
 import { runOpenClawAgent } from "../runOpenClawAgent";
-import { getSandboxHomeDir } from "../getSandboxHomeDir";
 import { logStep } from "../logStep";
 
 /**
@@ -23,29 +22,6 @@ export async function syncOrgRepos(sandbox: Sandbox): Promise<void> {
     return;
   }
 
-  const homeDir = await getSandboxHomeDir(sandbox);
-  const workspaceOrgs = `${homeDir}/.openclaw/workspace/orgs`;
-
-  // Check if any org repos exist before prompting OpenClaw
-  const findResult = await sandbox.runCommand({
-    cmd: "sh",
-    args: [
-      "-c",
-      `find ${workspaceOrgs} -mindepth 1 -maxdepth 1 -type d 2>/dev/null | while read dir; do if [ -d "$dir/.git" ] || [ -f "$dir/.git" ]; then basename "$dir"; fi; done`,
-    ],
-  });
-
-  const stdout = (await findResult.stdout()) || "";
-  const orgNames = stdout
-    .split("\n")
-    .map((s) => s.trim())
-    .filter(Boolean);
-
-  if (orgNames.length === 0) {
-    logStep("No org repos found, skipping sync", false);
-    return;
-  }
-
   logStep("Syncing org repos");
 
   const message = [
@@ -57,6 +33,7 @@ export async function syncOrgRepos(sandbox: Sandbox): Promise<void> {
     "2. git reset --hard origin/main",
     "",
     "This ensures we have the latest commits before making any changes.",
+    "If there are no org repos, that's fine — just skip.",
     "Continue to the next repo if one fails.",
   ].join("\n");
 
@@ -65,5 +42,5 @@ export async function syncOrgRepos(sandbox: Sandbox): Promise<void> {
     message,
   });
 
-  logStep("Org repos synced", false, { orgNames });
+  logStep("Org repos synced", false);
 }
