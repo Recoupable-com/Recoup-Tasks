@@ -35,6 +35,10 @@ vi.mock("../../sandboxes/cloneMonorepoViaAgent", () => ({
   cloneMonorepoViaAgent: vi.fn(),
 }));
 
+vi.mock("../../sandboxes/git/syncMonorepoSubmodules", () => ({
+  syncMonorepoSubmodules: vi.fn(),
+}));
+
 vi.mock("../../sandboxes/runOpenClawAgent", () => ({
   runOpenClawAgent: vi.fn().mockResolvedValue({ exitCode: 0, stdout: "done", stderr: "" }),
 }));
@@ -134,6 +138,25 @@ describe("codingAgentTask", () => {
     await mockRun(basePayload);
 
     expect(configureGitAuth).toHaveBeenCalledOnce();
+  });
+
+  it("syncs monorepo submodules after cloning and before running agent", async () => {
+    const { cloneMonorepoViaAgent } = await import("../../sandboxes/cloneMonorepoViaAgent");
+    const { syncMonorepoSubmodules } = await import("../../sandboxes/git/syncMonorepoSubmodules");
+    const { runOpenClawAgent } = await import("../../sandboxes/runOpenClawAgent");
+
+    await mockRun(basePayload);
+
+    expect(cloneMonorepoViaAgent).toHaveBeenCalledOnce();
+    expect(syncMonorepoSubmodules).toHaveBeenCalledOnce();
+    expect(runOpenClawAgent).toHaveBeenCalledOnce();
+
+    // Verify ordering: clone → sync → agent
+    const cloneOrder = vi.mocked(cloneMonorepoViaAgent).mock.invocationCallOrder[0];
+    const syncOrder = vi.mocked(syncMonorepoSubmodules).mock.invocationCallOrder[0];
+    const agentOrder = vi.mocked(runOpenClawAgent).mock.invocationCallOrder[0];
+    expect(cloneOrder).toBeLessThan(syncOrder);
+    expect(syncOrder).toBeLessThan(agentOrder);
   });
 
 });
