@@ -1,10 +1,12 @@
 import type { Sandbox } from "@vercel/sandbox";
 import { logger } from "@trigger.dev/sdk/v3";
+import { runOpenClawAgent } from "../runOpenClawAgent";
 import { getSandboxHomeDir } from "../getSandboxHomeDir";
 import { logStep } from "../logStep";
 
 /**
- * Pulls the latest changes from all org repos in the sandbox workspace.
+ * Syncs all org repos in the sandbox workspace to their latest remote state
+ * via an OpenClaw agent prompt.
  *
  * This ensures org repos are up-to-date with their remote `main` branch
  * before any commands run, preventing stale snapshots from causing
@@ -25,7 +27,7 @@ export async function syncOrgRepos(sandbox: Sandbox): Promise<void> {
   const homeDir = await getSandboxHomeDir(sandbox);
   const workspaceOrgs = `${homeDir}/.openclaw/workspace/orgs`;
 
-  // Find org directories that are git repos (directory .git or file .git for submodules)
+  // Check if any org repos exist before prompting OpenClaw
   const findResult = await sandbox.runCommand({
     cmd: "sh",
     args: [
@@ -47,39 +49,23 @@ export async function syncOrgRepos(sandbox: Sandbox): Promise<void> {
 
   logStep("Syncing org repos");
 
-  const results: string[] = [];
+  const message = [
+    "Sync all org repos to the latest remote state.",
+    "Org repos are at ~/.openclaw/workspace/orgs/",
+    "",
+    "For each org directory that is a git repo (has a .git directory or .git file):",
+    "1. git fetch origin main",
+    "2. git reset --hard origin/main",
+    "",
+    "This ensures we have the latest commits before making any changes.",
+    "Continue to the next repo if one fails.",
+  ].join("\n");
 
-  for (const name of orgNames) {
-    const repoPath = `${workspaceOrgs}/${name}`;
+  await runOpenClawAgent(sandbox, {
+    label: "Syncing org repos to latest remote",
+    message,
+  });
 
-    // Fetch and reset to origin/main to ensure we're fully up-to-date
-    const fetchResult = await sandbox.runCommand({
-      cmd: "git",
-      args: ["-C", repoPath, "fetch", "origin", "main"],
-    });
-
-    if (fetchResult.exitCode !== 0) {
-      const stderr = (await fetchResult.stderr()) || "";
-      logger.error(`Failed to fetch ${name}`, { stderr });
-      results.push(`${name}: fetch failed`);
-      continue;
-    }
-
-    const resetResult = await sandbox.runCommand({
-      cmd: "git",
-      args: ["-C", repoPath, "reset", "--hard", "origin/main"],
-    });
-
-    if (resetResult.exitCode !== 0) {
-      const stderr = (await resetResult.stderr()) || "";
-      logger.error(`Failed to reset ${name}`, { stderr });
-      results.push(`${name}: reset failed`);
-      continue;
-    }
-
-    results.push(`${name}: synced`);
-  }
-
-  logger.log("Org repo sync complete", { results });
+  logger.log("Org repo sync complete", { orgNames });
   logStep("Org repos synced");
 }

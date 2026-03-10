@@ -22,7 +22,7 @@ function createMockSandbox(orgNames: string[] = []) {
         stderr: async () => "",
       };
     }
-    // git fetch / reset
+    // openclaw agent command
     return {
       exitCode: 0,
       stdout: async () => "",
@@ -56,128 +56,42 @@ describe("syncOrgRepos", () => {
 
     // Only the find command should have been called
     expect(sandbox.runCommand).toHaveBeenCalledTimes(1);
+    const openclawCall = sandbox.runCommand.mock.calls.find(
+      (call: any[]) => call[0]?.cmd === "openclaw"
+    );
+    expect(openclawCall).toBeUndefined();
   });
 
-  it("fetches and resets each org repo to origin/main", async () => {
+  it("runs an openclaw agent prompt to sync org repos", async () => {
     const sandbox = createMockSandbox(["org-one", "org-two"]);
 
     await syncOrgRepos(sandbox);
 
-    const gitCalls = sandbox.runCommand.mock.calls.filter(
-      (call: any[]) => call[0]?.cmd === "git"
+    const openclawCall = sandbox.runCommand.mock.calls.find(
+      (call: any[]) => call[0]?.cmd === "openclaw"
     );
+    expect(openclawCall).toBeDefined();
 
-    // 2 repos × 2 commands (fetch + reset) = 4 git calls
-    expect(gitCalls).toHaveLength(4);
-
-    // org-one fetch
-    expect(gitCalls[0][0].args).toEqual([
-      "-C",
-      "/home/user/.openclaw/workspace/orgs/org-one",
-      "fetch",
-      "origin",
-      "main",
-    ]);
-
-    // org-one reset
-    expect(gitCalls[1][0].args).toEqual([
-      "-C",
-      "/home/user/.openclaw/workspace/orgs/org-one",
-      "reset",
-      "--hard",
-      "origin/main",
-    ]);
-
-    // org-two fetch
-    expect(gitCalls[2][0].args).toEqual([
-      "-C",
-      "/home/user/.openclaw/workspace/orgs/org-two",
-      "fetch",
-      "origin",
-      "main",
-    ]);
-
-    // org-two reset
-    expect(gitCalls[3][0].args).toEqual([
-      "-C",
-      "/home/user/.openclaw/workspace/orgs/org-two",
-      "reset",
-      "--hard",
-      "origin/main",
-    ]);
+    const args = openclawCall![0].args;
+    const message = args.find(
+      (a: string, i: number) => args[i - 1] === "--message"
+    );
+    expect(message).toContain("git fetch origin main");
+    expect(message).toContain("git reset --hard origin/main");
   });
 
-  it("continues syncing remaining repos when one fetch fails", async () => {
-    const sandbox = createMockSandbox(["failing-org", "working-org"]);
-
-    let fetchCount = 0;
-    sandbox.runCommand.mockImplementation(async (opts: any) => {
-      if (opts.cmd === "sh") {
-        return {
-          exitCode: 0,
-          stdout: async () => "failing-org\nworking-org",
-          stderr: async () => "",
-        };
-      }
-      if (opts.cmd === "git" && opts.args?.includes("fetch")) {
-        fetchCount++;
-        if (fetchCount === 1) {
-          return {
-            exitCode: 1,
-            stdout: async () => "",
-            stderr: async () => "fatal: could not read from remote",
-          };
-        }
-      }
-      return {
-        exitCode: 0,
-        stdout: async () => "",
-        stderr: async () => "",
-      };
-    });
+  it("instructs OpenClaw to handle .git files (submodule gitlinks)", async () => {
+    const sandbox = createMockSandbox(["org-one"]);
 
     await syncOrgRepos(sandbox);
 
-    const gitCalls = sandbox.runCommand.mock.calls.filter(
-      (call: any[]) => call[0]?.cmd === "git"
+    const openclawCall = sandbox.runCommand.mock.calls.find(
+      (call: any[]) => call[0]?.cmd === "openclaw"
     );
-
-    // failing-org: fetch only (no reset due to failure)
-    // working-org: fetch + reset
-    expect(gitCalls).toHaveLength(3);
-  });
-
-  it("skips reset when fetch fails for a repo", async () => {
-    const sandbox = createMockSandbox(["bad-org"]);
-
-    sandbox.runCommand.mockImplementation(async (opts: any) => {
-      if (opts.cmd === "sh") {
-        return {
-          exitCode: 0,
-          stdout: async () => "bad-org",
-          stderr: async () => "",
-        };
-      }
-      if (opts.cmd === "git" && opts.args?.includes("fetch")) {
-        return {
-          exitCode: 128,
-          stdout: async () => "",
-          stderr: async () => "fatal: remote error",
-        };
-      }
-      return {
-        exitCode: 0,
-        stdout: async () => "",
-        stderr: async () => "",
-      };
-    });
-
-    await syncOrgRepos(sandbox);
-
-    const resetCalls = sandbox.runCommand.mock.calls.filter(
-      (call: any[]) =>
-        call[0]?.cmd === "git" && call[0]?.args?.includes("reset")
+    const args = openclawCall![0].args;
+    const message = args.find(
+      (a: string, i: number) => args[i - 1] === "--message"
     );
-    expect(resetCalls).toHaveLength(0);
+    expect(message).toContain(".git file");
   });
 });
