@@ -11,6 +11,7 @@ import { writeReadme } from "../sandboxes/writeReadme";
 import { ensureOrgRepos } from "../sandboxes/ensureOrgRepos";
 import { ensureSetupSandbox } from "../sandboxes/ensureSetupSandbox";
 import { pushSandboxToGithub } from "../sandboxes/pushSandboxToGithub";
+import { syncOrgRepos } from "../sandboxes/git/syncOrgRepos";
 import {
   runSandboxCommandPayloadSchema,
   type SandboxResult,
@@ -64,6 +65,11 @@ export const runSandboxCommandTask = schemaTask({
 
       // Ensure org/artist folder structure exists (setup via OpenClaw)
       await ensureSetupSandbox(sandbox, accountId);
+
+      // Sync all org repos to latest remote state before running commands.
+      // Prevents stale snapshots from causing force-pushes that delete
+      // already-merged commits.
+      await syncOrgRepos(sandbox);
 
       // Run the command with args
       logStep("Running command");
