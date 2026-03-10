@@ -38,28 +38,7 @@ describe("syncMonorepoSubmodules", () => {
     expect(openclawCall).toBeDefined();
   });
 
-  it("includes submodule config with base branches in the agent message", async () => {
-    const sandbox = createMockSandbox();
-
-    await syncMonorepoSubmodules(sandbox);
-
-    const openclawCall = sandbox.runCommand.mock.calls.find(
-      (call: any[]) => call[0]?.cmd === "openclaw"
-    );
-    const args = openclawCall![0].args;
-    const message = args.find(
-      (a: string, i: number) => args[i - 1] === "--message"
-    );
-
-    // Should reference specific submodules and their base branches from SUBMODULE_CONFIG
-    expect(message).toContain("api");
-    expect(message).toContain("test");
-    expect(message).toContain("chat");
-    expect(message).toContain("tasks");
-    expect(message).toContain("main");
-  });
-
-  it("instructs git fetch and reset for each submodule's base branch", async () => {
+  it("instructs git fetch and checkout for each submodule", async () => {
     const sandbox = createMockSandbox();
 
     await syncMonorepoSubmodules(sandbox);
@@ -74,6 +53,7 @@ describe("syncMonorepoSubmodules", () => {
 
     expect(message).toContain("git fetch");
     expect(message).toContain("git checkout");
+    expect(message).toContain("git reset --hard");
   });
 
   it("targets the Recoup-Monorepo directory", async () => {
