@@ -135,7 +135,7 @@ describe("setupOpenClaw", () => {
     expect(gatewayCall).toBeDefined();
   });
 
-  it("sets the default model to moonshotai/kimi-k2.5 via agents.defaults.model.primary", async () => {
+  it("sets the default model to anthropic/claude-sonnet-4.6 via agents.defaults.model.primary", async () => {
     const sandbox = createMockSandbox();
 
     await setupOpenClaw(sandbox, "account-1");
@@ -153,7 +153,7 @@ describe("setupOpenClaw", () => {
     expect(script).toContain("defaults");
     expect(script).toContain("model");
     expect(script).toContain("primary");
-    expect(script).toContain("vercel-ai-gateway/moonshotai/kimi-k2.5");
+    expect(script).toContain("vercel-ai-gateway/anthropic/claude-sonnet-4.6");
   });
 
   it("throws when env injection fails", async () => {
