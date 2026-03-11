@@ -39,8 +39,8 @@ vi.mock("../../sandboxes/git/syncMonorepoSubmodules", () => ({
   syncMonorepoSubmodules: vi.fn(),
 }));
 
-vi.mock("../../sandboxes/runOpenClawAgent", () => ({
-  runOpenClawAgent: vi.fn().mockResolvedValue({ exitCode: 0, stdout: "done", stderr: "" }),
+vi.mock("../../sandboxes/runClaudeCodeAgent", () => ({
+  runClaudeCodeAgent: vi.fn().mockResolvedValue({ exitCode: 0, stdout: "done", stderr: "" }),
 }));
 
 vi.mock("../../sandboxes/pushAndCreatePRsViaAgent", () => ({
@@ -84,14 +84,14 @@ describe("codingAgentTask", () => {
   it("creates a sandbox, clones via agent, runs agent, creates PRs via agent, and notifies", async () => {
     const { notifyCodingAgentCallback } = await import("../../sandboxes/notifyCodingAgentCallback");
     const { cloneMonorepoViaAgent } = await import("../../sandboxes/cloneMonorepoViaAgent");
-    const { runOpenClawAgent } = await import("../../sandboxes/runOpenClawAgent");
+    const { runClaudeCodeAgent } = await import("../../sandboxes/runClaudeCodeAgent");
     const { pushAndCreatePRsViaAgent } = await import("../../sandboxes/pushAndCreatePRsViaAgent");
 
     await mockRun(basePayload);
 
     expect(mockGetOrCreateSandbox).toHaveBeenCalledOnce();
     expect(cloneMonorepoViaAgent).toHaveBeenCalledOnce();
-    expect(runOpenClawAgent).toHaveBeenCalledOnce();
+    expect(runClaudeCodeAgent).toHaveBeenCalledOnce();
     expect(pushAndCreatePRsViaAgent).toHaveBeenCalledOnce();
     expect(notifyCodingAgentCallback).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -143,18 +143,18 @@ describe("codingAgentTask", () => {
   it("syncs monorepo submodules after cloning and before running agent", async () => {
     const { cloneMonorepoViaAgent } = await import("../../sandboxes/cloneMonorepoViaAgent");
     const { syncMonorepoSubmodules } = await import("../../sandboxes/git/syncMonorepoSubmodules");
-    const { runOpenClawAgent } = await import("../../sandboxes/runOpenClawAgent");
+    const { runClaudeCodeAgent } = await import("../../sandboxes/runClaudeCodeAgent");
 
     await mockRun(basePayload);
 
     expect(cloneMonorepoViaAgent).toHaveBeenCalledOnce();
     expect(syncMonorepoSubmodules).toHaveBeenCalledOnce();
-    expect(runOpenClawAgent).toHaveBeenCalledOnce();
+    expect(runClaudeCodeAgent).toHaveBeenCalledOnce();
 
     // Verify ordering: clone → sync → agent
     const cloneOrder = vi.mocked(cloneMonorepoViaAgent).mock.invocationCallOrder[0];
     const syncOrder = vi.mocked(syncMonorepoSubmodules).mock.invocationCallOrder[0];
-    const agentOrder = vi.mocked(runOpenClawAgent).mock.invocationCallOrder[0];
+    const agentOrder = vi.mocked(runClaudeCodeAgent).mock.invocationCallOrder[0];
     expect(cloneOrder).toBeLessThan(syncOrder);
     expect(syncOrder).toBeLessThan(agentOrder);
   });

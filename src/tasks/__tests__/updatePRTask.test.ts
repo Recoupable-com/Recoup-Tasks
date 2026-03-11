@@ -35,8 +35,8 @@ vi.mock("../../sandboxes/setupOpenClaw", () => ({
   setupOpenClaw: vi.fn(),
 }));
 
-vi.mock("../../sandboxes/runOpenClawAgent", () => ({
-  runOpenClawAgent: vi.fn().mockResolvedValue({ exitCode: 0, stdout: "done", stderr: "" }),
+vi.mock("../../sandboxes/runClaudeCodeAgent", () => ({
+  runClaudeCodeAgent: vi.fn().mockResolvedValue({ exitCode: 0, stdout: "done", stderr: "" }),
 }));
 
 vi.mock("../../sandboxes/notifyCodingAgentCallback", () => ({
@@ -91,11 +91,11 @@ describe("updatePRTask", () => {
   });
 
   it("runs OpenClaw agent with feedback prompt", async () => {
-    const { runOpenClawAgent } = await import("../../sandboxes/runOpenClawAgent");
+    const { runClaudeCodeAgent } = await import("../../sandboxes/runClaudeCodeAgent");
 
     await mockRun(basePayload);
 
-    expect(runOpenClawAgent).toHaveBeenCalledWith(
+    expect(runClaudeCodeAgent).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
         message: expect.stringContaining("Make the button blue instead"),
@@ -104,13 +104,13 @@ describe("updatePRTask", () => {
   });
 
   it("delegates push to agent instead of using runGitCommand", async () => {
-    const { runOpenClawAgent } = await import("../../sandboxes/runOpenClawAgent");
+    const { runClaudeCodeAgent } = await import("../../sandboxes/runClaudeCodeAgent");
 
     await mockRun(basePayload);
 
     // Should be called twice: once for feedback, once for push
-    expect(runOpenClawAgent).toHaveBeenCalledTimes(2);
-    expect(runOpenClawAgent).toHaveBeenCalledWith(
+    expect(runClaudeCodeAgent).toHaveBeenCalledTimes(2);
+    expect(runClaudeCodeAgent).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
         label: "Push feedback changes",
@@ -162,7 +162,7 @@ describe("updatePRTask", () => {
   });
 
   it("passes sandbox env to both agent calls", async () => {
-    const { runOpenClawAgent } = await import("../../sandboxes/runOpenClawAgent");
+    const { runClaudeCodeAgent } = await import("../../sandboxes/runClaudeCodeAgent");
     const { getSandboxEnv } = await import("../../sandboxes/getSandboxEnv");
 
     await mockRun(basePayload);
@@ -176,7 +176,7 @@ describe("updatePRTask", () => {
     };
 
     // Both agent calls should receive env
-    const calls = vi.mocked(runOpenClawAgent).mock.calls;
+    const calls = vi.mocked(runClaudeCodeAgent).mock.calls;
     expect(calls[0][1]).toEqual(expect.objectContaining({ env: expectedEnv }));
     expect(calls[1][1]).toEqual(expect.objectContaining({ env: expectedEnv }));
   });
