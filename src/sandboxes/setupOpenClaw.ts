@@ -1,6 +1,7 @@
 import type { Sandbox } from "@vercel/sandbox";
 import { logger } from "@trigger.dev/sdk/v3";
 import { onboardOpenClaw } from "./onboardOpenClaw";
+import { OPENCLAW_DEFAULT_MODEL } from "../consts";
 
 /**
  * Ensures OpenClaw is onboarded, seeds env vars into the config,
@@ -44,6 +45,10 @@ export async function setupOpenClaw(
         ${githubToken ? `c.env.GITHUB_TOKEN = '${githubToken}';` : ""}
         c.tools = c.tools || {};
         c.tools.profile = 'coding';
+        c.agents = c.agents || {};
+        c.agents.defaults = c.agents.defaults || {};
+        c.agents.defaults.model = c.agents.defaults.model || {};
+        c.agents.defaults.model.primary = '${OPENCLAW_DEFAULT_MODEL}';
         fs.writeFileSync(p, JSON.stringify(c, null, 2));
       "`,
     ],
