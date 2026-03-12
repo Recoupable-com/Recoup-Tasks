@@ -1,6 +1,7 @@
 import { fal } from "@fal-ai/client";
-import { logger, metadata, schemaTask, tags } from "@trigger.dev/sdk/v3";
+import { metadata, schemaTask, tags } from "@trigger.dev/sdk/v3";
 import { createContentPayloadSchema } from "../schemas/contentCreationSchema";
+import { logStep } from "../sandboxes/logStep";
 import { fetchGithubFile } from "../content/fetchGithubFile";
 import { generateContentImage } from "../content/generateContentImage";
 import { generateContentVideo } from "../content/generateContentVideo";
@@ -48,13 +49,12 @@ export const createContentTask = schemaTask({
   },
   run: async payload => {
     await tags.add(`account:${payload.accountId}`);
-    metadata.set("currentStep", "Starting content pipeline");
     metadata.set("accountId", payload.accountId);
     metadata.set("artistSlug", payload.artistSlug);
     metadata.set("template", payload.template);
     metadata.set("lipsync", payload.lipsync);
 
-    logger.log("create-content task started", {
+    logStep("create-content task started", true, {
       artistSlug: payload.artistSlug,
       template: payload.template,
       lipsync: payload.lipsync,
@@ -68,13 +68,13 @@ export const createContentTask = schemaTask({
     fal.config({ credentials: falKey });
 
     // --- Step 1: Load template ---
-    metadata.set("currentStep", "Loading template");
+    logStep("Loading template");
     const template = await loadTemplate(payload.template);
 
     // --- Step 2: Fetch face-guide (only if template uses it) ---
     let faceGuideUrl: string | null = null;
     if (template.usesFaceGuide) {
-      metadata.set("currentStep", "Fetching face-guide");
+      logStep("Fetching face-guide");
       const faceGuideBuffer = await fetchGithubFile(
         payload.githubRepo,
         `artists/${payload.artistSlug}/context/images/face-guide.png`,
@@ -87,7 +87,7 @@ export const createContentTask = schemaTask({
     }
 
     // --- Step 3: Select audio clip ---
-    metadata.set("currentStep", "Selecting audio clip");
+    logStep("Selecting audio clip");
     const audioClip = await selectAudioClip({
       githubRepo: payload.githubRepo,
       artistSlug: payload.artistSlug,
@@ -96,7 +96,7 @@ export const createContentTask = schemaTask({
     });
 
     // --- Step 4: Fetch artist/audience context ---
-    metadata.set("currentStep", "Fetching artist context");
+    logStep("Fetching artist context");
     const artistContext = await fetchArtistContext(
       payload.githubRepo, payload.artistSlug, fetchGithubFile,
     );
@@ -105,7 +105,7 @@ export const createContentTask = schemaTask({
     );
 
     // --- Step 5: Generate image ---
-    metadata.set("currentStep", "Generating image");
+    logStep("Generating image");
     const referenceImagePath = pickRandomReferenceImage(template);
     // Build prompt: face-swap instruction (if needed) + template scene + style guide
     const instruction = template.usesFaceGuide ? FACE_SWAP_INSTRUCTION : NO_FACE_INSTRUCTION;
@@ -119,7 +119,7 @@ export const createContentTask = schemaTask({
 
     // --- Step 6: Upscale image (optional) ---
     if (payload.upscale) {
-      metadata.set("currentStep", "Upscaling image");
+      logStep("Upscaling image");
       imageUrl = await upscaleImage(imageUrl);
     }
 
@@ -129,7 +129,7 @@ export const createContentTask = schemaTask({
 
     if (payload.lipsync) {
       // Lipsync path: audio baked into video
-      metadata.set("currentStep", "Generating audio-to-video (lipsync)");
+      logStep("Generating audio-to-video (lipsync)");
       videoUrl = await generateAudioVideo({
         imageUrl,
         songBuffer: audioClip.songBuffer,
@@ -139,7 +139,7 @@ export const createContentTask = schemaTask({
       });
     } else {
       // Normal path: image-to-video, audio added in post
-      metadata.set("currentStep", "Generating video");
+      logStep("Generating video");
       videoUrl = await generateContentVideo({
         imageUrl,
         motionPrompt,
@@ -148,12 +148,12 @@ export const createContentTask = schemaTask({
 
     // --- Step 8: Upscale video (optional) ---
     if (payload.upscale) {
-      metadata.set("currentStep", "Upscaling video");
+      logStep("Upscaling video");
       videoUrl = await upscaleVideo(videoUrl);
     }
 
     // --- Step 9: Generate caption ---
-    metadata.set("currentStep", "Generating caption");
+    logStep("Generating caption");
     const captionText = await generateCaption({
       template,
       songTitle: audioClip.songTitle,
@@ -165,7 +165,7 @@ export const createContentTask = schemaTask({
     });
 
     // --- Step 10: Final render (ffmpeg) ---
-    metadata.set("currentStep", "Rendering final video (ffmpeg)");
+    logStep("Rendering final video (ffmpeg)");
     const finalVideo = await renderFinalVideo({
       videoUrl,
       songBuffer: audioClip.songBuffer,
@@ -198,8 +198,7 @@ export const createContentTask = schemaTask({
       message: "Full content pipeline complete — AI image + video + audio + caption",
     };
 
-    metadata.set("currentStep", "Complete");
-    logger.log("create-content task completed", {
+    logStep("Complete", true, {
       sizeBytes: finalVideo.sizeBytes,
       songTitle: audioClip.songTitle,
       captionText: captionText.slice(0, 80),

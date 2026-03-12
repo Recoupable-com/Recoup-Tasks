@@ -24,6 +24,10 @@ vi.mock("@fal-ai/client", () => ({
   },
 }));
 
+vi.mock("../../sandboxes/logStep", () => ({
+  logStep: vi.fn(),
+}));
+
 vi.mock("../../content/fetchGithubFile", () => ({
   fetchGithubFile: vi.fn().mockResolvedValue(Buffer.from("fake-png")),
 }));
