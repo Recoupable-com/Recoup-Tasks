@@ -1,6 +1,4 @@
 import { metadata, schemaTask } from "@trigger.dev/sdk/v3";
-import { installOpenClaw } from "../sandboxes/installOpenClaw";
-import { setupOpenClaw } from "../sandboxes/setupOpenClaw";
 import { cloneMonorepoViaAgent } from "../sandboxes/cloneMonorepoViaAgent";
 import { runClaudeCodeAgent } from "../sandboxes/runClaudeCodeAgent";
 import { pushAndCreatePRsViaAgent } from "../sandboxes/pushAndCreatePRsViaAgent";
@@ -32,9 +30,6 @@ export const codingAgentTask = schemaTask({
     logStep("Sandbox created", false, { sandboxId });
 
     try {
-      logStep("Installing OpenClaw");
-      await installOpenClaw(sandbox);
-      await setupOpenClaw(sandbox, CODING_AGENT_ACCOUNT_ID);
       await configureGitAuth(sandbox);
 
       logStep("Cloning monorepo via agent");

@@ -19,14 +19,6 @@ vi.mock("../../sandboxes/getOrCreateSandbox", () => ({
   getOrCreateSandbox: (...args: unknown[]) => mockGetOrCreateSandbox(...args),
 }));
 
-vi.mock("../../sandboxes/installOpenClaw", () => ({
-  installOpenClaw: vi.fn(),
-}));
-
-vi.mock("../../sandboxes/setupOpenClaw", () => ({
-  setupOpenClaw: vi.fn(),
-}));
-
 vi.mock("../../sandboxes/configureGitAuth", () => ({
   configureGitAuth: vi.fn(),
 }));
