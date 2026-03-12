@@ -67,6 +67,32 @@ export async function ensureGithubRepo(
   });
 
   if (gitCheck.exitCode === 0) {
+    // Verify the remote matches the expected repo — snapshots may carry
+    // a stale remote from a different account's sandbox.
+    const remoteResult = await sandbox.runCommand({
+      cmd: "git",
+      args: ["remote", "get-url", "origin"],
+    });
+    const currentRemote = ((await remoteResult.stdout()) || "").trim();
+    // Strip auth prefix for comparison (remote may include x-access-token)
+    const normalizedRemote = currentRemote.replace(
+      /https:\/\/x-access-token:[^@]+@github\.com\//,
+      "https://github.com/"
+    );
+
+    if (normalizedRemote !== githubRepo) {
+      logger.log("Sandbox remote mismatch, updating origin", {
+        expected: githubRepo,
+        actual: normalizedRemote,
+      });
+      const repoUrl = githubRepo.replace("https://github.com/", authPrefix);
+      await runGitCommand(
+        sandbox,
+        ["remote", "set-url", "origin", repoUrl],
+        "update remote to correct repo"
+      );
+    }
+
     logger.log("GitHub repo already cloned in sandbox", { githubRepo });
     return githubRepo;
   }
