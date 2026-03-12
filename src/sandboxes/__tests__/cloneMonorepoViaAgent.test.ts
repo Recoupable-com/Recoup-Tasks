@@ -27,7 +27,7 @@ describe("cloneMonorepoViaAgent", () => {
       sandbox,
       expect.objectContaining({
         label: "Clone monorepo via agent",
-        message: expect.stringContaining("Recoup-Monorepo"),
+        message: expect.stringContaining("recoupable/mono"),
       }),
     );
   });

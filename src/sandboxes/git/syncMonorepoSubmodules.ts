@@ -4,7 +4,7 @@ import { logStep } from "../logStep";
 
 /**
  * Syncs all monorepo submodules to their latest remote base branch
- * via an OpenClaw agent prompt.
+ * via a Claude Code agent prompt.
  *
  * This ensures PRs are created against the most up-to-date reference,
  * preventing stale base branches from causing merge conflicts.
@@ -19,7 +19,7 @@ export async function syncMonorepoSubmodules(sandbox: Sandbox): Promise<void> {
 
   const message = [
     "Sync all monorepo submodules to their latest remote base branch.",
-    "The monorepo is at ~/.openclaw/workspace/Recoup-Monorepo/",
+    "The monorepo is at ~/.openclaw/workspace/mono/",
     "",
     "For each submodule directory:",
     "1. cd into the submodule",
