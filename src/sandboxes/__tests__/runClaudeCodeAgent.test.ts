@@ -46,7 +46,7 @@ describe("runClaudeCodeAgent", () => {
 
     expect(sandbox.runCommand).toHaveBeenCalledWith({
       cmd: "claude",
-      args: ["--print", "Fix the bug"],
+      args: ["-p", "--dangerously-skip-permissions", "Fix the bug"],
       detached: true,
     });
   });
@@ -69,7 +69,7 @@ describe("runClaudeCodeAgent", () => {
 
     expect(sandbox.runCommand).toHaveBeenCalledWith({
       cmd: "claude",
-      args: ["--print", "Update the README"],
+      args: ["-p", "--dangerously-skip-permissions", "Update the README"],
       detached: true,
       env: { GITHUB_TOKEN: "ghp_test" },
     });

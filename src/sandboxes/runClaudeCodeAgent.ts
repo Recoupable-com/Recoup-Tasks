@@ -27,7 +27,7 @@ export async function runClaudeCodeAgent(
 ): Promise<RunClaudeCodeAgentResult> {
   const { label, message, env } = options;
 
-  const args = ["--print", message];
+  const args = ["-p", "--dangerously-skip-permissions", message];
 
   logStep(label, true, { cmd: "claude", args });
 
