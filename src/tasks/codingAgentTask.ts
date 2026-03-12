@@ -1,8 +1,6 @@
 import { metadata, schemaTask } from "@trigger.dev/sdk/v3";
-import { installOpenClaw } from "../sandboxes/installOpenClaw";
-import { setupOpenClaw } from "../sandboxes/setupOpenClaw";
 import { cloneMonorepoViaAgent } from "../sandboxes/cloneMonorepoViaAgent";
-import { runOpenClawAgent } from "../sandboxes/runOpenClawAgent";
+import { runClaudeCodeAgent } from "../sandboxes/runClaudeCodeAgent";
 import { pushAndCreatePRsViaAgent } from "../sandboxes/pushAndCreatePRsViaAgent";
 import { notifyCodingAgentCallback } from "../sandboxes/notifyCodingAgentCallback";
 import { logStep } from "../sandboxes/logStep";
@@ -32,9 +30,6 @@ export const codingAgentTask = schemaTask({
     logStep("Sandbox created", false, { sandboxId });
 
     try {
-      logStep("Installing OpenClaw");
-      await installOpenClaw(sandbox);
-      await setupOpenClaw(sandbox, CODING_AGENT_ACCOUNT_ID);
       await configureGitAuth(sandbox);
 
       logStep("Cloning monorepo via agent");
@@ -44,7 +39,7 @@ export const codingAgentTask = schemaTask({
       await syncMonorepoSubmodules(sandbox);
 
       logStep("Running AI agent");
-      const agentResult = await runOpenClawAgent(sandbox, {
+      const agentResult = await runClaudeCodeAgent(sandbox, {
         label: "Coding agent",
         message: prompt,
       });

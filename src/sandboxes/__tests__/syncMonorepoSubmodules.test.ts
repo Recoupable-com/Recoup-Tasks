@@ -5,70 +5,47 @@ vi.mock("@trigger.dev/sdk/v3", () => ({
   metadata: { set: vi.fn(), append: vi.fn() },
 }));
 
+vi.mock("../runClaudeCodeAgent", () => ({
+  runClaudeCodeAgent: vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" }),
+}));
+
 const { syncMonorepoSubmodules } = await import("../git/syncMonorepoSubmodules");
-
-function createMockSandbox() {
-  const runCommand = vi.fn().mockResolvedValue({
-    wait: vi.fn().mockResolvedValue({
-      exitCode: 0,
-      stdout: async () => "",
-      stderr: async () => "",
-    }),
-    exitCode: 0,
-    stdout: async () => "",
-    stderr: async () => "",
-  });
-
-  return { runCommand } as any;
-}
 
 beforeEach(() => {
   vi.clearAllMocks();
 });
 
 describe("syncMonorepoSubmodules", () => {
-  it("runs an openclaw agent prompt to sync submodules", async () => {
-    const sandbox = createMockSandbox();
+  it("runs a claude code agent prompt to sync submodules", async () => {
+    const { runClaudeCodeAgent } = await import("../runClaudeCodeAgent");
+    const sandbox = {} as any;
 
     await syncMonorepoSubmodules(sandbox);
 
-    const openclawCall = sandbox.runCommand.mock.calls.find(
-      (call: any[]) => call[0]?.cmd === "openclaw"
-    );
-    expect(openclawCall).toBeDefined();
+    expect(runClaudeCodeAgent).toHaveBeenCalledOnce();
   });
 
   it("instructs git fetch and checkout for each submodule", async () => {
-    const sandbox = createMockSandbox();
+    const { runClaudeCodeAgent } = await import("../runClaudeCodeAgent");
+    const sandbox = {} as any;
 
     await syncMonorepoSubmodules(sandbox);
 
-    const openclawCall = sandbox.runCommand.mock.calls.find(
-      (call: any[]) => call[0]?.cmd === "openclaw"
-    );
-    const args = openclawCall![0].args;
-    const message = args.find(
-      (a: string, i: number) => args[i - 1] === "--message"
-    );
+    const message = vi.mocked(runClaudeCodeAgent).mock.calls[0][1].message;
 
     expect(message).toContain("git fetch");
     expect(message).toContain("git checkout");
     expect(message).toContain("git reset --hard");
   });
 
-  it("targets the Recoup-Monorepo directory", async () => {
-    const sandbox = createMockSandbox();
+  it("targets the mono directory", async () => {
+    const { runClaudeCodeAgent } = await import("../runClaudeCodeAgent");
+    const sandbox = {} as any;
 
     await syncMonorepoSubmodules(sandbox);
 
-    const openclawCall = sandbox.runCommand.mock.calls.find(
-      (call: any[]) => call[0]?.cmd === "openclaw"
-    );
-    const args = openclawCall![0].args;
-    const message = args.find(
-      (a: string, i: number) => args[i - 1] === "--message"
-    );
+    const message = vi.mocked(runClaudeCodeAgent).mock.calls[0][1].message;
 
-    expect(message).toContain("Recoup-Monorepo");
+    expect(message).toContain("mono");
   });
 });
