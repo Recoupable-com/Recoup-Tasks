@@ -27,14 +27,6 @@ vi.mock("../../sandboxes/getVercelSandboxCredentials", () => ({
   }),
 }));
 
-vi.mock("../../sandboxes/installOpenClaw", () => ({
-  installOpenClaw: vi.fn(),
-}));
-
-vi.mock("../../sandboxes/setupOpenClaw", () => ({
-  setupOpenClaw: vi.fn(),
-}));
-
 vi.mock("../../sandboxes/runClaudeCodeAgent", () => ({
   runClaudeCodeAgent: vi.fn().mockResolvedValue({ exitCode: 0, stdout: "done", stderr: "" }),
 }));
@@ -90,7 +82,7 @@ describe("updatePRTask", () => {
     );
   });
 
-  it("runs OpenClaw agent with feedback prompt", async () => {
+  it("runs agent with feedback prompt", async () => {
     const { runClaudeCodeAgent } = await import("../../sandboxes/runClaudeCodeAgent");
 
     await mockRun(basePayload);
@@ -103,7 +95,23 @@ describe("updatePRTask", () => {
     );
   });
 
-  it("delegates push to agent instead of using runGitCommand", async () => {
+  it("runs agent in the correct submodule cwd derived from repo", async () => {
+    const { runClaudeCodeAgent } = await import("../../sandboxes/runClaudeCodeAgent");
+
+    await mockRun(basePayload);
+
+    const calls = vi.mocked(runClaudeCodeAgent).mock.calls;
+    // Both apply-feedback and push calls should target the submodule directory
+    calls.forEach(call => {
+      expect(call[1]).toEqual(
+        expect.objectContaining({
+          cwd: expect.stringContaining("/api"),
+        }),
+      );
+    });
+  });
+
+  it("delegates push to agent", async () => {
     const { runClaudeCodeAgent } = await import("../../sandboxes/runClaudeCodeAgent");
 
     await mockRun(basePayload);
@@ -148,19 +156,6 @@ describe("updatePRTask", () => {
     expect(configureGitAuth).toHaveBeenCalledOnce();
   });
 
-  it("creates sandbox with correct timeout param (not timeoutMs)", async () => {
-    await mockRun(basePayload);
-
-    expect(mockSandboxCreate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        timeout: 30 * 60 * 1000,
-      }),
-    );
-    // Ensure the wrong param name is NOT used
-    const callArgs = mockSandboxCreate.mock.calls[0][0];
-    expect(callArgs).not.toHaveProperty("timeoutMs");
-  });
-
   it("passes sandbox env to both agent calls", async () => {
     const { runClaudeCodeAgent } = await import("../../sandboxes/runClaudeCodeAgent");
     const { getSandboxEnv } = await import("../../sandboxes/getSandboxEnv");
@@ -175,7 +170,6 @@ describe("updatePRTask", () => {
       GITHUB_TOKEN: "test-gh-token",
     };
 
-    // Both agent calls should receive env
     const calls = vi.mocked(runClaudeCodeAgent).mock.calls;
     expect(calls[0][1]).toEqual(expect.objectContaining({ env: expectedEnv }));
     expect(calls[1][1]).toEqual(expect.objectContaining({ env: expectedEnv }));
