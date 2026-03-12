@@ -1,5 +1,5 @@
 import { fal } from "@fal-ai/client";
-import { metadata, schemaTask, tags } from "@trigger.dev/sdk/v3";
+import { schemaTask, tags } from "@trigger.dev/sdk/v3";
 import { createContentPayloadSchema } from "../schemas/contentCreationSchema";
 import { logStep } from "../sandboxes/logStep";
 import { fetchGithubFile } from "../content/fetchGithubFile";
@@ -49,12 +49,9 @@ export const createContentTask = schemaTask({
   },
   run: async payload => {
     await tags.add(`account:${payload.accountId}`);
-    metadata.set("accountId", payload.accountId);
-    metadata.set("artistSlug", payload.artistSlug);
-    metadata.set("template", payload.template);
-    metadata.set("lipsync", payload.lipsync);
 
     logStep("create-content task started", true, {
+      accountId: payload.accountId,
       artistSlug: payload.artistSlug,
       template: payload.template,
       lipsync: payload.lipsync,
