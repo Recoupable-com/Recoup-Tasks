@@ -1,17 +1,14 @@
-import { logger, metadata, schemaTask } from "@trigger.dev/sdk/v3";
-import { Sandbox } from "@vercel/sandbox";
-import { getVercelSandboxCredentials } from "../sandboxes/getVercelSandboxCredentials";
-import { installOpenClaw } from "../sandboxes/installOpenClaw";
-import { setupOpenClaw } from "../sandboxes/setupOpenClaw";
+import { metadata, schemaTask } from "@trigger.dev/sdk/v3";
 import { cloneMonorepoViaAgent } from "../sandboxes/cloneMonorepoViaAgent";
-import { runOpenClawAgent } from "../sandboxes/runOpenClawAgent";
+import { runClaudeCodeAgent } from "../sandboxes/runClaudeCodeAgent";
 import { pushAndCreatePRsViaAgent } from "../sandboxes/pushAndCreatePRsViaAgent";
 import { notifyCodingAgentCallback } from "../sandboxes/notifyCodingAgentCallback";
 import { logStep } from "../sandboxes/logStep";
 import { configureGitAuth } from "../sandboxes/configureGitAuth";
 import { codingAgentPayloadSchema } from "../schemas/codingAgentSchema";
-
-const CODING_AGENT_ACCOUNT_ID = "coding-agent";
+import { getOrCreateSandbox } from "../sandboxes/getOrCreateSandbox";
+import { syncMonorepoSubmodules } from "../sandboxes/git/syncMonorepoSubmodules";
+import { CODING_AGENT_ACCOUNT_ID } from "../consts";
 
 /**
  * Background task that spins up a sandbox, clones the Recoup monorepo
@@ -27,30 +24,22 @@ export const codingAgentTask = schemaTask({
   },
   run: async (payload) => {
     const { prompt, callbackThreadId } = payload;
-    const { token, teamId, projectId } = getVercelSandboxCredentials();
 
-    logStep("Creating sandbox");
+    const { sandboxId, sandbox } = await getOrCreateSandbox(CODING_AGENT_ACCOUNT_ID);
 
-    const sandbox = await Sandbox.create({
-      token,
-      teamId,
-      projectId,
-      timeoutMs: 30 * 60 * 1000,
-    });
-
-    logger.log("Sandbox created", { sandboxId: sandbox.sandboxId });
+    logStep("Sandbox created", false, { sandboxId });
 
     try {
-      logStep("Installing OpenClaw");
-      await installOpenClaw(sandbox);
-      await setupOpenClaw(sandbox, CODING_AGENT_ACCOUNT_ID);
       await configureGitAuth(sandbox);
 
       logStep("Cloning monorepo via agent");
       await cloneMonorepoViaAgent(sandbox);
 
+      logStep("Syncing submodules to latest base branches");
+      await syncMonorepoSubmodules(sandbox);
+
       logStep("Running AI agent");
-      const agentResult = await runOpenClawAgent(sandbox, {
+      const agentResult = await runClaudeCodeAgent(sandbox, {
         label: "Coding agent",
         message: prompt,
       });
@@ -71,22 +60,23 @@ export const codingAgentTask = schemaTask({
       logStep("Taking snapshot");
       const { snapshotId } = await sandbox.snapshot();
 
-      logStep("Notifying bot");
-      await notifyCodingAgentCallback({
+      const callbackPayload = {
         threadId: callbackThreadId,
-        status: prs.length > 0 ? "pr_created" : "no_changes",
+        status: (prs.length > 0 ? "pr_created" : "no_changes") as "pr_created" | "no_changes",
         branch,
         snapshotId,
         prs,
         stdout: agentResult.stdout,
         stderr: agentResult.stderr,
-      });
+      };
+      logStep("Notifying bot", true, callbackPayload);
+      await notifyCodingAgentCallback(callbackPayload);
 
       metadata.set("currentStep", "Complete");
 
       return { branch, snapshotId, prs, stdout: agentResult.stdout, stderr: agentResult.stderr };
     } finally {
-      logger.log("Stopping sandbox", { sandboxId: sandbox.sandboxId });
+      logStep("Stopping sandbox", false, { sandboxId: sandbox.sandboxId });
       await sandbox.stop();
     }
   },

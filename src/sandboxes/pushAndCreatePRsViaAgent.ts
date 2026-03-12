@@ -1,5 +1,5 @@
 import type { Sandbox } from "@vercel/sandbox";
-import { runOpenClawAgent } from "./runOpenClawAgent";
+import { runClaudeCodeAgent } from "./runClaudeCodeAgent";
 import { parsePRUrls, type ParsedPR } from "./parsePRUrls";
 import { SUBMODULE_CONFIG } from "./submoduleConfig";
 
@@ -9,7 +9,7 @@ interface PushAndCreatePRsOptions {
 }
 
 /**
- * Delegates push + PR creation to the OpenClaw agent.
+ * Delegates push + PR creation to the Claude Code agent.
  * Instructs the agent to create branches, commit, push, and open PRs
  * for each changed submodule. Parses PR_CREATED sentinel lines from stdout.
  *
@@ -27,7 +27,7 @@ export async function pushAndCreatePRsViaAgent(
     .map(([name, { repo, baseBranch }]) => `  - ${name}: repo=${repo}, base branch=${baseBranch}`)
     .join("\n");
 
-  const result = await runOpenClawAgent(sandbox, {
+  const result = await runClaudeCodeAgent(sandbox, {
     label: "Push and create PRs via agent",
     message: [
       `For each submodule that has uncommitted changes, create a branch, commit, push, and open a PR.`,

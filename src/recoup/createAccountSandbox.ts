@@ -21,7 +21,7 @@ const createSandboxResponseSchema = z.object({
 export async function createAccountSandbox(
   accountId: string
 ): Promise<{ sandboxId: string } | undefined> {
-  const url = `${NEW_API_BASE_URL}/api/sandboxes?account_id=${encodeURIComponent(accountId)}`;
+  const url = `${NEW_API_BASE_URL}/api/sandboxes`;
 
   if (!RECOUP_API_KEY) {
     throw new Error("RECOUP_API_KEY not configured");
@@ -36,7 +36,7 @@ export async function createAccountSandbox(
         "Content-Type": "application/json",
         "x-api-key": RECOUP_API_KEY,
       },
-      body: JSON.stringify({}),
+      body: JSON.stringify({ account_id: accountId }),
     });
 
     if (!response.ok) {

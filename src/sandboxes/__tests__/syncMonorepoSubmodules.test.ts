@@ -9,47 +9,43 @@ vi.mock("../runClaudeCodeAgent", () => ({
   runClaudeCodeAgent: vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" }),
 }));
 
-const { cloneMonorepoViaAgent } = await import("../cloneMonorepoViaAgent");
+const { syncMonorepoSubmodules } = await import("../git/syncMonorepoSubmodules");
 
 beforeEach(() => {
   vi.clearAllMocks();
 });
 
-describe("cloneMonorepoViaAgent", () => {
-  it("calls runClaudeCodeAgent with clone instructions", async () => {
+describe("syncMonorepoSubmodules", () => {
+  it("runs a claude code agent prompt to sync submodules", async () => {
     const { runClaudeCodeAgent } = await import("../runClaudeCodeAgent");
     const sandbox = {} as any;
 
-    await cloneMonorepoViaAgent(sandbox);
+    await syncMonorepoSubmodules(sandbox);
 
     expect(runClaudeCodeAgent).toHaveBeenCalledOnce();
-    expect(runClaudeCodeAgent).toHaveBeenCalledWith(
-      sandbox,
-      expect.objectContaining({
-        label: "Clone monorepo via agent",
-        message: expect.stringContaining("recoupable/mono"),
-      }),
-    );
   });
 
-  it("instructs agent not to use --recursive", async () => {
+  it("instructs git fetch and checkout for each submodule", async () => {
     const { runClaudeCodeAgent } = await import("../runClaudeCodeAgent");
     const sandbox = {} as any;
 
-    await cloneMonorepoViaAgent(sandbox);
+    await syncMonorepoSubmodules(sandbox);
 
     const message = vi.mocked(runClaudeCodeAgent).mock.calls[0][1].message;
-    expect(message).toContain("do NOT use --recursive");
+
+    expect(message).toContain("git fetch");
+    expect(message).toContain("git checkout");
+    expect(message).toContain("git reset --hard");
   });
 
-  it("does not include git user config (handled by configureGitAuth)", async () => {
+  it("targets the mono directory", async () => {
     const { runClaudeCodeAgent } = await import("../runClaudeCodeAgent");
     const sandbox = {} as any;
 
-    await cloneMonorepoViaAgent(sandbox);
+    await syncMonorepoSubmodules(sandbox);
 
     const message = vi.mocked(runClaudeCodeAgent).mock.calls[0][1].message;
-    expect(message).not.toContain("git config");
-  });
 
+    expect(message).toContain("mono");
+  });
 });

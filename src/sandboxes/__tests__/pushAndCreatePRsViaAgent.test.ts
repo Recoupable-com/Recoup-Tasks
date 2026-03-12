@@ -5,8 +5,8 @@ vi.mock("@trigger.dev/sdk/v3", () => ({
   metadata: { set: vi.fn(), append: vi.fn() },
 }));
 
-vi.mock("../runOpenClawAgent", () => ({
-  runOpenClawAgent: vi.fn(),
+vi.mock("../runClaudeCodeAgent", () => ({
+  runClaudeCodeAgent: vi.fn(),
 }));
 
 const { pushAndCreatePRsViaAgent } = await import("../pushAndCreatePRsViaAgent");
@@ -17,8 +17,8 @@ beforeEach(() => {
 
 describe("pushAndCreatePRsViaAgent", () => {
   it("parses PR_CREATED lines from agent stdout", async () => {
-    const { runOpenClawAgent } = await import("../runOpenClawAgent");
-    vi.mocked(runOpenClawAgent).mockResolvedValueOnce({
+    const { runClaudeCodeAgent } = await import("../runClaudeCodeAgent");
+    vi.mocked(runClaudeCodeAgent).mockResolvedValueOnce({
       exitCode: 0,
       stdout: [
         "Creating branch...",
@@ -53,8 +53,8 @@ describe("pushAndCreatePRsViaAgent", () => {
   });
 
   it("returns empty array when no PRs are created", async () => {
-    const { runOpenClawAgent } = await import("../runOpenClawAgent");
-    vi.mocked(runOpenClawAgent).mockResolvedValueOnce({
+    const { runClaudeCodeAgent } = await import("../runClaudeCodeAgent");
+    vi.mocked(runClaudeCodeAgent).mockResolvedValueOnce({
       exitCode: 0,
       stdout: "No changes detected in any submodule.\n",
       stderr: "",
@@ -70,8 +70,8 @@ describe("pushAndCreatePRsViaAgent", () => {
   });
 
   it("includes branch and prompt in the agent message", async () => {
-    const { runOpenClawAgent } = await import("../runOpenClawAgent");
-    vi.mocked(runOpenClawAgent).mockResolvedValueOnce({
+    const { runClaudeCodeAgent } = await import("../runClaudeCodeAgent");
+    vi.mocked(runClaudeCodeAgent).mockResolvedValueOnce({
       exitCode: 0,
       stdout: "",
       stderr: "",
@@ -83,14 +83,14 @@ describe("pushAndCreatePRsViaAgent", () => {
       branch: "agent/add-dark-mode-123",
     });
 
-    const message = vi.mocked(runOpenClawAgent).mock.calls[0][1].message;
+    const message = vi.mocked(runClaudeCodeAgent).mock.calls[0][1].message;
     expect(message).toContain("agent/add-dark-mode-123");
     expect(message).toContain("Add dark mode support");
   });
 
   it("includes submodule config in the agent message", async () => {
-    const { runOpenClawAgent } = await import("../runOpenClawAgent");
-    vi.mocked(runOpenClawAgent).mockResolvedValueOnce({
+    const { runClaudeCodeAgent } = await import("../runClaudeCodeAgent");
+    vi.mocked(runClaudeCodeAgent).mockResolvedValueOnce({
       exitCode: 0,
       stdout: "",
       stderr: "",
@@ -102,7 +102,7 @@ describe("pushAndCreatePRsViaAgent", () => {
       branch: "agent/fix-123",
     });
 
-    const message = vi.mocked(runOpenClawAgent).mock.calls[0][1].message;
+    const message = vi.mocked(runClaudeCodeAgent).mock.calls[0][1].message;
     expect(message).toContain("recoupable/api");
     expect(message).toContain("base branch=test");
     expect(message).toContain("recoupable/tasks");

@@ -135,6 +135,27 @@ describe("setupOpenClaw", () => {
     expect(gatewayCall).toBeDefined();
   });
 
+  it("sets the default model to anthropic/claude-sonnet-4.6 via agents.defaults.model.primary", async () => {
+    const sandbox = createMockSandbox();
+
+    await setupOpenClaw(sandbox, "account-1");
+
+    const injectCall = sandbox.runCommand.mock.calls.find(
+      (call: any[]) => {
+        const args = call[0]?.args;
+        return args?.[0] === "-c" && args?.[1]?.includes("openclaw.json");
+      }
+    );
+
+    expect(injectCall).toBeDefined();
+    const script = injectCall![0].args[1];
+    expect(script).toContain("agents");
+    expect(script).toContain("defaults");
+    expect(script).toContain("model");
+    expect(script).toContain("primary");
+    expect(script).toContain("vercel-ai-gateway/anthropic/claude-sonnet-4.6");
+  });
+
   it("throws when env injection fails", async () => {
     const sandbox = createMockSandbox();
 
