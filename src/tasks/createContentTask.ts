@@ -79,8 +79,12 @@ export const createContentTask = schemaTask({
       if (!faceGuideBuffer) {
         throw new Error(`face-guide.png not found for artist ${payload.artistSlug}`);
       }
+      logStep("Uploading face-guide to fal.ai storage", true, {
+        sizeBytes: faceGuideBuffer.byteLength,
+      });
       const faceGuideFile = new File([faceGuideBuffer], "face-guide.png", { type: "image/png" });
       faceGuideUrl = await fal.storage.upload(faceGuideFile);
+      logStep("Face-guide uploaded", false, { faceGuideUrl });
     }
 
     // --- Step 3: Select audio clip ---
