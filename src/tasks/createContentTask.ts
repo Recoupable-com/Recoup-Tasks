@@ -44,6 +44,7 @@ export const createContentTask = schemaTask({
   id: "create-content",
   schema: createContentPayloadSchema,
   maxDuration: 60 * 10,
+  machine: "small-1x",
   retry: {
     maxAttempts: 0,
   },
