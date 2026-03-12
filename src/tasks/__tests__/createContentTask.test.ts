@@ -80,7 +80,7 @@ vi.mock("../../content/fetchAudienceContext", () => ({
 
 vi.mock("../../content/renderFinalVideo", () => ({
   renderFinalVideo: vi.fn().mockResolvedValue({
-    dataUrl: "data:video/mp4;base64,FINAL",
+    videoUrl: "https://fal.ai/storage/final-video.mp4",
     mimeType: "video/mp4",
     sizeBytes: 5000,
   }),
@@ -125,7 +125,7 @@ describe("createContentTask", () => {
 
     expect(mockTagsAdd).toHaveBeenCalledWith("account:acc_123");
     expect(result.status).toBe("completed");
-    expect(result.videoSourceUrl).toBe("data:video/mp4;base64,FINAL");
+    expect(result.videoSourceUrl).toBe("https://fal.ai/storage/final-video.mp4");
     expect(result.renderedVideoBytes).toBe(5000);
     expect(result.audio.songTitle).toBe("Test Song");
     expect(result.captionText).toBe("this is the vibe 🎵");

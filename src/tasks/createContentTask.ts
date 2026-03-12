@@ -184,7 +184,7 @@ export const createContentTask = schemaTask({
       artistSlug: payload.artistSlug,
       template: payload.template,
       lipsync: payload.lipsync,
-      videoSourceUrl: finalVideo.dataUrl,
+      videoSourceUrl: finalVideo.videoUrl,
       renderedVideoBytes: finalVideo.sizeBytes,
       imageUrl,
       video: null,

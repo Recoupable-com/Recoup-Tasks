@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { logger } from "@trigger.dev/sdk/v3";
+import { fal } from "@fal-ai/client";
 
 const execFileAsync = promisify(execFile);
 
@@ -187,17 +188,21 @@ export async function renderFinalVideo(
 
     await execFileAsync("ffmpeg", ffmpegArgs);
 
-    // Read the final video
+    // Read the final video and upload to fal.ai storage (avoids base64 OOM)
     const finalBuffer = await readFile(outputPath);
-    const mimeType = "video/mp4";
-    const dataUrl = `data:${mimeType};base64,${finalBuffer.toString("base64")}`;
+    const sizeBytes = finalBuffer.length;
 
-    logger.log("Final video rendered", { sizeBytes: finalBuffer.length });
+    logger.log("Final video rendered, uploading to fal.ai storage", { sizeBytes });
+
+    const videoFile = new File([finalBuffer], "final-video.mp4", { type: "video/mp4" });
+    const videoUrl = await fal.storage.upload(videoFile);
+
+    logger.log("Final video uploaded to fal.ai storage", { videoUrl, sizeBytes });
 
     return {
-      dataUrl,
-      mimeType,
-      sizeBytes: finalBuffer.length,
+      videoUrl,
+      mimeType: "video/mp4",
+      sizeBytes,
     };
   } finally {
     // Clean up temp files
