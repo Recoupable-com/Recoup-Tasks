@@ -5,8 +5,8 @@ vi.mock("@trigger.dev/sdk/v3", () => ({
   metadata: { set: vi.fn(), append: vi.fn() },
 }));
 
-vi.mock("../runOpenClawAgent", () => ({
-  runOpenClawAgent: vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" }),
+vi.mock("../runClaudeCodeAgent", () => ({
+  runClaudeCodeAgent: vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" }),
 }));
 
 const { cloneMonorepoViaAgent } = await import("../cloneMonorepoViaAgent");
@@ -16,14 +16,14 @@ beforeEach(() => {
 });
 
 describe("cloneMonorepoViaAgent", () => {
-  it("calls runOpenClawAgent with clone instructions", async () => {
-    const { runOpenClawAgent } = await import("../runOpenClawAgent");
+  it("calls runClaudeCodeAgent with clone instructions", async () => {
+    const { runClaudeCodeAgent } = await import("../runClaudeCodeAgent");
     const sandbox = {} as any;
 
     await cloneMonorepoViaAgent(sandbox);
 
-    expect(runOpenClawAgent).toHaveBeenCalledOnce();
-    expect(runOpenClawAgent).toHaveBeenCalledWith(
+    expect(runClaudeCodeAgent).toHaveBeenCalledOnce();
+    expect(runClaudeCodeAgent).toHaveBeenCalledWith(
       sandbox,
       expect.objectContaining({
         label: "Clone monorepo via agent",
@@ -33,22 +33,22 @@ describe("cloneMonorepoViaAgent", () => {
   });
 
   it("instructs agent not to use --recursive", async () => {
-    const { runOpenClawAgent } = await import("../runOpenClawAgent");
+    const { runClaudeCodeAgent } = await import("../runClaudeCodeAgent");
     const sandbox = {} as any;
 
     await cloneMonorepoViaAgent(sandbox);
 
-    const message = vi.mocked(runOpenClawAgent).mock.calls[0][1].message;
+    const message = vi.mocked(runClaudeCodeAgent).mock.calls[0][1].message;
     expect(message).toContain("do NOT use --recursive");
   });
 
   it("does not include git user config (handled by configureGitAuth)", async () => {
-    const { runOpenClawAgent } = await import("../runOpenClawAgent");
+    const { runClaudeCodeAgent } = await import("../runClaudeCodeAgent");
     const sandbox = {} as any;
 
     await cloneMonorepoViaAgent(sandbox);
 
-    const message = vi.mocked(runOpenClawAgent).mock.calls[0][1].message;
+    const message = vi.mocked(runClaudeCodeAgent).mock.calls[0][1].message;
     expect(message).not.toContain("git config");
   });
 

@@ -1,5 +1,5 @@
 import type { Sandbox } from "@vercel/sandbox";
-import { runOpenClawAgent } from "../runOpenClawAgent";
+import { runClaudeCodeAgent } from "../runClaudeCodeAgent";
 import { logStep } from "../logStep";
 
 /**
@@ -32,7 +32,7 @@ export async function syncMonorepoSubmodules(sandbox: Sandbox): Promise<void> {
     "Continue to the next submodule if one fails.",
   ].join("\n");
 
-  await runOpenClawAgent(sandbox, {
+  await runClaudeCodeAgent(sandbox, {
     label: "Syncing monorepo submodules to latest remote",
     message,
   });

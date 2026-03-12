@@ -1,5 +1,5 @@
 import type { Sandbox } from "@vercel/sandbox";
-import { runOpenClawAgent } from "./runOpenClawAgent";
+import { runClaudeCodeAgent } from "./runClaudeCodeAgent";
 
 /**
  * Delegates monorepo clone to the OpenClaw agent.
@@ -11,7 +11,7 @@ import { runOpenClawAgent } from "./runOpenClawAgent";
 export async function cloneMonorepoViaAgent(
   sandbox: Sandbox,
 ): Promise<void> {
-  await runOpenClawAgent(sandbox, {
+  await runClaudeCodeAgent(sandbox, {
     label: "Clone monorepo via agent",
     message: [
       "Clone the Recoup monorepo and init its submodules:",
