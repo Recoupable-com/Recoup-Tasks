@@ -5,7 +5,6 @@ interface RunClaudeCodeAgentOptions {
   label: string;
   message: string;
   env?: Record<string, string>;
-  cwd?: string;
 }
 
 interface RunClaudeCodeAgentResult {
@@ -19,18 +18,18 @@ interface RunClaudeCodeAgentResult {
  * Uses the `claude` CLI with --print flag for non-interactive execution.
  *
  * @param sandbox - The Vercel Sandbox instance
- * @param options - Label for logging/metadata, message prompt, optional env vars, optional cwd
+ * @param options - Label for logging/metadata, message prompt, optional env vars
  * @returns exitCode, stdout, and stderr from the command
  */
 export async function runClaudeCodeAgent(
   sandbox: Sandbox,
   options: RunClaudeCodeAgentOptions,
 ): Promise<RunClaudeCodeAgentResult> {
-  const { label, message, env, cwd } = options;
+  const { label, message, env } = options;
 
   const args = ["-p", "--dangerously-skip-permissions", message];
 
-  logStep(label, true, { cmd: "claude", args, cwd });
+  logStep(label, true, { cmd: "claude", args });
 
   const commandOpts: Record<string, unknown> = {
     cmd: "claude",
@@ -40,10 +39,6 @@ export async function runClaudeCodeAgent(
 
   if (env) {
     commandOpts.env = env;
-  }
-
-  if (cwd) {
-    commandOpts.cwd = cwd;
   }
 
   const command = await sandbox.runCommand(commandOpts as any);

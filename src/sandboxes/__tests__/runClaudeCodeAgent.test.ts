@@ -51,30 +51,6 @@ describe("runClaudeCodeAgent", () => {
     });
   });
 
-  it("passes cwd when provided", async () => {
-    const sandbox = createMockSandbox();
-    sandbox.runCommand.mockResolvedValueOnce(
-      mockDetachedCommand({
-        exitCode: 0,
-        stdout: async () => "",
-        stderr: async () => "",
-      }),
-    );
-
-    await runClaudeCodeAgent(sandbox, {
-      label: "Apply feedback",
-      message: "Fix it",
-      cwd: "/root/.openclaw/workspace/mono/tasks",
-    });
-
-    expect(sandbox.runCommand).toHaveBeenCalledWith({
-      cmd: "claude",
-      args: ["-p", "--dangerously-skip-permissions", "Fix it"],
-      detached: true,
-      cwd: "/root/.openclaw/workspace/mono/tasks",
-    });
-  });
-
   it("passes env vars when provided", async () => {
     const sandbox = createMockSandbox();
     sandbox.runCommand.mockResolvedValueOnce(

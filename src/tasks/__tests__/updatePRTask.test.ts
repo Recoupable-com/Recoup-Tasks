@@ -95,22 +95,6 @@ describe("updatePRTask", () => {
     );
   });
 
-  it("runs agent in the correct submodule cwd derived from repo", async () => {
-    const { runClaudeCodeAgent } = await import("../../sandboxes/runClaudeCodeAgent");
-
-    await mockRun(basePayload);
-
-    const calls = vi.mocked(runClaudeCodeAgent).mock.calls;
-    // Both apply-feedback and push calls should target the submodule directory
-    calls.forEach(call => {
-      expect(call[1]).toEqual(
-        expect.objectContaining({
-          cwd: expect.stringContaining("/api"),
-        }),
-      );
-    });
-  });
-
   it("delegates push to agent", async () => {
     const { runClaudeCodeAgent } = await import("../../sandboxes/runClaudeCodeAgent");
 
@@ -154,6 +138,18 @@ describe("updatePRTask", () => {
     await mockRun(basePayload);
 
     expect(configureGitAuth).toHaveBeenCalledOnce();
+  });
+
+  it("creates sandbox with correct timeout param", async () => {
+    await mockRun(basePayload);
+
+    expect(mockSandboxCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        timeout: 30 * 60 * 1000,
+      }),
+    );
+    const callArgs = mockSandboxCreate.mock.calls[0][0];
+    expect(callArgs).not.toHaveProperty("timeoutMs");
   });
 
   it("passes sandbox env to both agent calls", async () => {

@@ -9,24 +9,9 @@ import { getSandboxEnv } from "../sandboxes/getSandboxEnv";
 import { updatePRPayloadSchema } from "../schemas/updatePRSchema";
 import { CODING_AGENT_ACCOUNT_ID } from "../consts";
 
-const MONOREPO_DIR = `${process.env.HOME ?? "/root"}/.openclaw/workspace/mono`;
-
-/**
- * Derives the absolute path to a submodule inside the monorepo from a
- * repo identifier like "recoupable/tasks".
- *
- * @param repo - Full repo identifier, e.g. "recoupable/tasks"
- * @returns Absolute path to the submodule directory in the sandbox
- */
-function getSubmoduleCwd(repo: string): string {
-  const repoName = repo.split("/")[1];
-  return `${MONOREPO_DIR}/${repoName}`;
-}
-
 /**
  * Background task that resumes a sandbox from a snapshot, applies feedback
- * via the Claude Code agent in the correct submodule directory, and pushes
- * the updates to the existing PR branch.
+ * via the Claude Code agent, and pushes the updates to the existing PR branch.
  */
 export const updatePRTask = schemaTask({
   id: "update-pr",
@@ -55,21 +40,18 @@ export const updatePRTask = schemaTask({
       await configureGitAuth(sandbox);
 
       const env = getSandboxEnv(CODING_AGENT_ACCOUNT_ID);
-      const cwd = getSubmoduleCwd(repo);
 
       logStep("Running AI agent with feedback");
       const agentResult = await runClaudeCodeAgent(sandbox, {
         label: "Apply feedback",
         message: `The following feedback was given on the existing changes on branch "${branch}":\n\n${feedback}\n\nPlease make the requested changes.`,
         env,
-        cwd,
       });
 
       logStep("Pushing updates via agent");
       await runClaudeCodeAgent(sandbox, {
         label: "Push feedback changes",
         env,
-        cwd,
         message: [
           `Stage, commit, and push the feedback changes to the existing PR branch.`,
           ``,
