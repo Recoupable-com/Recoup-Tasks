@@ -1,0 +1,33 @@
+{
+  "name": "artist-caption-bedroom",
+  "description": "Candid front-facing selfie with text caption overlay — the kind of post Gen Z artists make on TikTok/IG",
+  "imagePrompt": "A candid front-facing selfie INSIDE A BEDROOM. The person is sitting on an unmade bed or at a desk in their bedroom. Purple LED strip lights glow on the wall behind them. The room is dark with only the purple glow illuminating their face. Phone camera, low light, grainy. Wearing a hoodie, deadpan expression. The setting MUST be indoors in a real bedroom, not outside.",
+
+  "camera": {
+    "type": "front-facing phone camera",
+    "angle": "held slightly below face, looking down at lens",
+    "quality": "phone camera in low light, slight noise and grain, not DSLR sharp",
+    "focus": "face in focus, background slightly soft but not artificially blurred"
+  },
+
+  "environment": {
+    "feel": "real, uncontrolled, wherever they happen to be",
+    "lighting": "soft, dim purple glow from a desk lamp or LED strip — barely illuminating the room, heavy shadows, most of the frame is dark, only the face catches light",
+    "backgrounds": "real lived-in bedroom — unmade bed, plain walls, ceiling vents, clutter, nothing curated or staged",
+    "avoid": "clean renders, perfect symmetry, stock-photo rooms, AI-looking environments, smooth surfaces, studio backdrops"
+  },
+
+  "subject": {
+    "expression": "deadpan, slightly bored, vulnerable, not smiling for the camera",
+    "pose": "casual — hand in hair, hood up, slouched, not posed or performative",
+    "clothing": "oversized hoodie, sweater, or dark casual top",
+    "framing": "head and shoulders, close crop, face takes up most of the frame"
+  },
+
+  "realism": {
+    "priority": "the image must look like a real phone photo, not AI-generated",
+    "texture": "grainy, slightly noisy, imperfect skin texture visible",
+    "imperfections": "messy hair, wrinkled fabric, uneven lighting, random objects in background",
+    "avoid": "smooth skin, perfect hair, symmetrical composition, clean backgrounds, hyper-sharp detail, uncanny valley"
+  }
+}

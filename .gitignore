@@ -1,4 +1,6 @@
 .trigger
 .env
+.DS_Store
 node_modules
-tsconfig.tsbuildinfo
+tsconfig.tsbuildinfo.env.local
+.env

@@ -1,0 +1,23 @@
+{
+  "templateStyle": "live performance with emotional or lyric caption — the artist on stage with words that hit",
+  "captionRole": "the caption adds emotional weight to the image. it can be a lyric, a question, a confession, or a thought that makes the viewer feel something while looking at the performance",
+  "tone": "raw, emotional, vulnerable, poetic — like the artist is speaking directly to one person in the crowd",
+  "rules": [
+    "lowercase only",
+    "max 100 characters (can be longer than casual template since its more emotional)",
+    "apostrophes are allowed (im, youre, dont all ok — but also i'm, you're, don't all ok)",
+    "question marks are allowed",
+    "never promotional",
+    "never describe what's in the image",
+    "can be a direct lyric quote from the song",
+    "can be a rhetorical question",
+    "should feel like the artist is saying it mid-performance"
+  ],
+  "formats": [
+    "a lyric line that hits hardest out of context",
+    "a rhetorical question directed at someone specific",
+    "a confession that feels too honest for a stage",
+    "a one-line gut punch",
+    "something that makes you screenshot and send to someone"
+  ]
+}

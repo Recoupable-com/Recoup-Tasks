@@ -1,0 +1,28 @@
+{
+  "name": "artist-caption-stage",
+  "description": "Fan cam at a small live show \u2014 phone held up in the crowd, not professional photography",
+  "imagePrompt": "A person performing on a small stage at a live show. Fan cam perspective \u2014 phone held up in the crowd. Stage lights, slightly blurry, not professional photography.",
+  "camera": {
+    "type": "iPhone held up in a crowd recording a concert",
+    "angle": "slightly below stage level, looking up at performer, not perfectly centered",
+    "quality": "iPhone video screenshot quality \u2014 compressed, noisy, not sharp. Digital noise in dark areas. Slight purple fringing on highlights."
+  },
+  "environment": {
+    "feel": "cramped small venue, sweaty, dark, someone's phone screen glowing in the corner",
+    "lighting": "harsh stage spots from above \u2014 blown out orange and red highlights, deep black shadows, face half in darkness. Light spill is uneven and messy.",
+    "backgrounds": "out of focus crowd silhouettes, blurry stage equipment, maybe a phone screen or two glowing in the audience, exit sign in the distance",
+    "avoid": "even lighting, clean backgrounds, arena-sized venues, professional concert photography, perfectly exposed images, visible detail in dark areas"
+  },
+  "subject": {
+    "expression": "mid-performance \u2014 eyes closed singing, chin up, lost in the music",
+    "pose": "holding mic close, one hand up, or gripping mic stand, slightly blurry from movement",
+    "clothing": "dark \u2014 black hoodie, dark jacket, nothing bright or styled",
+    "framing": "not perfectly framed \u2014 subject slightly off center, maybe someone's head partially blocking the bottom, cropped awkwardly like a real phone photo"
+  },
+  "realism": {
+    "priority": "this MUST look like a screenshot from someone's iPhone concert video, not a professional photo or AI image",
+    "texture": "heavy digital noise in shadows, JPEG compression artifacts, slight color banding in gradients, skin has no retouching",
+    "imperfections": "lens flare bleeding across frame, blown out stage light spots that are pure white, someone's hand or phone slightly visible at edge of frame, chromatic aberration on bright lights, slight motion blur on performer's hands",
+    "avoid": "clean noise-free images, perfect skin, sharp focus on everything, symmetrical composition, studio quality, any sign of AI generation"
+  }
+}
