@@ -4,7 +4,8 @@ import { readFile, writeFile, unlink, mkdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
-import { logger } from "@trigger.dev/sdk/v3";
+import { logStep } from "../sandboxes/logStep";
+import { fal } from "@fal-ai/client";
 
 const execFileAsync = promisify(execFile);
 
@@ -153,7 +154,7 @@ export async function renderFinalVideo(
 
   try {
     // Download the AI-generated video
-    logger.log("Downloading video for final render");
+    logStep("Downloading video for final render");
     const videoResponse = await fetch(input.videoUrl);
     if (!videoResponse.ok) {
       throw new Error(`Failed to download video: ${videoResponse.status}`);
@@ -179,7 +180,7 @@ export async function renderFinalVideo(
       hasAudio: input.hasAudio,
     });
 
-    logger.log("Running ffmpeg render", {
+    logStep("Running ffmpeg render", true, {
       argCount: ffmpegArgs.length,
       hasAudio: input.hasAudio,
       captionLength: input.captionText.length,
@@ -187,17 +188,21 @@ export async function renderFinalVideo(
 
     await execFileAsync("ffmpeg", ffmpegArgs);
 
-    // Read the final video
+    // Read the final video and upload to fal.ai storage (avoids base64 OOM)
     const finalBuffer = await readFile(outputPath);
-    const mimeType = "video/mp4";
-    const dataUrl = `data:${mimeType};base64,${finalBuffer.toString("base64")}`;
+    const sizeBytes = finalBuffer.length;
 
-    logger.log("Final video rendered", { sizeBytes: finalBuffer.length });
+    logStep("Final video rendered, uploading to fal.ai storage", true, { sizeBytes });
+
+    const videoFile = new File([finalBuffer], "final-video.mp4", { type: "video/mp4" });
+    const videoUrl = await fal.storage.upload(videoFile);
+
+    logStep("Final video uploaded to fal.ai storage", false, { videoUrl, sizeBytes });
 
     return {
-      dataUrl,
-      mimeType,
-      sizeBytes: finalBuffer.length,
+      videoUrl,
+      mimeType: "video/mp4",
+      sizeBytes,
     };
   } finally {
     // Clean up temp files
