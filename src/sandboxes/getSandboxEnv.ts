@@ -20,5 +20,10 @@ export function getSandboxEnv(
     env.GITHUB_TOKEN = githubToken;
   }
 
+  const claudeCodeOauthToken = process.env.CLAUDE_CODE_OAUTH_TOKEN;
+  if (claudeCodeOauthToken) {
+    env.CLAUDE_CODE_OAUTH_TOKEN = claudeCodeOauthToken;
+  }
+
   return env;
 }
