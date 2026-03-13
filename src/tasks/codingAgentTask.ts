@@ -21,7 +21,7 @@ const CODING_AGENT_ACCOUNT_ID = "coding-agent";
 export const codingAgentTask = schemaTask({
   id: "coding-agent",
   schema: codingAgentPayloadSchema,
-  maxDuration: 60 * 15,
+  maxDuration: 60 * 30,
   retry: {
     maxAttempts: 0,
   },
