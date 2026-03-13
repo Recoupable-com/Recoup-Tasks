@@ -53,6 +53,7 @@ export const codingAgentTask = schemaTask({
       const agentResult = await runOpenClawAgent(sandbox, {
         label: "Coding agent",
         message: prompt,
+        cwd: "/vercel/sandbox/Recoup-Monorepo/mono",
       });
 
       logStep("Agent completed", true, {

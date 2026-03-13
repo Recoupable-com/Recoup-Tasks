@@ -4,6 +4,7 @@ import { logStep } from "./logStep";
 interface RunOpenClawAgentOptions {
   label: string;
   message: string;
+  cwd?: string;
   env?: Record<string, string>;
 }
 
@@ -24,16 +25,20 @@ export async function runOpenClawAgent(
   sandbox: Sandbox,
   options: RunOpenClawAgentOptions
 ): Promise<RunOpenClawAgentResult> {
-  const { label, message, env } = options;
+  const { label, message, cwd, env } = options;
 
   const args = ["agent", "--agent", "main", "--message", message];
 
-  logStep(label, true, { cmd: "openclaw", args });
+  logStep(label, true, { cmd: "openclaw", args, cwd });
 
   const commandOpts: Record<string, unknown> = {
     cmd: "openclaw",
     args,
   };
+
+  if (cwd) {
+    commandOpts.cwd = cwd;
+  }
 
   if (env) {
     commandOpts.env = env;
