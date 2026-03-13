@@ -28,7 +28,7 @@ function createMockSandbox() {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  delete process.env.CLAUDE_CODE_OAUTH_TOKEN;
+  process.env.CLAUDE_CODE_OAUTH_TOKEN = "test-oauth-token";
 });
 
 afterEach(() => {
@@ -36,7 +36,7 @@ afterEach(() => {
 });
 
 describe("runClaudeCodeAgent", () => {
-  it("calls claude --print with the message", async () => {
+  it("calls claude --print with the message and injects CLAUDE_CODE_OAUTH_TOKEN", async () => {
     const sandbox = createMockSandbox();
     sandbox.runCommand.mockResolvedValueOnce(
       mockDetachedCommand({
@@ -55,10 +55,11 @@ describe("runClaudeCodeAgent", () => {
       cmd: "claude",
       args: ["-p", "--dangerously-skip-permissions", "Fix the bug"],
       detached: true,
+      env: { CLAUDE_CODE_OAUTH_TOKEN: "test-oauth-token" },
     });
   });
 
-  it("passes env vars when provided", async () => {
+  it("merges CLAUDE_CODE_OAUTH_TOKEN into provided env", async () => {
     const sandbox = createMockSandbox();
     sandbox.runCommand.mockResolvedValueOnce(
       mockDetachedCommand({
@@ -78,7 +79,10 @@ describe("runClaudeCodeAgent", () => {
       cmd: "claude",
       args: ["-p", "--dangerously-skip-permissions", "Update the README"],
       detached: true,
-      env: { GITHUB_TOKEN: "ghp_test" },
+      env: {
+        GITHUB_TOKEN: "ghp_test",
+        CLAUDE_CODE_OAUTH_TOKEN: "test-oauth-token",
+      },
     });
   });
 
@@ -152,78 +156,6 @@ describe("runClaudeCodeAgent", () => {
 
     expect(logStep).toHaveBeenCalledWith("Clone repos failed", false, {
       stderr: "fatal error\n",
-    });
-  });
-
-  it("injects CLAUDE_CODE_OAUTH_TOKEN from process.env when no env is provided", async () => {
-    process.env.CLAUDE_CODE_OAUTH_TOKEN = "oauth-test-token";
-    const sandbox = createMockSandbox();
-    sandbox.runCommand.mockResolvedValueOnce(
-      mockDetachedCommand({
-        exitCode: 0,
-        stdout: async () => "",
-        stderr: async () => "",
-      }),
-    );
-
-    await runClaudeCodeAgent(sandbox, {
-      label: "Test",
-      message: "Do something",
-    });
-
-    expect(sandbox.runCommand).toHaveBeenCalledWith(
-      expect.objectContaining({
-        env: { CLAUDE_CODE_OAUTH_TOKEN: "oauth-test-token" },
-      }),
-    );
-  });
-
-  it("merges CLAUDE_CODE_OAUTH_TOKEN into provided env", async () => {
-    process.env.CLAUDE_CODE_OAUTH_TOKEN = "oauth-test-token";
-    const sandbox = createMockSandbox();
-    sandbox.runCommand.mockResolvedValueOnce(
-      mockDetachedCommand({
-        exitCode: 0,
-        stdout: async () => "",
-        stderr: async () => "",
-      }),
-    );
-
-    await runClaudeCodeAgent(sandbox, {
-      label: "Test",
-      message: "Do something",
-      env: { GITHUB_TOKEN: "ghp_test" },
-    });
-
-    expect(sandbox.runCommand).toHaveBeenCalledWith(
-      expect.objectContaining({
-        env: {
-          GITHUB_TOKEN: "ghp_test",
-          CLAUDE_CODE_OAUTH_TOKEN: "oauth-test-token",
-        },
-      }),
-    );
-  });
-
-  it("does not set env when no CLAUDE_CODE_OAUTH_TOKEN and no env provided", async () => {
-    const sandbox = createMockSandbox();
-    sandbox.runCommand.mockResolvedValueOnce(
-      mockDetachedCommand({
-        exitCode: 0,
-        stdout: async () => "",
-        stderr: async () => "",
-      }),
-    );
-
-    await runClaudeCodeAgent(sandbox, {
-      label: "Test",
-      message: "Do something",
-    });
-
-    expect(sandbox.runCommand).toHaveBeenCalledWith({
-      cmd: "claude",
-      args: ["-p", "--dangerously-skip-permissions", "Do something"],
-      detached: true,
     });
   });
 });
