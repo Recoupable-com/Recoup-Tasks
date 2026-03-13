@@ -15,9 +15,7 @@ vi.mock("@vercel/sandbox", () => ({
 }));
 
 vi.mock("../../recoup/createAccountSandbox", () => ({
-  createAccountSandbox: vi
-    .fn()
-    .mockResolvedValue({ sandboxId: "sbx_123" }),
+  createAccountSandbox: vi.fn().mockResolvedValue({ sandboxId: "sbx_123" }),
 }));
 
 vi.mock("../getVercelSandboxCredentials", () => ({
@@ -34,9 +32,7 @@ vi.mock("../logStep", () => ({
 
 const { getOrCreateSandbox } = await import("../getOrCreateSandbox");
 const { Sandbox } = await import("@vercel/sandbox");
-const { createAccountSandbox } = await import(
-  "../../recoup/createAccountSandbox"
-);
+const { createAccountSandbox } = await import("../../recoup/createAccountSandbox");
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -52,18 +48,14 @@ describe("getOrCreateSandbox", () => {
   it("connects to sandbox via Sandbox.get with returned sandboxId", async () => {
     await getOrCreateSandbox("acc_1");
 
-    expect(Sandbox.get).toHaveBeenCalledWith(
-      expect.objectContaining({ sandboxId: "sbx_123" }),
-    );
+    expect(Sandbox.get).toHaveBeenCalledWith(expect.objectContaining({ sandboxId: "sbx_123" }));
   });
 
   it("returns sandboxId and sandbox instance", async () => {
     const result = await getOrCreateSandbox("acc_1");
 
     expect(result.sandboxId).toBe("sbx_123");
-    expect(result.sandbox).toEqual(
-      expect.objectContaining({ sandboxId: "sbx_123" }),
-    );
+    expect(result.sandbox).toEqual(expect.objectContaining({ sandboxId: "sbx_123" }));
   });
 
   it("throws when createAccountSandbox returns undefined", async () => {

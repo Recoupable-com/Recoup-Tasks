@@ -11,11 +11,7 @@ import { updateAccountSnapshot } from "../recoup/updateAccountSnapshot";
  * @param githubRepo - Optional GitHub repo URL to persist alongside the snapshot
  * @returns The snapshot result with snapshotId and expiresAt
  */
-export async function snapshotAndPersist(
-  sandbox: Sandbox,
-  accountId: string,
-  githubRepo?: string
-) {
+export async function snapshotAndPersist(sandbox: Sandbox, accountId: string, githubRepo?: string) {
   const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
   logger.log("Taking sandbox snapshot");

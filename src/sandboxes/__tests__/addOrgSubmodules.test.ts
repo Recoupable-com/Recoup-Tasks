@@ -10,6 +10,9 @@ vi.mock("../getSandboxHomeDir", () => ({
 
 const { addOrgSubmodules } = await import("../git/addOrgSubmodules");
 
+/**
+ *
+ */
 function createMockSandbox() {
   const runCommand = vi.fn().mockResolvedValue({
     exitCode: 0,
@@ -51,9 +54,7 @@ describe("addOrgSubmodules", () => {
     await addOrgSubmodules(sandbox);
 
     const submoduleCalls = sandbox.runCommand.mock.calls.filter(
-      (call: any[]) =>
-        call[0]?.cmd === "git" &&
-        call[0]?.args?.[0] === "submodule"
+      (call: any[]) => call[0]?.cmd === "git" && call[0]?.args?.[0] === "submodule",
     );
     expect(submoduleCalls).toHaveLength(0);
   });
@@ -86,10 +87,7 @@ describe("addOrgSubmodules", () => {
           };
         }
       }
-      if (
-        opts.cmd === "sh" &&
-        opts.args?.[1]?.includes("git config --file .gitmodules")
-      ) {
+      if (opts.cmd === "sh" && opts.args?.[1]?.includes("git config --file .gitmodules")) {
         return { exitCode: 1, stdout: async () => "", stderr: async () => "" };
       }
       return { exitCode: 0, stdout: async () => "", stderr: async () => "" };
@@ -101,7 +99,7 @@ describe("addOrgSubmodules", () => {
       (call: any[]) =>
         call[0]?.cmd === "git" &&
         call[0]?.args?.[0] === "submodule" &&
-        call[0]?.args?.[1] === "add"
+        call[0]?.args?.[1] === "add",
     );
     expect(submoduleCalls).toHaveLength(2);
 
@@ -128,10 +126,7 @@ describe("addOrgSubmodules", () => {
           stderr: async () => "",
         };
       }
-      if (
-        opts.cmd === "sh" &&
-        opts.args?.[1]?.includes("git config --file .gitmodules")
-      ) {
+      if (opts.cmd === "sh" && opts.args?.[1]?.includes("git config --file .gitmodules")) {
         return { exitCode: 0, stdout: async () => "", stderr: async () => "" };
       }
       return { exitCode: 0, stdout: async () => "", stderr: async () => "" };
@@ -143,7 +138,7 @@ describe("addOrgSubmodules", () => {
       (call: any[]) =>
         call[0]?.cmd === "git" &&
         call[0]?.args?.[0] === "submodule" &&
-        call[0]?.args?.[1] === "add"
+        call[0]?.args?.[1] === "add",
     );
     expect(submoduleCalls).toHaveLength(0);
   });
@@ -166,10 +161,7 @@ describe("addOrgSubmodules", () => {
           stderr: async () => "",
         };
       }
-      if (
-        opts.cmd === "sh" &&
-        opts.args?.[1]?.includes("git config --file .gitmodules")
-      ) {
+      if (opts.cmd === "sh" && opts.args?.[1]?.includes("git config --file .gitmodules")) {
         return { exitCode: 1, stdout: async () => "", stderr: async () => "" };
       }
       return { exitCode: 0, stdout: async () => "", stderr: async () => "" };
@@ -181,7 +173,7 @@ describe("addOrgSubmodules", () => {
       (call: any[]) =>
         call[0]?.cmd === "sh" &&
         call[0]?.args?.[1]?.includes("git rm") &&
-        call[0]?.args?.[1]?.includes("--cached")
+        call[0]?.args?.[1]?.includes("--cached"),
     );
     expect(cleanupCall).toBeDefined();
   });

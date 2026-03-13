@@ -1,5 +1,4 @@
 import { defineConfig } from "@trigger.dev/sdk/v3";
-import { ffmpeg, additionalFiles } from "@trigger.dev/build/extensions/core";
 
 export default defineConfig({
   project: "proj_pxwxehzmqaxylqhhkomn",
@@ -20,19 +19,5 @@ export default defineConfig({
       randomize: true,
     },
   },
-  dirs: ["src/tasks"],
-  build: {
-    extensions: [
-      ffmpeg(),
-      // Bundle template files (style guides, reference images, caption guides)
-      // so they're available to the content creation pipeline at runtime.
-      additionalFiles({
-        files: [
-          "src/content/templates/**/*.json",
-          "src/content/templates/**/*.png",
-          "src/content/templates/**/*.jpg",
-        ],
-      }),
-    ],
-  },
+  dirs: ["src"],
 });

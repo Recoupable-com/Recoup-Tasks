@@ -22,7 +22,7 @@ interface RunOpenClawAgentResult {
  */
 export async function runOpenClawAgent(
   sandbox: Sandbox,
-  options: RunOpenClawAgentOptions
+  options: RunOpenClawAgentOptions,
 ): Promise<RunOpenClawAgentResult> {
   const { label, message, env } = options;
 

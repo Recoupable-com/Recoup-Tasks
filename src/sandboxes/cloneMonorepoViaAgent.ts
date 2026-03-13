@@ -8,9 +8,7 @@ import { runClaudeCodeAgent } from "./runClaudeCodeAgent";
  *
  * @param sandbox - The Vercel Sandbox instance
  */
-export async function cloneMonorepoViaAgent(
-  sandbox: Sandbox,
-): Promise<void> {
+export async function cloneMonorepoViaAgent(sandbox: Sandbox): Promise<void> {
   await runClaudeCodeAgent(sandbox, {
     label: "Clone monorepo via agent",
     message: [

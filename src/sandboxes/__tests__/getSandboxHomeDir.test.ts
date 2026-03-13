@@ -1,6 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
 import { getSandboxHomeDir } from "../getSandboxHomeDir";
 
+/**
+ *
+ * @param stdout
+ */
 function createMockSandbox(stdout = "/home/user") {
   return {
     runCommand: vi.fn().mockResolvedValue({

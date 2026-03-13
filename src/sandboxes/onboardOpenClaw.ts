@@ -35,7 +35,7 @@ export async function onboardOpenClaw(sandbox: Sandbox): Promise<void> {
   ];
 
   logger.log("Running OpenClaw onboard", {
-    command: `openclaw ${onboardArgs.map((a) => (a === process.env.VERCEL_AI_GATEWAY_API_KEY ? "[REDACTED]" : a)).join(" ")}`,
+    command: `openclaw ${onboardArgs.map(a => (a === process.env.VERCEL_AI_GATEWAY_API_KEY ? "[REDACTED]" : a)).join(" ")}`,
   });
 
   const onboard = await sandbox.runCommand({

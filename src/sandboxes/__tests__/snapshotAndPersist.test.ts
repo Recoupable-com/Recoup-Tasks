@@ -12,6 +12,9 @@ const { snapshotAndPersist } = await import("../snapshotAndPersist");
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
+/**
+ *
+ */
 function createMockSandbox() {
   return {
     snapshot: vi.fn().mockResolvedValue({

@@ -12,7 +12,7 @@ import { NEW_API_BASE_URL, RECOUP_API_KEY } from "../consts";
 export async function updateAccountSnapshot(
   accountId: string,
   snapshotId?: string,
-  githubRepo?: string
+  githubRepo?: string,
 ): Promise<{ success: boolean; snapshotId: string } | undefined> {
   const url = `${NEW_API_BASE_URL}/api/sandboxes`;
 

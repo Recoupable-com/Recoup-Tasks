@@ -12,12 +12,14 @@ vi.mock("../../recoup/getAccountOrgs", () => ({
 
 const mockCreateOrgGithubRepo = vi.fn();
 vi.mock("../../github/createOrgGithubRepo", () => ({
-  createOrgGithubRepo: (...args: unknown[]) =>
-    mockCreateOrgGithubRepo(...args),
+  createOrgGithubRepo: (...args: unknown[]) => mockCreateOrgGithubRepo(...args),
 }));
 
 const { ensureOrgRepos } = await import("../ensureOrgRepos");
 
+/**
+ *
+ */
 function createMockSandbox() {
   const runCommand = vi.fn().mockImplementation((opts: any) => {
     const finished = {
@@ -91,7 +93,7 @@ describe("ensureOrgRepos", () => {
     ]);
 
     mockCreateOrgGithubRepo.mockResolvedValueOnce(
-      "https://github.com/recoupable/org-test-org-org-1"
+      "https://github.com/recoupable/org-test-org-org-1",
     );
 
     const sandbox = createMockSandbox();
@@ -100,15 +102,13 @@ describe("ensureOrgRepos", () => {
 
     // Should have called openclaw agent with a message about cloning
     const openclawCall = sandbox.runCommand.mock.calls.find(
-      (call: any[]) => call[0]?.cmd === "openclaw"
+      (call: any[]) => call[0]?.cmd === "openclaw",
     );
     expect(openclawCall).toBeDefined();
 
     // The openclaw args should include the repo URL
     const args = openclawCall![0].args;
-    const message = args.find(
-      (a: string, i: number) => args[i - 1] === "--message"
-    );
+    const message = args.find((a: string, i: number) => args[i - 1] === "--message");
     expect(message).toContain("org-test-org-org-1");
 
     // GITHUB_TOKEN is injected into openclaw.json by setupOpenClaw,
@@ -123,7 +123,7 @@ describe("ensureOrgRepos", () => {
     ]);
 
     mockCreateOrgGithubRepo.mockResolvedValueOnce(
-      "https://github.com/recoupable/org-test-org-org-1"
+      "https://github.com/recoupable/org-test-org-org-1",
     );
 
     const sandbox = createMockSandbox();
@@ -131,9 +131,7 @@ describe("ensureOrgRepos", () => {
     await ensureOrgRepos(sandbox, "account-1");
 
     const submoduleCall = sandbox.runCommand.mock.calls.find(
-      (call: any[]) =>
-        call[0]?.cmd === "git" &&
-        call[0]?.args?.[0] === "submodule"
+      (call: any[]) => call[0]?.cmd === "git" && call[0]?.args?.[0] === "submodule",
     );
     expect(submoduleCall).toBeUndefined();
   });
@@ -146,9 +144,7 @@ describe("ensureOrgRepos", () => {
 
     mockCreateOrgGithubRepo
       .mockResolvedValueOnce(undefined)
-      .mockResolvedValueOnce(
-        "https://github.com/recoupable/org-working-org-org-2"
-      );
+      .mockResolvedValueOnce("https://github.com/recoupable/org-working-org-org-2");
 
     const sandbox = createMockSandbox();
 
@@ -158,7 +154,7 @@ describe("ensureOrgRepos", () => {
 
     // Openclaw should still be called with the one that succeeded
     const openclawCall = sandbox.runCommand.mock.calls.find(
-      (call: any[]) => call[0]?.cmd === "openclaw"
+      (call: any[]) => call[0]?.cmd === "openclaw",
     );
     expect(openclawCall).toBeDefined();
   });
@@ -175,7 +171,7 @@ describe("ensureOrgRepos", () => {
     ]);
 
     mockCreateOrgGithubRepo.mockResolvedValueOnce(
-      "https://github.com/recoupable/org-test-org-org-1"
+      "https://github.com/recoupable/org-test-org-org-1",
     );
 
     const sandbox = createMockSandbox();
@@ -183,12 +179,10 @@ describe("ensureOrgRepos", () => {
     await ensureOrgRepos(sandbox, "account-1");
 
     const openclawCall = sandbox.runCommand.mock.calls.find(
-      (call: any[]) => call[0]?.cmd === "openclaw"
+      (call: any[]) => call[0]?.cmd === "openclaw",
     );
     const args = openclawCall![0].args;
-    const message = args.find(
-      (a: string, i: number) => args[i - 1] === "--message"
-    );
+    const message = args.find((a: string, i: number) => args[i - 1] === "--message");
 
     // Message must handle .git as a file (submodule gitlink), not just directory
     expect(message).toContain(".git file");
@@ -206,7 +200,7 @@ describe("ensureOrgRepos", () => {
     await ensureOrgRepos(sandbox, "account-1");
 
     const openclawCall = sandbox.runCommand.mock.calls.find(
-      (call: any[]) => call[0]?.cmd === "openclaw"
+      (call: any[]) => call[0]?.cmd === "openclaw",
     );
     expect(openclawCall).toBeUndefined();
   });

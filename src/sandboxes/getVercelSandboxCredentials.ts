@@ -10,7 +10,7 @@ export function getVercelSandboxCredentials() {
 
   if (!token || !teamId || !projectId) {
     throw new Error(
-      "Missing Vercel credentials. Set VERCEL_TOKEN, VERCEL_TEAM_ID, and VERCEL_PROJECT_ID."
+      "Missing Vercel credentials. Set VERCEL_TOKEN, VERCEL_TEAM_ID, and VERCEL_PROJECT_ID.",
     );
   }
 

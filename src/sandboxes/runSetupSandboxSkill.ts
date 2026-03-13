@@ -10,7 +10,7 @@ import { runOpenClawAgent } from "./runOpenClawAgent";
  */
 export async function runSetupSandboxSkill(
   sandbox: Sandbox,
-  env: Record<string, string>
+  env: Record<string, string>,
 ): Promise<void> {
   const result = await runOpenClawAgent(sandbox, {
     label: "Running setup-sandbox skill",

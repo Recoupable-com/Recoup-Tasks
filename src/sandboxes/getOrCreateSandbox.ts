@@ -15,9 +15,7 @@ interface GetOrCreateSandboxResult {
  * @param accountId - The account ID to create a sandbox for
  * @returns The sandbox ID and connected Sandbox instance
  */
-export async function getOrCreateSandbox(
-  accountId: string,
-): Promise<GetOrCreateSandboxResult> {
+export async function getOrCreateSandbox(accountId: string): Promise<GetOrCreateSandboxResult> {
   const { token, teamId, projectId } = getVercelSandboxCredentials();
 
   logStep("Creating sandbox via API");
