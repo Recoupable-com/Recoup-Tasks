@@ -31,14 +31,20 @@ export async function runClaudeCodeAgent(
 
   logStep(label, true, { cmd: "claude", args });
 
+  const claudeOauthToken = process.env.CLAUDE_CODE_OAUTH_TOKEN;
+  const mergedEnv: Record<string, string> = {
+    ...(env ?? {}),
+    ...(claudeOauthToken ? { CLAUDE_CODE_OAUTH_TOKEN: claudeOauthToken } : {}),
+  };
+
   const commandOpts: Record<string, unknown> = {
     cmd: "claude",
     args,
     detached: true,
   };
 
-  if (env) {
-    commandOpts.env = env;
+  if (Object.keys(mergedEnv).length > 0) {
+    commandOpts.env = mergedEnv;
   }
 
   const command = await sandbox.runCommand(commandOpts as any);
