@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("@trigger.dev/sdk/v3", () => ({
   logger: { log: vi.fn(), error: vi.fn() },
@@ -11,6 +11,8 @@ vi.mock("../logStep", () => ({
 
 const { runClaudeCodeAgent } = await import("../runClaudeCodeAgent");
 const { logStep } = await import("../logStep");
+
+const originalEnv = { ...process.env };
 
 function mockDetachedCommand(finished: {
   exitCode: number;
@@ -26,10 +28,15 @@ function createMockSandbox() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  process.env.CLAUDE_CODE_OAUTH_TOKEN = "test-oauth-token";
+});
+
+afterEach(() => {
+  process.env = { ...originalEnv };
 });
 
 describe("runClaudeCodeAgent", () => {
-  it("calls claude --print with the message", async () => {
+  it("calls claude --print with the message and injects CLAUDE_CODE_OAUTH_TOKEN", async () => {
     const sandbox = createMockSandbox();
     sandbox.runCommand.mockResolvedValueOnce(
       mockDetachedCommand({
@@ -48,10 +55,11 @@ describe("runClaudeCodeAgent", () => {
       cmd: "claude",
       args: ["-p", "--dangerously-skip-permissions", "Fix the bug"],
       detached: true,
+      env: { CLAUDE_CODE_OAUTH_TOKEN: "test-oauth-token" },
     });
   });
 
-  it("passes env vars when provided", async () => {
+  it("merges CLAUDE_CODE_OAUTH_TOKEN into provided env", async () => {
     const sandbox = createMockSandbox();
     sandbox.runCommand.mockResolvedValueOnce(
       mockDetachedCommand({
@@ -71,7 +79,10 @@ describe("runClaudeCodeAgent", () => {
       cmd: "claude",
       args: ["-p", "--dangerously-skip-permissions", "Update the README"],
       detached: true,
-      env: { GITHUB_TOKEN: "ghp_test" },
+      env: {
+        GITHUB_TOKEN: "ghp_test",
+        CLAUDE_CODE_OAUTH_TOKEN: "test-oauth-token",
+      },
     });
   });
 
