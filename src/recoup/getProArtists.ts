@@ -8,6 +8,9 @@ const proArtistsResponseSchema = z.object({
 
 const PRO_ARTISTS_API_URL = "https://api.recoupable.com/api/artists/pro";
 
+/**
+ *
+ */
 export async function getProArtists(): Promise<string[] | undefined> {
   try {
     const response = await fetch(PRO_ARTISTS_API_URL, {

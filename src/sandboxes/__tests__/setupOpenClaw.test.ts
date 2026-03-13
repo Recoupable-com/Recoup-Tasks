@@ -10,6 +10,9 @@ vi.mock("../onboardOpenClaw", () => ({
 
 const { setupOpenClaw } = await import("../setupOpenClaw");
 
+/**
+ *
+ */
 function createMockSandbox() {
   const runCommand = vi.fn().mockResolvedValue({
     exitCode: 0,
@@ -31,9 +34,7 @@ describe("setupOpenClaw", () => {
     delete process.env.RECOUP_API_KEY;
     const sandbox = createMockSandbox();
 
-    await expect(setupOpenClaw(sandbox, "account-1")).rejects.toThrow(
-      "Missing RECOUP_API_KEY"
-    );
+    await expect(setupOpenClaw(sandbox, "account-1")).rejects.toThrow("Missing RECOUP_API_KEY");
   });
 
   it("injects RECOUP_API_KEY and RECOUP_ACCOUNT_ID into openclaw.json", async () => {
@@ -42,12 +43,10 @@ describe("setupOpenClaw", () => {
     await setupOpenClaw(sandbox, "account-1");
 
     // Find the node -e call that injects env vars
-    const injectCall = sandbox.runCommand.mock.calls.find(
-      (call: any[]) => {
-        const args = call[0]?.args;
-        return args?.[0] === "-c" && args?.[1]?.includes("openclaw.json");
-      }
-    );
+    const injectCall = sandbox.runCommand.mock.calls.find((call: any[]) => {
+      const args = call[0]?.args;
+      return args?.[0] === "-c" && args?.[1]?.includes("openclaw.json");
+    });
 
     expect(injectCall).toBeDefined();
     const script = injectCall![0].args[1];
@@ -71,12 +70,10 @@ describe("setupOpenClaw", () => {
     await setupOpenClaw(sandbox, "account-1");
 
     // Find the node -e call that injects env vars
-    const injectCall = sandbox.runCommand.mock.calls.find(
-      (call: any[]) => {
-        const args = call[0]?.args;
-        return args?.[0] === "-c" && args?.[1]?.includes("openclaw.json");
-      }
-    );
+    const injectCall = sandbox.runCommand.mock.calls.find((call: any[]) => {
+      const args = call[0]?.args;
+      return args?.[0] === "-c" && args?.[1]?.includes("openclaw.json");
+    });
 
     expect(injectCall).toBeDefined();
     const script = injectCall![0].args[1];
@@ -92,12 +89,10 @@ describe("setupOpenClaw", () => {
     await setupOpenClaw(sandbox, "account-1");
 
     // Env injection call should still run (for RECOUP vars)
-    const injectCall = sandbox.runCommand.mock.calls.find(
-      (call: any[]) => {
-        const args = call[0]?.args;
-        return args?.[0] === "-c" && args?.[1]?.includes("openclaw.json");
-      }
-    );
+    const injectCall = sandbox.runCommand.mock.calls.find((call: any[]) => {
+      const args = call[0]?.args;
+      return args?.[0] === "-c" && args?.[1]?.includes("openclaw.json");
+    });
     expect(injectCall).toBeDefined();
   });
 
@@ -106,12 +101,10 @@ describe("setupOpenClaw", () => {
 
     await setupOpenClaw(sandbox, "account-1");
 
-    const injectCall = sandbox.runCommand.mock.calls.find(
-      (call: any[]) => {
-        const args = call[0]?.args;
-        return args?.[0] === "-c" && args?.[1]?.includes("openclaw.json");
-      }
-    );
+    const injectCall = sandbox.runCommand.mock.calls.find((call: any[]) => {
+      const args = call[0]?.args;
+      return args?.[0] === "-c" && args?.[1]?.includes("openclaw.json");
+    });
 
     expect(injectCall).toBeDefined();
     const script = injectCall![0].args[1];
@@ -125,12 +118,10 @@ describe("setupOpenClaw", () => {
     await setupOpenClaw(sandbox, "account-1");
 
     // Find the gateway start call
-    const gatewayCall = sandbox.runCommand.mock.calls.find(
-      (call: any[]) => {
-        const args = call[0]?.args;
-        return args?.[1]?.includes("gateway");
-      }
-    );
+    const gatewayCall = sandbox.runCommand.mock.calls.find((call: any[]) => {
+      const args = call[0]?.args;
+      return args?.[1]?.includes("gateway");
+    });
 
     expect(gatewayCall).toBeDefined();
   });
@@ -140,15 +131,12 @@ describe("setupOpenClaw", () => {
 
     // Make the second runCommand call (env injection) fail
     // First call is onboardOpenClaw (mocked), so first runCommand is env injection
-    sandbox.runCommand
-      .mockResolvedValueOnce({
-        exitCode: 1,
-        stdout: async () => "",
-        stderr: async () => "node script failed",
-      });
+    sandbox.runCommand.mockResolvedValueOnce({
+      exitCode: 1,
+      stdout: async () => "",
+      stderr: async () => "node script failed",
+    });
 
-    await expect(setupOpenClaw(sandbox, "account-1")).rejects.toThrow(
-      "Failed to inject env vars"
-    );
+    await expect(setupOpenClaw(sandbox, "account-1")).rejects.toThrow("Failed to inject env vars");
   });
 });

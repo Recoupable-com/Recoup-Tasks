@@ -25,7 +25,7 @@ export const codingAgentTask = schemaTask({
   retry: {
     maxAttempts: 0,
   },
-  run: async (payload) => {
+  run: async payload => {
     const { prompt, callbackThreadId } = payload;
     const { token, teamId, projectId } = getVercelSandboxCredentials();
 
@@ -63,7 +63,10 @@ export const codingAgentTask = schemaTask({
 
       logStep("Creating PRs via agent");
       const timestamp = Date.now();
-      const slug = prompt.slice(0, 30).replace(/[^a-zA-Z0-9]/g, "-").toLowerCase();
+      const slug = prompt
+        .slice(0, 30)
+        .replace(/[^a-zA-Z0-9]/g, "-")
+        .toLowerCase();
       const branch = `agent/${slug}-${timestamp}`;
 
       const prs = await pushAndCreatePRsViaAgent(sandbox, { prompt, branch });

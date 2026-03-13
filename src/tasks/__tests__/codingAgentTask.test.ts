@@ -23,7 +23,9 @@ vi.mock("@vercel/sandbox", () => ({
 
 vi.mock("../../sandboxes/getVercelSandboxCredentials", () => ({
   getVercelSandboxCredentials: vi.fn().mockReturnValue({
-    token: "tok", teamId: "team", projectId: "proj",
+    token: "tok",
+    teamId: "team",
+    projectId: "proj",
   }),
 }));
 
@@ -50,8 +52,10 @@ vi.mock("../../sandboxes/runOpenClawAgent", () => ({
 vi.mock("../../sandboxes/pushAndCreatePRsViaAgent", () => ({
   pushAndCreatePRsViaAgent: vi.fn().mockResolvedValue([
     {
-      repo: "recoupable/api", number: 42,
-      url: "https://github.com/recoupable/api/pull/42", baseBranch: "test",
+      repo: "recoupable/api",
+      number: 42,
+      url: "https://github.com/recoupable/api/pull/42",
+      baseBranch: "test",
     },
   ]),
 }));
@@ -140,5 +144,4 @@ describe("codingAgentTask", () => {
 
     expect(configureGitAuth).toHaveBeenCalledOnce();
   });
-
 });

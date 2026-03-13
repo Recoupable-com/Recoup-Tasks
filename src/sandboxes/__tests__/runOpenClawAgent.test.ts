@@ -12,6 +12,9 @@ vi.mock("../logStep", () => ({
 const { runOpenClawAgent } = await import("../runOpenClawAgent");
 const { logStep } = await import("../logStep");
 
+/**
+ *
+ */
 function createMockSandbox() {
   const runCommand = vi.fn();
   return { runCommand } as any;
@@ -136,5 +139,4 @@ describe("runOpenClawAgent", () => {
     expect(result.stdout).toBe("output\n");
     expect(result.stderr).toBe("warn\n");
   });
-
 });

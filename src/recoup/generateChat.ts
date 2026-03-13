@@ -25,7 +25,7 @@ type ChatGenerateResponse = {
  * @returns Promise that resolves to the parsed response, or undefined on error
  */
 export async function generateChat(
-  params: ChatGenerateParams
+  params: ChatGenerateParams,
 ): Promise<ChatGenerateResponse | undefined> {
   if (!RECOUP_API_KEY) {
     logger.error("Missing RECOUP_API_KEY environment variable");

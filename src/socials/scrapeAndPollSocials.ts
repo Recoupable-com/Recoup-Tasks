@@ -9,10 +9,13 @@ export const SCRAPE_BATCH_SIZE = 10;
 /**
  * Scrapes and polls socials in batches, waiting for each batch to complete before starting the next.
  * Returns an array of poll results for all completed scrapes.
+ *
+ * @param socials
+ * @param batchSize
  */
 export async function scrapeAndPollSocials(
   socials: ScrapableSocial[],
-  batchSize: number = SCRAPE_BATCH_SIZE
+  batchSize: number = SCRAPE_BATCH_SIZE,
 ): Promise<PollResult[]> {
   const allResults: PollResult[] = [];
 
@@ -23,7 +26,7 @@ export async function scrapeAndPollSocials(
 
     // Start scrapes for this batch
     const scrapeResults = await Promise.all(
-      socialBatch.map((social) => scrapeSocial(social.socialId))
+      socialBatch.map(social => scrapeSocial(social.socialId)),
     );
 
     // Collect valid runs from this batch
@@ -75,27 +78,24 @@ export async function scrapeAndPollSocials(
 
     // Log all successfully started scrapes for this batch
     if (startedScrapes.length > 0) {
-      logger.log(
-        `Started scrapes for batch ${batchNumber} of ${totalBatches}`,
-        {
-          count: startedScrapes.length,
-          scrapes: startedScrapes,
-        }
-      );
+      logger.log(`Started scrapes for batch ${batchNumber} of ${totalBatches}`, {
+        count: startedScrapes.length,
+        scrapes: startedScrapes,
+      });
     }
 
     // Poll this batch to completion before moving to next batch
     logger.log(`Polling batch ${batchNumber} runs to completion`, {
       batchRuns: batchRuns.length,
-      runIds: batchRuns.map((r) => r.runId),
+      runIds: batchRuns.map(r => r.runId),
     });
 
     const batchResults = await pollScraperResults(batchRuns);
 
     logger.log(`Batch ${batchNumber} completed`, {
       total: batchResults.length,
-      succeeded: batchResults.filter((r) => r.status === "SUCCEEDED").length,
-      failed: batchResults.filter((r) => r.status === "FAILED").length,
+      succeeded: batchResults.filter(r => r.status === "SUCCEEDED").length,
+      failed: batchResults.filter(r => r.status === "FAILED").length,
       results: batchResults,
     });
 

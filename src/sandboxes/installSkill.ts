@@ -10,10 +10,7 @@ import { logger } from "@trigger.dev/sdk/v3";
  * @param sandbox - The Vercel Sandbox instance
  * @param skill - The skills.sh skill identifier (e.g. "recoupable/setup-sandbox")
  */
-export async function installSkill(
-  sandbox: Sandbox,
-  skill: string
-): Promise<void> {
+export async function installSkill(sandbox: Sandbox, skill: string): Promise<void> {
   const skillName = skill.split("/").pop()!;
 
   logger.log("Installing skill via skills.sh", { skill });

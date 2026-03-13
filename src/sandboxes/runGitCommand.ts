@@ -4,12 +4,15 @@ import { logger } from "@trigger.dev/sdk/v3";
 /**
  * Runs a git command in the sandbox and logs stderr on failure.
  *
+ * @param sandbox
+ * @param args
+ * @param description
  * @returns true if the command succeeded, false otherwise
  */
 export async function runGitCommand(
   sandbox: Sandbox,
   args: string[],
-  description: string
+  description: string,
 ): Promise<boolean> {
   const result = await sandbox.runCommand({ cmd: "git", args });
 

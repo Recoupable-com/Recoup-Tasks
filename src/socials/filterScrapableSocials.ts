@@ -12,13 +12,13 @@ export type ScrapableSocial = {
 /**
  * Filters and collects all scrapable socials from the artist socials map.
  * Returns an array of scrapable socials with their associated artist IDs.
+ *
+ * @param artistIds
+ * @param artistSocialsMap
  */
 export function filterScrapableSocials(
   artistIds: string[],
-  artistSocialsMap: Map<
-    string,
-    Awaited<ReturnType<typeof getArtistSocials>> | undefined
-  >
+  artistSocialsMap: Map<string, Awaited<ReturnType<typeof getArtistSocials>> | undefined>,
 ): ScrapableSocial[] {
   const scrapableSocials: ScrapableSocial[] = [];
   const nonScrapableSocials: Array<{

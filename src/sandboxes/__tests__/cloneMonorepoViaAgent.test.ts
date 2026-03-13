@@ -51,5 +51,4 @@ describe("cloneMonorepoViaAgent", () => {
     const message = vi.mocked(runOpenClawAgent).mock.calls[0][1].message;
     expect(message).not.toContain("git config");
   });
-
 });

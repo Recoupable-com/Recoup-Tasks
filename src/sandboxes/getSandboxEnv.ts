@@ -1,10 +1,10 @@
 /**
  * Builds the environment variables to inject into sandbox commands.
  * Shared by runSandboxCommandTask and codingAgentTask.
+ *
+ * @param accountId
  */
-export function getSandboxEnv(
-  accountId: string
-): Record<string, string> {
+export function getSandboxEnv(accountId: string): Record<string, string> {
   const apiKey = process.env.RECOUP_API_KEY;
   if (!apiKey) {
     throw new Error("Missing RECOUP_API_KEY environment variable");

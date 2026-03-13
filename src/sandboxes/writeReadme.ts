@@ -16,7 +16,7 @@ export async function writeReadme(
   sandbox: Sandbox,
   sandboxId: string,
   accountId: string,
-  githubRepo?: string
+  githubRepo?: string,
 ): Promise<void> {
   // Skip if README.md already has our content
   const check = await sandbox.runCommand({

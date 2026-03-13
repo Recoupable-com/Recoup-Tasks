@@ -11,10 +11,7 @@ import { writeReadme } from "../sandboxes/writeReadme";
 import { ensureOrgRepos } from "../sandboxes/ensureOrgRepos";
 import { ensureSetupSandbox } from "../sandboxes/ensureSetupSandbox";
 import { pushSandboxToGithub } from "../sandboxes/pushSandboxToGithub";
-import {
-  runSandboxCommandPayloadSchema,
-  type SandboxResult,
-} from "../schemas/sandboxSchema";
+import { runSandboxCommandPayloadSchema, type SandboxResult } from "../schemas/sandboxSchema";
 
 /**
  * Background task that connects to an existing Vercel Sandbox, ensures OpenClaw
@@ -85,11 +82,7 @@ export const runSandboxCommandTask = schemaTask({
       logStep("Pushing to GitHub");
       await pushSandboxToGithub(sandbox);
 
-      const snapshotResult = await snapshotAndPersist(
-        sandbox,
-        accountId,
-        githubRepo ?? undefined
-      );
+      const snapshotResult = await snapshotAndPersist(sandbox, accountId, githubRepo ?? undefined);
 
       const result: SandboxResult = {
         stdout,

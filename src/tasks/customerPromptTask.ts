@@ -48,9 +48,7 @@ export const customerPromptTask = schedules.task({
     const accountId = taskConfig?.accountId;
     const artistId = taskConfig?.artistId;
     const model = taskConfig?.model;
-    const prompt =
-      taskConfig?.prompt ??
-      "Draft a friendly check-in message for our customers.";
+    const prompt = taskConfig?.prompt ?? "Draft a friendly check-in message for our customers.";
 
     if (!accountId) {
       logger.error("Missing required accountId from task");
