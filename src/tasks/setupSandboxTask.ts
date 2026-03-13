@@ -17,7 +17,7 @@ export const setupSandboxTask = schemaTask({
   retry: {
     maxAttempts: 0, // Zero retries — run once only
   },
-  run: async (payload) => {
+  run: async payload => {
     const { accountId } = payload;
 
     logStep("Starting sandbox setup", true, { accountId });
@@ -30,11 +30,7 @@ export const setupSandboxTask = schemaTask({
       logStep("Provisioning complete", false);
 
       logStep("Taking snapshot");
-      const snapshotResult = await snapshotAndPersist(
-        sandbox,
-        accountId,
-        githubRepo,
-      );
+      const snapshotResult = await snapshotAndPersist(sandbox, accountId, githubRepo);
 
       logStep("Sandbox setup complete", true, {
         sandboxId: sandbox.sandboxId,

@@ -11,10 +11,7 @@ import { OPENCLAW_DEFAULT_MODEL } from "../consts";
  * @param accountId - The account ID for the sandbox owner
  * @throws Error if env injection or gateway startup fails
  */
-export async function setupOpenClaw(
-  sandbox: Sandbox,
-  accountId: string
-): Promise<void> {
+export async function setupOpenClaw(sandbox: Sandbox, accountId: string): Promise<void> {
   await onboardOpenClaw(sandbox);
 
   // Inject RECOUP env vars into openclaw.json's env block so they're

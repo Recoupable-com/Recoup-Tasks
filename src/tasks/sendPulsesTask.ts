@@ -111,7 +111,7 @@ Use send_email with the html parameter to deliver.`;
 export const sendPulsesTask = schedules.task({
   id: "send-pulses-task",
   cron: { pattern: "0 9 * * *", timezone: "America/New_York" }, // Run daily at 9 AM ET
-  run: async (payload) => {
+  run: async payload => {
     logger.log("Starting send pulses task", {
       timestamp: payload.timestamp,
       timezone: payload.timezone,
@@ -134,7 +134,7 @@ export const sendPulsesTask = schedules.task({
       }
 
       logger.log("Processing active pulses", { count: activePulses.length });
-      accountIds = activePulses.map((pulse) => pulse.account_id);
+      accountIds = activePulses.map(pulse => pulse.account_id);
     }
 
     let sent = 0;

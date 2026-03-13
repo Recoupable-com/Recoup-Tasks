@@ -11,10 +11,7 @@ import { logStep } from "./logStep";
  * @param sandbox - The Vercel Sandbox instance
  * @param accountId - The account ID for the sandbox owner
  */
-export async function ensureSetupSandbox(
-  sandbox: Sandbox,
-  accountId: string
-): Promise<void> {
+export async function ensureSetupSandbox(sandbox: Sandbox, accountId: string): Promise<void> {
   logStep("Installing skills");
 
   await installSkill(sandbox, "recoupable/setup-sandbox");

@@ -12,9 +12,7 @@ import { getSandboxHomeDir } from "../getSandboxHomeDir";
  *
  * @param sandbox - The Vercel Sandbox instance
  */
-export async function pushOrgRepos(
-  sandbox: Sandbox
-): Promise<void> {
+export async function pushOrgRepos(sandbox: Sandbox): Promise<void> {
   const githubToken = process.env.GITHUB_TOKEN;
 
   if (!githubToken) {
@@ -37,7 +35,7 @@ export async function pushOrgRepos(
   const stdout = (await findResult.stdout()) || "";
   const orgNames = stdout
     .split("\n")
-    .map((s) => s.trim())
+    .map(s => s.trim())
     .filter(Boolean);
 
   if (orgNames.length === 0) {

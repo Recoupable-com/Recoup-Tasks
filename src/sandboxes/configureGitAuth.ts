@@ -7,6 +7,8 @@ import { getGitHubAuthPrefix } from "./getGitHubAuthPrefix";
  *
  * Sets url.insteadOf so all HTTPS GitHub URLs automatically use the token,
  * and configures the Recoup Agent git identity.
+ *
+ * @param sandbox
  */
 export async function configureGitAuth(sandbox: Sandbox): Promise<void> {
   const authPrefix = getGitHubAuthPrefix();
@@ -14,12 +16,7 @@ export async function configureGitAuth(sandbox: Sandbox): Promise<void> {
   if (authPrefix) {
     await sandbox.runCommand({
       cmd: "git",
-      args: [
-        "config",
-        "--global",
-        `url.${authPrefix}.insteadOf`,
-        "https://github.com/",
-      ],
+      args: ["config", "--global", `url.${authPrefix}.insteadOf`, "https://github.com/"],
     });
     logger.log("Git auth configured with GITHUB_TOKEN");
   } else {

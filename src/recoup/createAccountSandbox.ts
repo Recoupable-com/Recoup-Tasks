@@ -19,7 +19,7 @@ const createSandboxResponseSchema = z.object({
  * @returns The created sandbox ID, or undefined on error
  */
 export async function createAccountSandbox(
-  accountId: string
+  accountId: string,
 ): Promise<{ sandboxId: string } | undefined> {
   const url = `${NEW_API_BASE_URL}/api/sandboxes`;
 

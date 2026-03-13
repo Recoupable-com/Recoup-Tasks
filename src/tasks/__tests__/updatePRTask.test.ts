@@ -23,7 +23,9 @@ vi.mock("@vercel/sandbox", () => ({
 
 vi.mock("../../sandboxes/getVercelSandboxCredentials", () => ({
   getVercelSandboxCredentials: vi.fn().mockReturnValue({
-    token: "tok", teamId: "team", projectId: "proj",
+    token: "tok",
+    teamId: "team",
+    projectId: "proj",
   }),
 }));
 

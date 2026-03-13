@@ -35,11 +35,11 @@ export async function runClaudeCodeAgent(
     cmd: "claude",
     args,
     detached: true,
-    env: {
-      ...env,
-      CLAUDE_CODE_OAUTH_TOKEN: process.env.CLAUDE_CODE_OAUTH_TOKEN,
-    },
   };
+
+  if (env) {
+    commandOpts.env = env;
+  }
 
   const command = await sandbox.runCommand(commandOpts as any);
   const result = await command.wait();

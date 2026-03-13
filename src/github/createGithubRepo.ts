@@ -13,7 +13,7 @@ const GITHUB_ORG = "recoupable";
  */
 export async function createGithubRepo(
   accountName: string,
-  accountId: string
+  accountId: string,
 ): Promise<string | undefined> {
   const token = process.env.GITHUB_TOKEN;
 
@@ -32,21 +32,18 @@ export async function createGithubRepo(
   });
 
   try {
-    const response = await fetch(
-      `https://api.github.com/orgs/${GITHUB_ORG}/repos`,
-      {
-        method: "POST",
-        headers: {
-          Accept: "application/vnd.github+json",
-          Authorization: `Bearer ${token}`,
-          "X-GitHub-Api-Version": "2022-11-28",
-        },
-        body: JSON.stringify({
-          name: repoName,
-          private: true,
-        }),
-      }
-    );
+    const response = await fetch(`https://api.github.com/orgs/${GITHUB_ORG}/repos`, {
+      method: "POST",
+      headers: {
+        Accept: "application/vnd.github+json",
+        Authorization: `Bearer ${token}`,
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+      body: JSON.stringify({
+        name: repoName,
+        private: true,
+      }),
+    });
 
     if (!response.ok) {
       // 422 means repo already exists — fetch existing URL
