@@ -20,8 +20,7 @@ vi.mock("../../recoup/fetchActivePulses", () => ({
 
 const mockExecutePulseInSandbox = vi.fn();
 vi.mock("../../pulse/executePulseInSandbox", () => ({
-  executePulseInSandbox: (...args: unknown[]) =>
-    mockExecutePulseInSandbox(...args),
+  executePulseInSandbox: (...args: unknown[]) => mockExecutePulseInSandbox(...args),
 }));
 
 // Import after mocks
@@ -53,7 +52,7 @@ describe("sendPulsesTask", () => {
       expect.objectContaining({
         accountId: "account-1",
         prompt: expect.any(String),
-      })
+      }),
     );
   });
 

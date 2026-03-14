@@ -20,7 +20,7 @@ export const updatePRTask = schemaTask({
   retry: {
     maxAttempts: 0,
   },
-  run: async (payload) => {
+  run: async payload => {
     const { feedback, snapshotId, branch, repo, callbackThreadId } = payload;
     const { token, teamId, projectId } = getVercelSandboxCredentials();
 

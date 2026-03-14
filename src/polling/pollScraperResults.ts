@@ -15,18 +15,16 @@ export type PollResult = ScrapeRun & {
 /**
  * Polls each scraper run in parallel until all are completed (SUCCEEDED or FAILED).
  * Returns an array of results for each run.
+ *
+ * @param runs
  */
-export async function pollScraperResults(
-  runs: ScrapeRun[]
-): Promise<PollResult[]> {
+export async function pollScraperResults(runs: ScrapeRun[]): Promise<PollResult[]> {
   const results: PollResult[] = [];
-  const pendingRuns = new Map<string, ScrapeRun>(
-    runs.map((run) => [run.runId, run])
-  );
+  const pendingRuns = new Map<string, ScrapeRun>(runs.map(run => [run.runId, run]));
 
   while (pendingRuns.size > 0) {
     // Poll all pending runs in parallel
-    const pollPromises = Array.from(pendingRuns.values()).map(async (run) => {
+    const pollPromises = Array.from(pendingRuns.values()).map(async run => {
       const result = await getScraperResults(run.runId);
 
       if (!result) {

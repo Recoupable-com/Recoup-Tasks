@@ -16,10 +16,7 @@ import { logStep } from "./logStep";
  * @param sandbox - The Vercel Sandbox instance
  * @param accountId - The account ID to look up orgs for
  */
-export async function ensureOrgRepos(
-  sandbox: Sandbox,
-  accountId: string
-): Promise<void> {
+export async function ensureOrgRepos(sandbox: Sandbox, accountId: string): Promise<void> {
   const githubToken = process.env.GITHUB_TOKEN;
 
   if (!githubToken) {
@@ -41,10 +38,7 @@ export async function ensureOrgRepos(
   const orgRepos: Array<{ name: string; url: string }> = [];
 
   for (const org of orgs) {
-    const repoUrl = await createOrgGithubRepo(
-      org.organizationName,
-      org.organizationId
-    );
+    const repoUrl = await createOrgGithubRepo(org.organizationName, org.organizationId);
 
     if (!repoUrl) {
       logger.error("Failed to create org GitHub repo, skipping", {
@@ -66,9 +60,7 @@ export async function ensureOrgRepos(
   }
 
   // Build the prompt for OpenClaw to clone the repos
-  const repoList = orgRepos
-    .map((r) => `- "${r.name}" → ${r.url}`)
-    .join("\n");
+  const repoList = orgRepos.map(r => `- "${r.name}" → ${r.url}`).join("\n");
 
   const message = [
     "Clone the following GitHub repositories into orgs/ in your workspace.",

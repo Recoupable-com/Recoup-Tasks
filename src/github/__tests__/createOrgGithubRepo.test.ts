@@ -26,9 +26,7 @@ describe("createOrgGithubRepo", () => {
 
     const result = await createOrgGithubRepo("Test Org", "uuid-123");
 
-    expect(result).toBe(
-      "https://github.com/Recoupable-Com/org-test-org-uuid-123"
-    );
+    expect(result).toBe("https://github.com/Recoupable-Com/org-test-org-uuid-123");
     expect(mockFetch).toHaveBeenCalledOnce();
 
     // Verify the request body has the right repo name and auto_init
@@ -57,9 +55,7 @@ describe("createOrgGithubRepo", () => {
 
     const result = await createOrgGithubRepo("My Org", "uuid-456");
 
-    expect(result).toBe(
-      "https://github.com/Recoupable-Com/org-my-org-uuid-456"
-    );
+    expect(result).toBe("https://github.com/Recoupable-Com/org-my-org-uuid-456");
     expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 
@@ -104,8 +100,7 @@ describe("createOrgGithubRepo", () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
-        html_url:
-          "https://github.com/Recoupable-Com/org-my-cool-org-uuid-111",
+        html_url: "https://github.com/Recoupable-Com/org-my-cool-org-uuid-111",
       }),
     });
 

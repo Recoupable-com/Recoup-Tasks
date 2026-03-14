@@ -14,10 +14,10 @@ const SOCIAL_SCRAPE_API_URL = "https://api.recoupable.com/api/social/scrape";
 /**
  * Triggers a social profile scraping job for a given social_id.
  * Returns Apify run metadata that can be used to poll for status and retrieve results.
+ *
+ * @param socialId
  */
-export async function scrapeSocial(
-  socialId: string
-): Promise<ScrapeSocialResponse | undefined> {
+export async function scrapeSocial(socialId: string): Promise<ScrapeSocialResponse | undefined> {
   if (!socialId) {
     logger.error("scrapeSocial called without socialId");
     return undefined;

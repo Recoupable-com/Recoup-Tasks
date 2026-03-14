@@ -4,6 +4,8 @@ import { logger } from "@trigger.dev/sdk/v3";
  * Lists mp3 files available in an artist's GitHub repo.
  * Checks main repo first, then submodule org repos.
  *
+ * @param githubRepoUrl
+ * @param artistSlug
  * @returns Array of file paths relative to the repo root.
  */
 export async function listArtistSongs(
@@ -40,6 +42,8 @@ export async function listArtistSongs(
 /**
  * Parses an encoded song path to extract the actual repo URL and file path.
  * Song paths from org repos are encoded as: __ORG_REPO__{url}__{path}
+ *
+ * @param encodedPath
  */
 export function parseSongPath(encodedPath: string): {
   repoUrl: string | null;
@@ -52,6 +56,12 @@ export function parseSongPath(encodedPath: string): {
   return { repoUrl: null, filePath: encodedPath };
 }
 
+/**
+ *
+ * @param githubRepoUrl
+ * @param artistSlug
+ * @param token
+ */
 async function listMp3sInRepo(
   githubRepoUrl: string,
   artistSlug: string,
@@ -89,10 +99,12 @@ async function listMp3sInRepo(
     .map(entry => entry.path);
 }
 
-async function getOrgRepoUrls(
-  githubRepoUrl: string,
-  token: string,
-): Promise<string[]> {
+/**
+ *
+ * @param githubRepoUrl
+ * @param token
+ */
+async function getOrgRepoUrls(githubRepoUrl: string, token: string): Promise<string[]> {
   const match = githubRepoUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
   if (!match) return [];
   const [, owner, repo] = match;

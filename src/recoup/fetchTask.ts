@@ -16,7 +16,7 @@ const taskResponseSchema = z.object({
       artist_account_id: z.string(),
       enabled: z.boolean().nullable(),
       model: z.string().nullish(),
-    })
+    }),
   ),
 });
 
@@ -27,10 +27,10 @@ const taskResponseSchema = z.object({
  * - Task not found
  * - Task is disabled
  * - API error occurs
+ *
+ * @param externalId
  */
-export async function fetchTask(
-  externalId?: string
-): Promise<ChatConfig | undefined> {
+export async function fetchTask(externalId?: string): Promise<ChatConfig | undefined> {
   if (!externalId) {
     logger.warn("No externalId provided, skipping task fetch");
     return undefined;

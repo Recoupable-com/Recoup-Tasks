@@ -8,9 +8,7 @@ export const runSandboxCommandPayloadSchema = z.object({
   accountId: z.string().min(1, "accountId is required"),
 });
 
-export type RunSandboxCommandPayload = z.infer<
-  typeof runSandboxCommandPayloadSchema
->;
+export type RunSandboxCommandPayload = z.infer<typeof runSandboxCommandPayloadSchema>;
 
 export const snapshotSchema = z.object({
   id: z.string(),

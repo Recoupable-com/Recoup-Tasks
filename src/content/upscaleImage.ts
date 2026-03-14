@@ -37,6 +37,10 @@ export async function upscaleImage(imageUrl: string): Promise<string> {
   return url;
 }
 
+/**
+ *
+ * @param data
+ */
 function extractFalUrl(data: Record<string, unknown>): string | undefined {
   for (const key of ["image", "video"]) {
     if (data[key] && typeof data[key] === "object") {

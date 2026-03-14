@@ -16,11 +16,16 @@ const execFileAsync = promisify(execFile);
  *
  * Matches the content-creation-app's generateAudioVideo.ts behavior.
  *
+ * @param imageUrl.imageUrl
  * @param imageUrl - URL of the AI-generated image
  * @param songBuffer - Raw mp3 bytes of the song
  * @param audioStartSeconds - Where to clip the song from
  * @param audioDurationSeconds - How long the clip should be
  * @param motionPrompt - Describes how the subject should move
+ * @param imageUrl.songBuffer
+ * @param imageUrl.audioStartSeconds
+ * @param imageUrl.audioDurationSeconds
+ * @param imageUrl.motionPrompt
  * @returns URL of the generated video (with audio baked in)
  */
 export async function generateAudioVideo({
@@ -37,19 +42,12 @@ export async function generateAudioVideo({
   motionPrompt: string;
 }): Promise<string> {
   const config = DEFAULT_PIPELINE_CONFIG;
-  const durationSeconds = Math.min(
-    audioDurationSeconds,
-    config.audioVideoModelMaxSeconds,
-  );
+  const durationSeconds = Math.min(audioDurationSeconds, config.audioVideoModelMaxSeconds);
   const fps = 25;
   const numFrames = Math.round(durationSeconds * fps) + 1;
 
   // Clip the audio to the right section and upload to fal
-  const audioUrl = await clipAndUploadAudio(
-    songBuffer,
-    audioStartSeconds,
-    durationSeconds,
-  );
+  const audioUrl = await clipAndUploadAudio(songBuffer, audioStartSeconds, durationSeconds);
 
   logger.log("Generating audio-to-video (lipsync)", {
     model: config.audioVideoModel,
@@ -89,6 +87,10 @@ export async function generateAudioVideo({
 
 /**
  * Clips the song mp3 to the specified range and uploads to fal storage.
+ *
+ * @param songBuffer
+ * @param startSeconds
+ * @param durationSeconds
  */
 async function clipAndUploadAudio(
   songBuffer: Buffer,
@@ -105,10 +107,14 @@ async function clipAndUploadAudio(
 
     await execFileAsync("ffmpeg", [
       "-y",
-      "-i", inputPath,
-      "-ss", String(startSeconds),
-      "-t", String(durationSeconds),
-      "-c", "copy",
+      "-i",
+      inputPath,
+      "-ss",
+      String(startSeconds),
+      "-t",
+      String(durationSeconds),
+      "-c",
+      "copy",
       clippedPath,
     ]);
 
@@ -128,6 +134,10 @@ async function clipAndUploadAudio(
   }
 }
 
+/**
+ *
+ * @param data
+ */
 function extractFalUrl(data: Record<string, unknown>): string | undefined {
   for (const key of ["image", "video"]) {
     if (data[key] && typeof data[key] === "object") {

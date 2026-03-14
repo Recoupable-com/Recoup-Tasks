@@ -17,10 +17,7 @@ export interface SongClip {
  * @param lyrics - Timestamped lyrics from transcription
  * @returns Array of clip recommendations
  */
-export async function analyzeClips(
-  songTitle: string,
-  lyrics: SongLyrics,
-): Promise<SongClip[]> {
+export async function analyzeClips(songTitle: string, lyrics: SongLyrics): Promise<SongClip[]> {
   const recoupApiKey = process.env.RECOUP_API_KEY;
   if (!recoupApiKey) {
     throw new Error("RECOUP_API_KEY is required for clip analysis");
@@ -107,7 +104,10 @@ IMPORTANT: startSeconds must align with actual word timestamps from the lyrics a
     return [
       {
         startSeconds: 0,
-        lyrics: lyrics.segments.slice(0, 10).map(s => s.text).join(" "),
+        lyrics: lyrics.segments
+          .slice(0, 10)
+          .map(s => s.text)
+          .join(" "),
         reason: "fallback — start of song",
         mood: "unknown",
         hasLyrics: true,
@@ -123,7 +123,10 @@ IMPORTANT: startSeconds must align with actual word timestamps from the lyrics a
     return [
       {
         startSeconds: 0,
-        lyrics: lyrics.segments.slice(0, 10).map(s => s.text).join(" "),
+        lyrics: lyrics.segments
+          .slice(0, 10)
+          .map(s => s.text)
+          .join(" "),
         reason: "fallback — JSON parse failed",
         mood: "unknown",
         hasLyrics: true,

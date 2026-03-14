@@ -68,15 +68,17 @@ export async function transcribeSong(
 
 /**
  * Gets the lyrics for a specific time range within a song.
+ *
+ * @param lyrics
+ * @param startSeconds
+ * @param endSeconds
  */
 export function getLyricsForTimeRange(
   lyrics: SongLyrics,
   startSeconds: number,
   endSeconds: number,
 ): { clipLyrics: string; segments: LyricSegment[] } {
-  const segments = lyrics.segments.filter(
-    s => s.start < endSeconds && s.end > startSeconds,
-  );
+  const segments = lyrics.segments.filter(s => s.start < endSeconds && s.end > startSeconds);
   const clipLyrics = segments.map(s => s.text).join(" ");
   return { clipLyrics, segments };
 }

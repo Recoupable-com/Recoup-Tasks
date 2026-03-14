@@ -15,7 +15,7 @@ const artistSocialsResponseSchema = z.object({
       following_count: z.number().nullable(),
       region: z.string().nullable(),
       updated_at: z.string(),
-    })
+    }),
   ),
   pagination: z
     .object({
@@ -27,14 +27,16 @@ const artistSocialsResponseSchema = z.object({
     .optional(),
 });
 
-export type ArtistSocialProfile = z.infer<
-  typeof artistSocialsResponseSchema
->["socials"][number];
+export type ArtistSocialProfile = z.infer<typeof artistSocialsResponseSchema>["socials"][number];
 
 const ARTIST_SOCIALS_API_URL = "https://api.recoupable.com/api/artist/socials";
 
+/**
+ *
+ * @param artistAccountId
+ */
 export async function getArtistSocials(
-  artistAccountId: string
+  artistAccountId: string,
 ): Promise<ArtistSocialProfile[] | undefined> {
   if (!artistAccountId) {
     logger.error("getArtistSocials called without artistAccountId");

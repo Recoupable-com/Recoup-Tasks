@@ -21,7 +21,7 @@ import { getGitHubAuthPrefix } from "./getGitHubAuthPrefix";
  */
 export async function ensureGithubRepo(
   sandbox: Sandbox,
-  accountId: string
+  accountId: string,
 ): Promise<string | undefined> {
   const authPrefix = getGitHubAuthPrefix();
 
@@ -80,13 +80,7 @@ export async function ensureGithubRepo(
     return undefined;
   }
 
-  if (
-    !(await runGitCommand(
-      sandbox,
-      ["remote", "add", "origin", repoUrl],
-      "add remote"
-    ))
-  ) {
+  if (!(await runGitCommand(sandbox, ["remote", "add", "origin", repoUrl], "add remote"))) {
     return undefined;
   }
 
@@ -108,7 +102,7 @@ export async function ensureGithubRepo(
         !(await runGitCommand(
           sandbox,
           ["checkout", "-B", "main", "origin/main"],
-          "checkout main branch"
+          "checkout main branch",
         ))
       ) {
         return undefined;
@@ -117,11 +111,7 @@ export async function ensureGithubRepo(
       // Set up URL rewriting so submodule clones use auth
       await sandbox.runCommand({
         cmd: "git",
-        args: [
-          "config",
-          `url.${authPrefix}.insteadOf`,
-          "https://github.com/",
-        ],
+        args: ["config", `url.${authPrefix}.insteadOf`, "https://github.com/"],
       });
 
       // Initialize submodules if they exist (org repos)

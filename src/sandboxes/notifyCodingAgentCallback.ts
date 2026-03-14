@@ -26,7 +26,10 @@ export async function notifyCodingAgentCallback(payload: CallbackPayload): Promi
     return;
   }
 
-  logger.log("Sending coding agent callback", { threadId: payload.threadId, status: payload.status });
+  logger.log("Sending coding agent callback", {
+    threadId: payload.threadId,
+    status: payload.status,
+  });
 
   try {
     const response = await fetch(url, {
