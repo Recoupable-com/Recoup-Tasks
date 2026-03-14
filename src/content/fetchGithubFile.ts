@@ -4,6 +4,8 @@ import { logger } from "@trigger.dev/sdk/v3";
  * Fetches a raw file from a GitHub repo via the API.
  * If the file isn't found in the main repo, checks submodule org repos.
  *
+ * @param githubRepoUrl
+ * @param filePath
  * @returns The file as a Buffer, or null if not found anywhere.
  */
 export async function fetchGithubFile(
@@ -39,6 +41,10 @@ export async function fetchGithubFile(
 
 /**
  * Fetches a file from a specific GitHub repo.
+ *
+ * @param githubRepoUrl
+ * @param filePath
+ * @param token
  */
 async function fetchFileFromRepo(
   githubRepoUrl: string,
@@ -67,11 +73,11 @@ async function fetchFileFromRepo(
 
 /**
  * Reads .gitmodules from the main repo and extracts org submodule URLs.
+ *
+ * @param githubRepoUrl
+ * @param token
  */
-async function getOrgRepoUrls(
-  githubRepoUrl: string,
-  token: string,
-): Promise<string[]> {
+async function getOrgRepoUrls(githubRepoUrl: string, token: string): Promise<string[]> {
   const gitmodules = await fetchFileFromRepo(githubRepoUrl, ".gitmodules", token);
   if (!gitmodules) return [];
 
@@ -87,6 +93,10 @@ async function getOrgRepoUrls(
   return urls;
 }
 
+/**
+ *
+ * @param githubRepoUrl
+ */
 function parseRepoUrl(githubRepoUrl: string): { owner: string; repo: string } {
   const match = githubRepoUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
   if (!match) {

@@ -7,6 +7,9 @@ vi.mock("@trigger.dev/sdk/v3", () => ({
 
 const { syncOrgRepos } = await import("../git/syncOrgRepos");
 
+/**
+ *
+ */
 function createMockSandbox() {
   const runCommand = vi.fn().mockResolvedValue({
     wait: vi.fn().mockResolvedValue({
@@ -43,14 +46,12 @@ describe("syncOrgRepos", () => {
     await syncOrgRepos(sandbox);
 
     const openclawCall = sandbox.runCommand.mock.calls.find(
-      (call: any[]) => call[0]?.cmd === "openclaw"
+      (call: any[]) => call[0]?.cmd === "openclaw",
     );
     expect(openclawCall).toBeDefined();
 
     const args = openclawCall![0].args;
-    const message = args.find(
-      (a: string, i: number) => args[i - 1] === "--message"
-    );
+    const message = args.find((a: string, i: number) => args[i - 1] === "--message");
     expect(message).toContain("git fetch origin main");
     expect(message).toContain("git reset --hard origin/main");
   });
@@ -61,12 +62,10 @@ describe("syncOrgRepos", () => {
     await syncOrgRepos(sandbox);
 
     const openclawCall = sandbox.runCommand.mock.calls.find(
-      (call: any[]) => call[0]?.cmd === "openclaw"
+      (call: any[]) => call[0]?.cmd === "openclaw",
     );
     const args = openclawCall![0].args;
-    const message = args.find(
-      (a: string, i: number) => args[i - 1] === "--message"
-    );
+    const message = args.find((a: string, i: number) => args[i - 1] === "--message");
     expect(message).toContain(".git file");
   });
 });

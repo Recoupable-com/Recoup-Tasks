@@ -4,8 +4,10 @@ import type { SongLyrics } from "./transcribeSong";
 import type { CaptionLength } from "../schemas/contentCreationSchema";
 
 const CAPTION_LENGTH_INSTRUCTIONS: Record<CaptionLength, string> = {
-  short: "Write a SHORT caption (max 10 words). Punchy, minimal, like a text message. Think: one phrase that hits.",
-  medium: "Write a MEDIUM caption (15-30 words). A complete thought with feeling. 1-2 sentences max.",
+  short:
+    "Write a SHORT caption (max 10 words). Punchy, minimal, like a text message. Think: one phrase that hits.",
+  medium:
+    "Write a MEDIUM caption (15-30 words). A complete thought with feeling. 1-2 sentences max.",
   long: "Write a LONG caption (40-80 words). A mini-story or stream of consciousness. Vulnerable, raw, the kind of caption people screenshot.",
 };
 
@@ -14,6 +16,15 @@ const CAPTION_LENGTH_INSTRUCTIONS: Record<CaptionLength, string> = {
  * Combines template style, artist context, song lyrics, and audience data.
  *
  * Matches the content-creation-app's generateCaption.ts behavior.
+ *
+ * @param root0
+ * @param root0.template
+ * @param root0.songTitle
+ * @param root0.fullLyrics
+ * @param root0.clipLyrics
+ * @param root0.artistContext
+ * @param root0.audienceContext
+ * @param root0.captionLength
  */
 export async function generateCaption({
   template,
@@ -41,9 +52,10 @@ export async function generateCaption({
     ? JSON.stringify(template.captionGuide, null, 2)
     : "(no caption guide)";
 
-  const examples = template.captionExamples.length > 0
-    ? template.captionExamples.map(c => `- "${c}"`).join("\n")
-    : "(no examples)";
+  const examples =
+    template.captionExamples.length > 0
+      ? template.captionExamples.map(c => `- "${c}"`).join("\n")
+      : "(no examples)";
 
   const lengthInstruction = CAPTION_LENGTH_INSTRUCTIONS[captionLength];
 
@@ -117,4 +129,3 @@ Generate ONE caption. ${lengthInstruction} Return ONLY the caption text, nothing
   logger.log("Caption generated", { caption: captionText.slice(0, 80) });
   return captionText;
 }
-

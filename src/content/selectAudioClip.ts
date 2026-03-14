@@ -37,10 +37,14 @@ export interface SelectedAudioClip {
  *   5. Analyze clips with Recoup Chat API
  *   6. Pick the best clip
  *
+ * @param githubRepo.githubRepo
  * @param githubRepo - GitHub repo URL
  * @param artistSlug - Artist directory name
  * @param clipDuration - How long the clip should be (seconds)
  * @param lipsync - Whether to prefer clips with lyrics (for lipsync mode)
+ * @param githubRepo.artistSlug
+ * @param githubRepo.clipDuration
+ * @param githubRepo.lipsync
  * @returns Selected audio clip with all metadata
  */
 export async function selectAudioClip({

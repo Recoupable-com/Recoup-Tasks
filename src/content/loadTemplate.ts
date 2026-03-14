@@ -23,6 +23,8 @@ const TEMPLATES_DIR = path.resolve(__dirname, "../content/templates");
 
 /**
  * Load all template data (style guide, caption guide, moods, movements, reference images).
+ *
+ * @param templateName
  */
 export async function loadTemplate(templateName: string): Promise<TemplateData> {
   const templateDir = path.join(TEMPLATES_DIR, templateName);
@@ -33,15 +35,14 @@ export async function loadTemplate(templateName: string): Promise<TemplateData> 
   const captionGuide = await loadJsonFile<Record<string, unknown>>(
     path.join(templateDir, "caption-guide.json"),
   );
-  const captionExamples = await loadJsonFile<string[]>(
-    path.join(templateDir, "references", "captions", "examples.json"),
-  ) ?? [];
-  const videoMoods = await loadJsonFile<string[]>(
-    path.join(templateDir, "video-moods.json"),
-  ) ?? [];
-  const videoMovements = await loadJsonFile<string[]>(
-    path.join(templateDir, "video-movements.json"),
-  ) ?? [];
+  const captionExamples =
+    (await loadJsonFile<string[]>(
+      path.join(templateDir, "references", "captions", "examples.json"),
+    )) ?? [];
+  const videoMoods =
+    (await loadJsonFile<string[]>(path.join(templateDir, "video-moods.json"))) ?? [];
+  const videoMovements =
+    (await loadJsonFile<string[]>(path.join(templateDir, "video-movements.json"))) ?? [];
 
   // Discover reference images
   const imagesDir = path.join(templateDir, "references", "images");
@@ -77,6 +78,8 @@ export async function loadTemplate(templateName: string): Promise<TemplateData> 
 
 /**
  * Pick a random reference image path from the template.
+ *
+ * @param template
  */
 export function pickRandomReferenceImage(template: TemplateData): string | null {
   if (template.referenceImagePaths.length === 0) return null;
@@ -87,6 +90,9 @@ export function pickRandomReferenceImage(template: TemplateData): string | null 
 /**
  * Build the full image prompt by combining the base prompt with the style guide rules.
  * Matches the logic from the content-creation-app's generateImage.ts.
+ *
+ * @param basePrompt
+ * @param styleGuide
  */
 export function buildImagePrompt(
   basePrompt: string,
@@ -119,20 +125,28 @@ export function buildImagePrompt(
 /**
  * Build a motion prompt for video generation using template mood/movement variations.
  * Matches the logic from the content-creation-app's generateVideo.ts.
+ *
+ * @param template
  */
 export function buildMotionPrompt(template: TemplateData): string {
-  const movement = template.videoMovements.length > 0
-    ? template.videoMovements[Math.floor(Math.random() * template.videoMovements.length)]
-    : "nearly still, only natural breathing";
+  const movement =
+    template.videoMovements.length > 0
+      ? template.videoMovements[Math.floor(Math.random() * template.videoMovements.length)]
+      : "nearly still, only natural breathing";
 
-  const mood = template.videoMoods.length > 0
-    ? template.videoMoods[Math.floor(Math.random() * template.videoMoods.length)]
-    : "";
+  const mood =
+    template.videoMoods.length > 0
+      ? template.videoMoods[Math.floor(Math.random() * template.videoMoods.length)]
+      : "";
 
   return `Completely static camera. The person stares at the camera. Movement: ${movement}.${mood ? ` Energy: ${mood}.` : ""} Shot on phone, low light, grainy.`;
 }
 
-/** Load a JSON file, returning null if it doesn't exist. */
+/**
+ * Load a JSON file, returning null if it doesn't exist.
+ *
+ * @param filePath
+ */
 async function loadJsonFile<T>(filePath: string): Promise<T | null> {
   try {
     const raw = await fs.readFile(filePath, "utf-8");

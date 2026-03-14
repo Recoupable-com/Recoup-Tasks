@@ -11,6 +11,8 @@ const execFileAsync = promisify(execFile);
 
 /**
  * Strips emoji and other non-ASCII characters that ffmpeg drawtext can't render.
+ *
+ * @param text
  */
 function stripEmoji(text: string): string {
   return text
@@ -24,6 +26,9 @@ function stripEmoji(text: string): string {
 /**
  * Wraps text to fit within a max character width per line.
  * Breaks on word boundaries to avoid mid-word splits.
+ *
+ * @param text
+ * @param maxCharsPerLine
  */
 function wrapText(text: string, maxCharsPerLine: number): string[] {
   const words = text.split(" ");
@@ -60,11 +65,13 @@ const BOTTOM_MARGIN = 120;
  * so captions never get cut off regardless of text length.
  *
  * Vertical positioning:
- *   - Short (1-3 lines): bottom of frame
- *   - Medium (4-6 lines): vertically centered
- *   - Long (7+ lines): starts from top area
+ * - Short (1-3 lines): bottom of frame
+ * - Medium (4-6 lines): vertically centered
+ * - Long (7+ lines): starts from top area
  *
  * Font auto-shrinks if text doesn't fit within the available space.
+ *
+ * @param text
  */
 function calculateCaptionLayout(text: string): {
   lines: string[];
@@ -80,7 +87,7 @@ function calculateCaptionLayout(text: string): {
   let chosenLineHeight = MIN_FONT_SIZE + 10;
 
   for (let fontSize = MAX_FONT_SIZE; fontSize >= MIN_FONT_SIZE; fontSize -= 2) {
-    const charsPerLine = Math.floor(FRAME_WIDTH * 0.85 / (fontSize * 0.55));
+    const charsPerLine = Math.floor((FRAME_WIDTH * 0.85) / (fontSize * 0.55));
     const lineHeight = fontSize + 10;
     const lines = wrapText(text, charsPerLine);
     const totalHeight = lines.length * lineHeight;
@@ -135,11 +142,13 @@ export interface RenderFinalVideoOutput {
 
 /**
  * Renders the final social post video using ffmpeg:
- *   1. Downloads the AI-generated video
- *   2. Crops 16:9 → 9:16 (portrait for TikTok/Reels)
- *   3. Overlays audio clip from the song (unless lipsync mode)
- *   4. Overlays caption text (white with black stroke, bottom center)
- *   5. Returns the final video as a data URL
+ * 1. Downloads the AI-generated video
+ * 2. Crops 16:9 → 9:16 (portrait for TikTok/Reels)
+ * 3. Overlays audio clip from the song (unless lipsync mode)
+ * 4. Overlays caption text (white with black stroke, bottom center)
+ * 5. Returns the final video as a data URL
+ *
+ * @param input
  */
 export async function renderFinalVideo(
   input: RenderFinalVideoInput,
@@ -219,9 +228,22 @@ export async function renderFinalVideo(
  * Builds the ffmpeg arguments for the final render.
  *
  * What it does (matching Remotion SocialPost):
- *   1. Center-crop 16:9 → 9:16 portrait
- *   2. Overlay audio from song clip (skip if lipsync — audio already in video)
- *   3. Overlay caption text (white, black stroke, bottom center)
+ * 1. Center-crop 16:9 → 9:16 portrait
+ * 2. Overlay audio from song clip (skip if lipsync — audio already in video)
+ * 3. Overlay caption text (white, black stroke, bottom center)
+ *
+ * @param root0
+ * @param root0.videoPath
+ * @param root0.audioPath
+ * @param root0.captionLayout
+ * @param root0.captionLayout.lines
+ * @param root0.captionLayout.fontSize
+ * @param root0.captionLayout.lineHeight
+ * @param root0.captionLayout.position
+ * @param root0.outputPath
+ * @param root0.audioStartSeconds
+ * @param root0.audioDurationSeconds
+ * @param root0.hasAudio
  */
 function buildFfmpegArgs({
   videoPath,
@@ -234,7 +256,12 @@ function buildFfmpegArgs({
 }: {
   videoPath: string;
   audioPath: string;
-  captionLayout: { lines: string[]; fontSize: number; lineHeight: number; position: "bottom" | "center" | "top" };
+  captionLayout: {
+    lines: string[];
+    fontSize: number;
+    lineHeight: number;
+    position: "bottom" | "center" | "top";
+  };
   outputPath: string;
   audioStartSeconds: number;
   audioDurationSeconds: number;
@@ -275,7 +302,7 @@ function buildFfmpegArgs({
       .replace(/\n/g, " ")
       .replace(/\r/g, "");
 
-    const yPos = blockStartY + (i * lineHeight);
+    const yPos = blockStartY + i * lineHeight;
 
     return [
       `drawtext=text='${escaped}'`,
@@ -295,29 +322,46 @@ function buildFfmpegArgs({
   if (hasAudio) {
     // Lipsync mode: video already has audio, just crop + caption
     args.push(
-      "-i", videoPath,
-      "-vf", videoFilter,
-      "-c:v", "libx264",
-      "-c:a", "aac",
-      "-pix_fmt", "yuv420p",
-      "-movflags", "+faststart",
+      "-i",
+      videoPath,
+      "-vf",
+      videoFilter,
+      "-c:v",
+      "libx264",
+      "-c:a",
+      "aac",
+      "-pix_fmt",
+      "yuv420p",
+      "-movflags",
+      "+faststart",
       "-shortest",
       outputPath,
     );
   } else {
     // Normal mode: crop video + overlay song audio clip
     args.push(
-      "-i", videoPath,
-      "-ss", String(audioStartSeconds),
-      "-t", String(audioDurationSeconds),
-      "-i", audioPath,
-      "-vf", videoFilter,
-      "-c:v", "libx264",
-      "-c:a", "aac",
-      "-map", "0:v:0",
-      "-map", "1:a:0",
-      "-pix_fmt", "yuv420p",
-      "-movflags", "+faststart",
+      "-i",
+      videoPath,
+      "-ss",
+      String(audioStartSeconds),
+      "-t",
+      String(audioDurationSeconds),
+      "-i",
+      audioPath,
+      "-vf",
+      videoFilter,
+      "-c:v",
+      "libx264",
+      "-c:a",
+      "aac",
+      "-map",
+      "0:v:0",
+      "-map",
+      "1:a:0",
+      "-pix_fmt",
+      "yuv420p",
+      "-movflags",
+      "+faststart",
       "-shortest",
       outputPath,
     );

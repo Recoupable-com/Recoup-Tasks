@@ -36,11 +36,9 @@ export const proArtistSocialProfilesScrape = schedules.task({
     // Log artists missing socials for visibility
     artistIds
       .filter(
-        (artistId) =>
-          !artistSocialsMap.get(artistId) ||
-          artistSocialsMap.get(artistId)?.length === 0
+        artistId => !artistSocialsMap.get(artistId) || artistSocialsMap.get(artistId)?.length === 0,
       )
-      .forEach((artistId) => {
+      .forEach(artistId => {
         logger.warn("No socials found for artist", { artistId });
       });
 
@@ -62,15 +60,15 @@ export const proArtistSocialProfilesScrape = schedules.task({
     logger.log("All scrape batches completed", {
       totalRuns: allResults.length,
       totalArtists: artistIds.length,
-      succeeded: allResults.filter((r) => r.status === "SUCCEEDED").length,
-      failed: allResults.filter((r) => r.status === "FAILED").length,
+      succeeded: allResults.filter(r => r.status === "SUCCEEDED").length,
+      failed: allResults.filter(r => r.status === "FAILED").length,
     });
 
     return {
       totalArtists: artistIds.length,
       totalRuns: allResults.length,
-      succeeded: allResults.filter((r) => r.status === "SUCCEEDED").length,
-      failed: allResults.filter((r) => r.status === "FAILED").length,
+      succeeded: allResults.filter(r => r.status === "SUCCEEDED").length,
+      failed: allResults.filter(r => r.status === "FAILED").length,
     };
   },
 });

@@ -100,10 +100,14 @@ export const createContentTask = schemaTask({
     // --- Step 4: Fetch artist/audience context ---
     logStep("Fetching artist context");
     const artistContext = await fetchArtistContext(
-      payload.githubRepo, payload.artistSlug, fetchGithubFile,
+      payload.githubRepo,
+      payload.artistSlug,
+      fetchGithubFile,
     );
     const audienceContext = await fetchAudienceContext(
-      payload.githubRepo, payload.artistSlug, fetchGithubFile,
+      payload.githubRepo,
+      payload.artistSlug,
+      fetchGithubFile,
     );
 
     // --- Step 5: Generate image ---

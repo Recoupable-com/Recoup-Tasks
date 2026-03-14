@@ -5,8 +5,10 @@ import { DEFAULT_PIPELINE_CONFIG } from "./defaultPipelineConfig";
 /**
  * Generates a video from an AI-generated image using fal.ai image-to-video.
  *
+ * @param imageUrl.imageUrl
  * @param imageUrl - URL of the source image (from generateContentImage)
  * @param motionPrompt - Describes how the subject should move
+ * @param imageUrl.motionPrompt
  * @returns URL of the generated video
  */
 export async function generateContentVideo({
@@ -17,10 +19,7 @@ export async function generateContentVideo({
   motionPrompt: string;
 }): Promise<string> {
   const config = DEFAULT_PIPELINE_CONFIG;
-  const durationSeconds = Math.min(
-    config.clipDuration,
-    config.videoModelMaxSeconds,
-  );
+  const durationSeconds = Math.min(config.clipDuration, config.videoModelMaxSeconds);
 
   logger.log("Generating video", {
     model: config.videoModel,
@@ -55,6 +54,8 @@ export async function generateContentVideo({
 
 /**
  * Extracts a media URL from various fal.ai response shapes.
+ *
+ * @param data
  */
 function extractFalUrl(data: Record<string, unknown>): string | undefined {
   for (const key of ["image", "video"]) {

@@ -39,4 +39,3 @@ describe("createContentPayloadSchema", () => {
     expect(result.success).toBe(false);
   });
 });
-

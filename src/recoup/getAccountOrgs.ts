@@ -23,9 +23,7 @@ export interface OrgInfo {
  * @param accountId - The account ID to look up orgs for
  * @returns Array of org id/name pairs, or undefined on error
  */
-export async function getAccountOrgs(
-  accountId: string
-): Promise<OrgInfo[] | undefined> {
+export async function getAccountOrgs(accountId: string): Promise<OrgInfo[] | undefined> {
   const url = `${NEW_API_BASE_URL}/api/organizations?account_id=${encodeURIComponent(accountId)}`;
 
   logger.log("Fetching account organizations", { accountId, url });
@@ -59,8 +57,8 @@ export async function getAccountOrgs(
     }
 
     const orgs = validation.data.organizations
-      .filter((org) => org.organization_id && org.organization_name)
-      .map((org) => ({
+      .filter(org => org.organization_id && org.organization_name)
+      .map(org => ({
         organizationId: org.organization_id,
         organizationName: org.organization_name!,
       }));

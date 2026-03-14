@@ -32,7 +32,7 @@ export async function addOrgSubmodules(sandbox: Sandbox): Promise<void> {
   const stdout = (await findResult.stdout()) || "";
   const orgNames = stdout
     .split("\n")
-    .map((s) => s.trim())
+    .map(s => s.trim())
     .filter(Boolean);
 
   if (orgNames.length === 0) {
