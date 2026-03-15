@@ -34,6 +34,7 @@ export async function runClaudeCodeAgent(
   const commandOpts: Record<string, unknown> = {
     cmd: "claude",
     args,
+    cwd: "/vercel/sandbox/mono",
     detached: true,
     env: {
       ...env,

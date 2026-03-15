@@ -54,6 +54,7 @@ describe("runClaudeCodeAgent", () => {
     expect(sandbox.runCommand).toHaveBeenCalledWith({
       cmd: "claude",
       args: ["-p", "--dangerously-skip-permissions", "Fix the bug"],
+      cwd: "/vercel/sandbox/mono",
       detached: true,
       env: { CLAUDE_CODE_OAUTH_TOKEN: "test-oauth-token" },
     });
@@ -78,6 +79,7 @@ describe("runClaudeCodeAgent", () => {
     expect(sandbox.runCommand).toHaveBeenCalledWith({
       cmd: "claude",
       args: ["-p", "--dangerously-skip-permissions", "Update the README"],
+      cwd: "/vercel/sandbox/mono",
       detached: true,
       env: {
         GITHUB_TOKEN: "ghp_test",
@@ -140,6 +142,26 @@ describe("runClaudeCodeAgent", () => {
       stdout: "output\n",
       stderr: "",
     });
+  });
+
+  it("always sets cwd to /vercel/sandbox/mono", async () => {
+    const sandbox = createMockSandbox();
+    sandbox.runCommand.mockResolvedValueOnce(
+      mockDetachedCommand({
+        exitCode: 0,
+        stdout: async () => "",
+        stderr: async () => "",
+      }),
+    );
+
+    await runClaudeCodeAgent(sandbox, {
+      label: "Coding agent",
+      message: "Fix the bug",
+    });
+
+    expect(sandbox.runCommand).toHaveBeenCalledWith(
+      expect.objectContaining({ cwd: "/vercel/sandbox/mono" }),
+    );
   });
 
   it("logs failure on non-zero exit code", async () => {
