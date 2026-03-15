@@ -144,7 +144,7 @@ describe("runClaudeCodeAgent", () => {
     });
   });
 
-  it("always sets cwd to /vercel/sandbox/mono", async () => {
+  it("defaults cwd to /vercel/sandbox/mono", async () => {
     const sandbox = createMockSandbox();
     sandbox.runCommand.mockResolvedValueOnce(
       mockDetachedCommand({
@@ -161,6 +161,27 @@ describe("runClaudeCodeAgent", () => {
 
     expect(sandbox.runCommand).toHaveBeenCalledWith(
       expect.objectContaining({ cwd: "/vercel/sandbox/mono" }),
+    );
+  });
+
+  it("allows overriding cwd", async () => {
+    const sandbox = createMockSandbox();
+    sandbox.runCommand.mockResolvedValueOnce(
+      mockDetachedCommand({
+        exitCode: 0,
+        stdout: async () => "",
+        stderr: async () => "",
+      }),
+    );
+
+    await runClaudeCodeAgent(sandbox, {
+      label: "Clone monorepo",
+      message: "Clone the repo",
+      cwd: "/vercel/sandbox",
+    });
+
+    expect(sandbox.runCommand).toHaveBeenCalledWith(
+      expect.objectContaining({ cwd: "/vercel/sandbox" }),
     );
   });
 

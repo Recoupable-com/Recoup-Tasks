@@ -5,6 +5,7 @@ interface RunClaudeCodeAgentOptions {
   label: string;
   message: string;
   env?: Record<string, string>;
+  cwd?: string;
 }
 
 interface RunClaudeCodeAgentResult {
@@ -25,7 +26,7 @@ export async function runClaudeCodeAgent(
   sandbox: Sandbox,
   options: RunClaudeCodeAgentOptions,
 ): Promise<RunClaudeCodeAgentResult> {
-  const { label, message, env } = options;
+  const { label, message, env, cwd = "/vercel/sandbox/mono" } = options;
 
   const args = ["-p", "--dangerously-skip-permissions", message];
 
@@ -34,7 +35,7 @@ export async function runClaudeCodeAgent(
   const commandOpts: Record<string, unknown> = {
     cmd: "claude",
     args,
-    cwd: "/vercel/sandbox/mono",
+    cwd,
     detached: true,
     env: {
       ...env,

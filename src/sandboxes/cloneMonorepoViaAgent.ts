@@ -13,6 +13,7 @@ export async function cloneMonorepoViaAgent(
 ): Promise<void> {
   await runClaudeCodeAgent(sandbox, {
     label: "Clone monorepo via agent",
+    cwd: "/vercel/sandbox",
     message: [
       "Clone the Recoup monorepo and init its submodules:",
       "1. Run: git clone https://github.com/recoupable/mono.git",
