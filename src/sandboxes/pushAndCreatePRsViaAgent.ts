@@ -37,7 +37,7 @@ export async function pushAndCreatePRsViaAgent(
       `Check for any changed or untracked files in the mono repo root (outside submodule directories).`,
       `This includes progress files like progress.md, progress.txt, PROGRESS_USAGE.md, etc.`,
       `If there are changes in the mono repo root:`,
-      `1. git add any changed/untracked files in the root (do NOT add submodule pointer changes)`,
+      `1. git add any changed/untracked files in the root`,
       `2. git commit -m "agent: ${prompt.slice(0, 72)}"`,
       `3. push directly to main: git push origin main`,
       ``,
