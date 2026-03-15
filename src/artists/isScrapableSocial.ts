@@ -12,6 +12,8 @@ import type { ArtistSocialProfile } from "../recoup/getArtistSocials";
  *
  * Non-scrapable platforms:
  * - open.spotify.com
+ *
+ * @param social
  */
 export function isScrapableSocial(social: ArtistSocialProfile): boolean {
   const profileUrl = social.profile_url.toLowerCase();
@@ -39,5 +41,5 @@ export function isScrapableSocial(social: ArtistSocialProfile): boolean {
     "youtube.com",
   ];
 
-  return scrapableDomains.some((domain) => profileUrl.includes(domain));
+  return scrapableDomains.some(domain => profileUrl.includes(domain));
 }

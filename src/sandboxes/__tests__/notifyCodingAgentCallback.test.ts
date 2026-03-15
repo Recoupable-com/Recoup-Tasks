@@ -52,9 +52,7 @@ describe("notifyCodingAgentCallback", () => {
       status: "no_changes",
     });
 
-    expect(logger.error).toHaveBeenCalledWith(
-      expect.stringContaining("CODING_AGENT_CALLBACK_URL"),
-    );
+    expect(logger.error).toHaveBeenCalledWith(expect.stringContaining("CODING_AGENT_CALLBACK_URL"));
     expect(mockFetch).not.toHaveBeenCalled();
   });
 });

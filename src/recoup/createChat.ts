@@ -23,9 +23,7 @@ type CreateChatResponse = {
  * @param params - Chat creation parameters
  * @returns Promise that resolves to the created chat, or undefined on error
  */
-export async function createChat(
-  params?: CreateChatParams
-): Promise<Room | undefined> {
+export async function createChat(params?: CreateChatParams): Promise<Room | undefined> {
   if (!RECOUP_API_KEY) {
     logger.error("Missing RECOUP_API_KEY environment variable");
     return undefined;

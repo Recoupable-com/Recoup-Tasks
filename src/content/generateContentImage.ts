@@ -13,9 +13,12 @@ import { DEFAULT_PIPELINE_CONFIG } from "./defaultPipelineConfig";
  * The prompt tells the model to replace the person in the reference scene
  * with the person from the face-guide headshot.
  *
+ * @param faceGuideUrl.faceGuideUrl
  * @param faceGuideUrl - fal storage URL of the artist's face-guide (headshot)
  * @param referenceImagePath - local path to a template reference image (or null)
  * @param prompt - Scene/style prompt that instructs the face swap
+ * @param faceGuideUrl.referenceImagePath
+ * @param faceGuideUrl.prompt
  * @returns URL of the generated image
  */
 export async function generateContentImage({
@@ -75,7 +78,11 @@ export async function generateContentImage({
   return imageUrl;
 }
 
-/** Extracts a media URL from various fal.ai response shapes. */
+/**
+ * Extracts a media URL from various fal.ai response shapes.
+ *
+ * @param data
+ */
 function extractFalUrl(data: Record<string, unknown>): string | undefined {
   for (const key of ["image", "video"]) {
     if (data[key] && typeof data[key] === "object") {

@@ -21,10 +21,10 @@ const APIFY_SCRAPER_API_URL = "https://api.recoupable.com/api/apify/scraper";
 /**
  * Checks the status and retrieves results from an Apify scraper run.
  * Returns the response with status and data (if completed).
+ *
+ * @param runId
  */
-export async function getScraperResults(
-  runId: string
-): Promise<ScraperResponse | undefined> {
+export async function getScraperResults(runId: string): Promise<ScraperResponse | undefined> {
   if (!runId) {
     logger.error("getScraperResults called without runId");
     return undefined;
@@ -80,4 +80,3 @@ export async function getScraperResults(
     return undefined;
   }
 }
-

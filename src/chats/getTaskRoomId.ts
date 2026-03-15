@@ -14,9 +14,7 @@ type GetTaskRoomIdParams = {
  * @param params - Parameters containing optional roomId and artistId
  * @returns The room ID, or undefined if creation fails
  */
-export async function getTaskRoomId(
-  params: GetTaskRoomIdParams
-): Promise<string | undefined> {
+export async function getTaskRoomId(params: GetTaskRoomIdParams): Promise<string | undefined> {
   if (params.roomId) {
     logger.log("Using existing roomId", { roomId: params.roomId });
     return params.roomId;

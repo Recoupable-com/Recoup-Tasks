@@ -12,6 +12,13 @@ vi.mock("../logStep", () => ({
 const { runOpenClawAgent } = await import("../runOpenClawAgent");
 const { logStep } = await import("../logStep");
 
+/**
+ *
+ * @param finished
+ * @param finished.exitCode
+ * @param finished.stdout
+ * @param finished.stderr
+ */
 function mockDetachedCommand(finished: {
   exitCode: number;
   stdout: () => Promise<string>;
@@ -20,6 +27,9 @@ function mockDetachedCommand(finished: {
   return { wait: vi.fn().mockResolvedValue(finished) };
 }
 
+/**
+ *
+ */
 function createMockSandbox() {
   const runCommand = vi.fn();
   return { runCommand } as any;
@@ -153,9 +163,7 @@ describe("runOpenClawAgent", () => {
       message: "Make changes",
     });
 
-    expect(sandbox.runCommand).toHaveBeenCalledWith(
-      expect.objectContaining({ detached: true }),
-    );
+    expect(sandbox.runCommand).toHaveBeenCalledWith(expect.objectContaining({ detached: true }));
     expect(waitMock).toHaveBeenCalled();
   });
 
@@ -178,5 +186,4 @@ describe("runOpenClawAgent", () => {
     expect(result.stdout).toBe("output\n");
     expect(result.stderr).toBe("warn\n");
   });
-
 });
