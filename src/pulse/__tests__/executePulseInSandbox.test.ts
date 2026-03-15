@@ -114,9 +114,9 @@ describe("executePulseInSandbox", () => {
     }));
     const mod = await import("../executePulseInSandbox");
 
-    await expect(
-      mod.executePulseInSandbox({ accountId, prompt })
-    ).rejects.toThrow("RECOUP_API_KEY not configured");
+    await expect(mod.executePulseInSandbox({ accountId, prompt })).rejects.toThrow(
+      "RECOUP_API_KEY not configured",
+    );
 
     process.env.RECOUP_API_KEY = original;
   });

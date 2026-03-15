@@ -38,8 +38,10 @@ vi.mock("../../sandboxes/runClaudeCodeAgent", () => ({
 vi.mock("../../sandboxes/pushAndCreatePRsViaAgent", () => ({
   pushAndCreatePRsViaAgent: vi.fn().mockResolvedValue([
     {
-      repo: "recoupable/api", number: 42,
-      url: "https://github.com/recoupable/api/pull/42", baseBranch: "test",
+      repo: "recoupable/api",
+      number: 42,
+      url: "https://github.com/recoupable/api/pull/42",
+      baseBranch: "test",
     },
   ]),
 }));
@@ -150,5 +152,4 @@ describe("codingAgentTask", () => {
     expect(cloneOrder).toBeLessThan(syncOrder);
     expect(syncOrder).toBeLessThan(agentOrder);
   });
-
 });

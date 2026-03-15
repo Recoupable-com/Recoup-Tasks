@@ -25,7 +25,8 @@ dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
 const STATE_FILE = path.resolve(process.cwd(), ".pipeline-state.json");
-const GITHUB_REPO = "https://github.com/recoupable/sidney-swift-1ca89eeb-14ab-4a4a-a1c5-2dd41663c039";
+const GITHUB_REPO =
+  "https://github.com/recoupable/sidney-swift-1ca89eeb-14ab-4a4a-a1c5-2dd41663c039";
 const ARTIST_SLUG = "gatsby-grace";
 const TEMPLATE_NAME = "artist-caption-bedroom";
 
@@ -46,6 +47,9 @@ interface PipelineState {
   finalVideoPath?: string;
 }
 
+/**
+ *
+ */
 async function loadState(): Promise<PipelineState> {
   try {
     return JSON.parse(await fs.readFile(STATE_FILE, "utf-8"));
@@ -54,12 +58,19 @@ async function loadState(): Promise<PipelineState> {
   }
 }
 
+/**
+ *
+ * @param state
+ */
 async function saveState(state: PipelineState): Promise<void> {
   await fs.writeFile(STATE_FILE, JSON.stringify(state, null, 2));
   console.log(`  💾 State saved to ${STATE_FILE}`);
 }
 
 // --- Configure fal ---
+/**
+ *
+ */
 function setupFal(): void {
   if (!process.env.FAL_KEY) {
     console.error("❌ FAL_KEY not set in .env.local");
@@ -70,11 +81,16 @@ function setupFal(): void {
 
 // --- Steps ---
 
+/**
+ *
+ */
 async function testImage(): Promise<void> {
   setupFal();
   const { fetchGithubFile } = await import("./fetchGithubFile.js");
   const { generateContentImage } = await import("./generateContentImage.js");
-  const { loadTemplate, pickRandomReferenceImage, buildImagePrompt } = await import("./loadTemplate.js");
+  const { loadTemplate, pickRandomReferenceImage, buildImagePrompt } = await import(
+    "./loadTemplate.js"
+  );
   const { FACE_SWAP_INSTRUCTION } = await import("./contentPrompts.js");
 
   console.log("\n🎨 Testing: Image Generation\n");
@@ -84,7 +100,10 @@ async function testImage(): Promise<void> {
 
   // Fetch face-guide
   console.log("  Fetching face-guide...");
-  const faceGuideBuffer = await fetchGithubFile(GITHUB_REPO, `artists/${ARTIST_SLUG}/context/images/face-guide.png`);
+  const faceGuideBuffer = await fetchGithubFile(
+    GITHUB_REPO,
+    `artists/${ARTIST_SLUG}/context/images/face-guide.png`,
+  );
   if (!faceGuideBuffer) throw new Error("face-guide.png not found");
   const faceGuideFile = new File([faceGuideBuffer], "face-guide.png", { type: "image/png" });
   const faceGuideUrl = await fal.storage.upload(faceGuideFile);
@@ -100,7 +119,11 @@ async function testImage(): Promise<void> {
   console.log(`  Prompt: "${prompt.slice(0, 80)}..."`);
   console.log("  🔄 Generating image...\n");
 
-  const imageUrl = await generateContentImage({ faceGuideUrl, referenceImagePath: refPath, prompt });
+  const imageUrl = await generateContentImage({
+    faceGuideUrl,
+    referenceImagePath: refPath,
+    prompt,
+  });
 
   console.log(`\n  ✅ Image generated!`);
   console.log(`  🔗 ${imageUrl}`);
@@ -109,6 +132,9 @@ async function testImage(): Promise<void> {
   await saveState({ ...state, faceGuideUrl, imageUrl });
 }
 
+/**
+ *
+ */
 async function testVideo(): Promise<void> {
   setupFal();
   const { generateContentVideo } = await import("./generateContentVideo.js");
@@ -116,7 +142,10 @@ async function testVideo(): Promise<void> {
 
   const state = await loadState();
   const imageUrl = state.upscaledImageUrl ?? state.imageUrl;
-  if (!imageUrl) { console.error("❌ No image URL in state. Run: image first"); process.exit(1); }
+  if (!imageUrl) {
+    console.error("❌ No image URL in state. Run: image first");
+    process.exit(1);
+  }
 
   console.log("\n🎬 Testing: Video Generation\n");
   console.log(`  Image: ${imageUrl.slice(0, 60)}...`);
@@ -134,12 +163,18 @@ async function testVideo(): Promise<void> {
   await saveState({ ...state, videoUrl });
 }
 
+/**
+ *
+ */
 async function testUpscaleImage(): Promise<void> {
   setupFal();
   const { upscaleImage } = await import("./upscaleImage.js");
 
   const state = await loadState();
-  if (!state.imageUrl) { console.error("❌ No image URL in state. Run: image first"); process.exit(1); }
+  if (!state.imageUrl) {
+    console.error("❌ No image URL in state. Run: image first");
+    process.exit(1);
+  }
 
   console.log("\n🔍 Testing: Image Upscale\n");
   console.log(`  Input: ${state.imageUrl.slice(0, 60)}...`);
@@ -153,12 +188,18 @@ async function testUpscaleImage(): Promise<void> {
   await saveState({ ...state, upscaledImageUrl });
 }
 
+/**
+ *
+ */
 async function testUpscaleVideo(): Promise<void> {
   setupFal();
   const { upscaleVideo } = await import("./upscaleVideo.js");
 
   const state = await loadState();
-  if (!state.videoUrl) { console.error("❌ No video URL in state. Run: video first"); process.exit(1); }
+  if (!state.videoUrl) {
+    console.error("❌ No video URL in state. Run: video first");
+    process.exit(1);
+  }
 
   console.log("\n🔍 Testing: Video Upscale\n");
   console.log(`  Input: ${state.videoUrl.slice(0, 60)}...`);
@@ -172,6 +213,9 @@ async function testUpscaleVideo(): Promise<void> {
   await saveState({ ...state, upscaledVideoUrl });
 }
 
+/**
+ *
+ */
 async function testAudio(): Promise<void> {
   setupFal();
   const { selectAudioClip } = await import("./selectAudioClip.js");
@@ -204,13 +248,21 @@ async function testAudio(): Promise<void> {
   });
 }
 
+/**
+ *
+ */
 async function testCaption(): Promise<void> {
-  const { generateCaption, fetchArtistContext, fetchAudienceContext } = await import("./generateCaption.js");
+  const { generateCaption, fetchArtistContext, fetchAudienceContext } = await import(
+    "./generateCaption.js"
+  );
   const { fetchGithubFile } = await import("./fetchGithubFile.js");
   const { loadTemplate } = await import("./loadTemplate.js");
 
   const state = await loadState();
-  if (!state.songTitle) { console.error("❌ No song in state. Run: audio first"); process.exit(1); }
+  if (!state.songTitle) {
+    console.error("❌ No song in state. Run: audio first");
+    process.exit(1);
+  }
 
   console.log("\n✍️  Testing: Caption Generation\n");
 
@@ -236,13 +288,22 @@ async function testCaption(): Promise<void> {
   await saveState({ ...state, captionText });
 }
 
+/**
+ *
+ */
 async function testRender(): Promise<void> {
   const { renderFinalVideo } = await import("./renderFinalVideo.js");
 
   const state = await loadState();
   const videoUrl = state.upscaledVideoUrl ?? state.videoUrl;
-  if (!videoUrl) { console.error("❌ No video URL. Run: video first"); process.exit(1); }
-  if (!state.songBuffer) { console.error("❌ No audio. Run: audio first"); process.exit(1); }
+  if (!videoUrl) {
+    console.error("❌ No video URL. Run: video first");
+    process.exit(1);
+  }
+  if (!state.songBuffer) {
+    console.error("❌ No audio. Run: audio first");
+    process.exit(1);
+  }
 
   console.log("\n🎬 Testing: ffmpeg Final Render\n");
   console.log(`  Video: ${videoUrl.slice(0, 60)}...`);
@@ -270,10 +331,18 @@ async function testRender(): Promise<void> {
   await saveState({ ...state, finalVideoPath: outPath });
 }
 
+/**
+ *
+ */
 async function testRenderOnly(): Promise<void> {
   const { execFile } = await import("node:child_process");
   const { promisify } = await import("node:util");
-  const { writeFile: writeFileFn, readFile: readFileFn, unlink: unlinkFn, mkdir: mkdirFn } = await import("node:fs/promises");
+  const {
+    writeFile: writeFileFn,
+    readFile: readFileFn,
+    unlink: unlinkFn,
+    mkdir: mkdirFn,
+  } = await import("node:fs/promises");
   const { randomUUID } = await import("node:crypto");
   const { tmpdir } = await import("node:os");
   const execFileAsync = promisify(execFile);
@@ -289,26 +358,41 @@ async function testRenderOnly(): Promise<void> {
 
   console.log("  Creating test video...");
   await execFileAsync("ffmpeg", [
-    "-y", "-f", "lavfi", "-i", "testsrc=s=1280x720:d=3",
-    "-c:v", "libx264", "-pix_fmt", "yuv420p", testVideoPath,
+    "-y",
+    "-f",
+    "lavfi",
+    "-i",
+    "testsrc=s=1280x720:d=3",
+    "-c:v",
+    "libx264",
+    "-pix_fmt",
+    "yuv420p",
+    testVideoPath,
   ]);
 
   console.log("  Creating test audio...");
   await execFileAsync("ffmpeg", [
-    "-y", "-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo",
-    "-t", "3", silentPath,
+    "-y",
+    "-f",
+    "lavfi",
+    "-i",
+    "anullsrc=r=44100:cl=stereo",
+    "-t",
+    "3",
+    silentPath,
   ]);
 
   // Test with a LONG caption to verify adaptive sizing works
-  const testCaption = process.argv[3] === "long"
-    ? "sometimes you just gotta sit in the dark and let the playlist do the talking because words ain't gonna fix what's broken inside but at least the bass hits right where it hurts and you wonder if anyone else is sitting in their room right now feeling the exact same thing scrolling through old photos at 3am knowing you should sleep but the music won't let you go"
-    : process.argv[3] === "medium"
-    ? "sometimes you just gotta sit in the dark and let the playlist do the talking because words ain't gonna fix what's broken inside"
-    : "that one drawer holding all the memories you just can't throw away";
+  const testCaption =
+    process.argv[3] === "long"
+      ? "sometimes you just gotta sit in the dark and let the playlist do the talking because words ain't gonna fix what's broken inside but at least the bass hits right where it hurts and you wonder if anyone else is sitting in their room right now feeling the exact same thing scrolling through old photos at 3am knowing you should sleep but the music won't let you go"
+      : process.argv[3] === "medium"
+        ? "sometimes you just gotta sit in the dark and let the playlist do the talking because words ain't gonna fix what's broken inside"
+        : "that one drawer holding all the memories you just can't throw away";
 
   console.log(`  Caption: "${testCaption.slice(0, 60)}${testCaption.length > 60 ? "..." : ""}"`);
   console.log("  🔄 Rendering...\n");
-  
+
   // Inline the adaptive layout logic for the test
   const FRAME_W = 720;
   const FRAME_H = 1280;
@@ -317,13 +401,22 @@ async function testRenderOnly(): Promise<void> {
   const MAX_FS = 42;
   const BOTTOM_M = 120;
 
+  /**
+   *
+   * @param text
+   * @param maxChars
+   */
   function wrapLocal(text: string, maxChars: number): string[] {
     const words = text.split(" ");
     const lines: string[] = [];
     let cur = "";
     for (const w of words) {
-      if (cur.length + w.length + 1 > maxChars && cur.length > 0) { lines.push(cur); cur = w; }
-      else { cur = cur ? `${cur} ${w}` : w; }
+      if (cur.length + w.length + 1 > maxChars && cur.length > 0) {
+        lines.push(cur);
+        cur = w;
+      } else {
+        cur = cur ? `${cur} ${w}` : w;
+      }
     }
     if (cur) lines.push(cur);
     return lines;
@@ -333,13 +426,18 @@ async function testRenderOnly(): Promise<void> {
   let chosenLh = chosenFs + 10;
   let chosenLines: string[] = [];
   for (let fs = MAX_FS; fs >= MIN_FS; fs -= 2) {
-    const cpl = Math.floor(FRAME_W * 0.85 / (fs * 0.55));
+    const cpl = Math.floor((FRAME_W * 0.85) / (fs * 0.55));
     const lh = fs + 10;
     const lines = wrapLocal(testCaption.replace(/'/g, "\u2019"), cpl);
     if (lines.length * lh <= FRAME_H * MAX_H_RATIO) {
-      chosenFs = fs; chosenLh = lh; chosenLines = lines; break;
+      chosenFs = fs;
+      chosenLh = lh;
+      chosenLines = lines;
+      break;
     }
-    chosenFs = fs; chosenLh = lh; chosenLines = lines;
+    chosenFs = fs;
+    chosenLh = lh;
+    chosenLines = lines;
   }
 
   // Determine position based on line count
@@ -349,15 +447,19 @@ async function testRenderOnly(): Promise<void> {
   const FH = 1280;
   const totalTH = chosenLines.length * chosenLh;
   let blockStartY: number;
-  if (position === "bottom") { blockStartY = FH - BOTTOM_M - totalTH; }
-  else if (position === "center") { blockStartY = Math.round((FH - totalTH) / 2); }
-  else { blockStartY = 180; }
+  if (position === "bottom") {
+    blockStartY = FH - BOTTOM_M - totalTH;
+  } else if (position === "center") {
+    blockStartY = Math.round((FH - totalTH) / 2);
+  } else {
+    blockStartY = 180;
+  }
 
   const cropFilter = "crop=ih*9/16:ih";
   const scaleFilter = "scale=720:1280";
   const bw = Math.max(2, Math.round(chosenFs / 14));
   const captionFilters = chosenLines.map((line, i) => {
-    const yPos = blockStartY + (i * chosenLh);
+    const yPos = blockStartY + i * chosenLh;
     return `drawtext=text='${line}':fontsize=${chosenFs}:fontcolor=white:borderw=${bw}:bordercolor=black:x=(w-tw)/2:y=${yPos}`;
   });
 
@@ -369,16 +471,26 @@ async function testRenderOnly(): Promise<void> {
   try {
     await execFileAsync("ffmpeg", [
       "-y",
-      "-i", testVideoPath,
-      "-t", "3",
-      "-i", silentPath,
-      "-vf", videoFilter,
-      "-c:v", "libx264",
-      "-c:a", "aac",
-      "-map", "0:v:0",
-      "-map", "1:a:0",
-      "-pix_fmt", "yuv420p",
-      "-movflags", "+faststart",
+      "-i",
+      testVideoPath,
+      "-t",
+      "3",
+      "-i",
+      silentPath,
+      "-vf",
+      videoFilter,
+      "-c:v",
+      "libx264",
+      "-c:a",
+      "aac",
+      "-map",
+      "0:v:0",
+      "-map",
+      "1:a:0",
+      "-pix_fmt",
+      "yuv420p",
+      "-movflags",
+      "+faststart",
       "-shortest",
       outputPath,
     ]);

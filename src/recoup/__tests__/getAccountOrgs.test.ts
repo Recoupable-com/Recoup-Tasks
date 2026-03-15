@@ -40,9 +40,7 @@ describe("getAccountOrgs", () => {
       { organizationId: "org-456", organizationName: "Another Org" },
     ]);
     expect(mockFetch).toHaveBeenCalledOnce();
-    expect(mockFetch.mock.calls[0][0]).toContain(
-      "/api/organizations?account_id=account-1"
-    );
+    expect(mockFetch.mock.calls[0][0]).toContain("/api/organizations?account_id=account-1");
   });
 
   it("returns empty array when account has no orgs", async () => {

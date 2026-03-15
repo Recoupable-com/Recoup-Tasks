@@ -16,6 +16,9 @@ vi.mock("../logStep", () => ({
 const { pushOrgRepos } = await import("../git/pushOrgRepos");
 const { logStep } = await import("../logStep");
 
+/**
+ *
+ */
 function createMockSandbox() {
   const runCommand = vi.fn();
   return { runCommand } as any;
@@ -58,7 +61,7 @@ describe("pushOrgRepos", () => {
 
     // Should not call openclaw
     const openclawCall = sandbox.runCommand.mock.calls.find(
-      (call: any[]) => call[0]?.cmd === "openclaw"
+      (call: any[]) => call[0]?.cmd === "openclaw",
     );
     expect(openclawCall).toBeUndefined();
   });
@@ -89,7 +92,7 @@ describe("pushOrgRepos", () => {
         call[0]?.args?.[0] === "agent" &&
         call[0]?.args?.[1] === "--agent" &&
         call[0]?.args?.[2] === "main" &&
-        call[0]?.args?.[3] === "--message"
+        call[0]?.args?.[3] === "--message",
     );
     expect(openclawCall).toBeDefined();
 
@@ -124,7 +127,7 @@ describe("pushOrgRepos", () => {
     await pushOrgRepos(sandbox);
 
     const openclawCall = sandbox.runCommand.mock.calls.find(
-      (call: any[]) => call[0]?.cmd === "openclaw"
+      (call: any[]) => call[0]?.cmd === "openclaw",
     );
     const message = openclawCall![0].args[4];
 
@@ -163,8 +166,7 @@ describe("pushOrgRepos", () => {
 
     // The find command should use resolved path, not ~
     const findCall = sandbox.runCommand.mock.calls.find(
-      (call: any[]) =>
-        call[0]?.cmd === "sh" && call[0]?.args?.[1]?.includes("find")
+      (call: any[]) => call[0]?.cmd === "sh" && call[0]?.args?.[1]?.includes("find"),
     );
     expect(findCall![0].args[1]).toContain("/home/sandbox/");
     expect(findCall![0].args[1]).not.toContain("~");
@@ -201,7 +203,7 @@ describe("pushOrgRepos", () => {
     expect(logStep).toHaveBeenCalledWith(
       expect.stringContaining("failed"),
       false,
-      expect.objectContaining({ stderr: expect.any(String) })
+      expect.objectContaining({ stderr: expect.any(String) }),
     );
   });
 });

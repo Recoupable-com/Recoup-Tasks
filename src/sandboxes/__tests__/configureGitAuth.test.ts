@@ -6,6 +6,9 @@ vi.mock("@trigger.dev/sdk/v3", () => ({
 
 const { configureGitAuth } = await import("../configureGitAuth");
 
+/**
+ *
+ */
 function createMockSandbox() {
   const runCommand = vi.fn().mockResolvedValue({ exitCode: 0 });
   return { runCommand } as any;
@@ -61,9 +64,8 @@ describe("configureGitAuth", () => {
 
     await configureGitAuth(sandbox);
 
-    const insteadOfCall = sandbox.runCommand.mock.calls.find(
-      (call: any[]) =>
-        call[0]?.args?.some?.((a: string) => a.includes("insteadOf"))
+    const insteadOfCall = sandbox.runCommand.mock.calls.find((call: any[]) =>
+      call[0]?.args?.some?.((a: string) => a.includes("insteadOf")),
     );
     expect(insteadOfCall).toBeUndefined();
   });

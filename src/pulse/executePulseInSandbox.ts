@@ -21,6 +21,9 @@ const executePulseResponseSchema = z.object({
  *
  * @param params.accountId - The account ID to execute the pulse for
  * @param params.prompt - The pulse prompt to execute
+ * @param root0
+ * @param root0.accountId
+ * @param root0.prompt
  * @returns The sandbox ID and run ID on success, undefined on error
  */
 export async function executePulseInSandbox({

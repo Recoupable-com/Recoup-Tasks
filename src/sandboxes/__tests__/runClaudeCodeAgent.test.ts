@@ -14,6 +14,13 @@ const { logStep } = await import("../logStep");
 
 const originalEnv = { ...process.env };
 
+/**
+ *
+ * @param finished
+ * @param finished.exitCode
+ * @param finished.stdout
+ * @param finished.stderr
+ */
 function mockDetachedCommand(finished: {
   exitCode: number;
   stdout: () => Promise<string>;
@@ -22,6 +29,9 @@ function mockDetachedCommand(finished: {
   return { wait: vi.fn().mockResolvedValue(finished) };
 }
 
+/**
+ *
+ */
 function createMockSandbox() {
   return { runCommand: vi.fn() } as any;
 }
@@ -97,9 +107,7 @@ describe("runClaudeCodeAgent", () => {
 
     await runClaudeCodeAgent(sandbox, { label: "Test", message: "Do something" });
 
-    expect(sandbox.runCommand).toHaveBeenCalledWith(
-      expect.objectContaining({ detached: true }),
-    );
+    expect(sandbox.runCommand).toHaveBeenCalledWith(expect.objectContaining({ detached: true }));
     expect(waitMock).toHaveBeenCalled();
   });
 

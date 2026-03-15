@@ -10,9 +10,7 @@ describe("getGitHubAuthPrefix", () => {
   it("returns the auth URL prefix when GITHUB_TOKEN is set", () => {
     const result = getGitHubAuthPrefix();
 
-    expect(result).toBe(
-      "https://x-access-token:ghp_test123@github.com/",
-    );
+    expect(result).toBe("https://x-access-token:ghp_test123@github.com/");
   });
 
   it("returns null when GITHUB_TOKEN is missing", () => {

@@ -21,9 +21,7 @@ export interface AccountInfo {
  * @param accountId - The account ID to look up
  * @returns The account id and name, or undefined on error
  */
-export async function getAccount(
-  accountId: string
-): Promise<AccountInfo | undefined> {
+export async function getAccount(accountId: string): Promise<AccountInfo | undefined> {
   const url = `${NEW_API_BASE_URL}/api/accounts/${encodeURIComponent(accountId)}`;
 
   logger.log("Fetching account info", { accountId, url });

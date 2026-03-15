@@ -18,11 +18,11 @@ import { CODING_AGENT_ACCOUNT_ID } from "../consts";
 export const codingAgentTask = schemaTask({
   id: "coding-agent",
   schema: codingAgentPayloadSchema,
-  maxDuration: 60 * 30,
+  maxDuration: 60 * 15,
   retry: {
     maxAttempts: 0,
   },
-  run: async (payload) => {
+  run: async payload => {
     const { prompt, callbackThreadId } = payload;
 
     const { sandboxId, sandbox } = await getOrCreateSandbox(CODING_AGENT_ACCOUNT_ID);
@@ -52,7 +52,10 @@ export const codingAgentTask = schemaTask({
 
       logStep("Creating PRs via agent");
       const timestamp = Date.now();
-      const slug = prompt.slice(0, 30).replace(/[^a-zA-Z0-9]/g, "-").toLowerCase();
+      const slug = prompt
+        .slice(0, 30)
+        .replace(/[^a-zA-Z0-9]/g, "-")
+        .toLowerCase();
       const branch = `agent/${slug}-${timestamp}`;
 
       const prs = await pushAndCreatePRsViaAgent(sandbox, { prompt, branch });

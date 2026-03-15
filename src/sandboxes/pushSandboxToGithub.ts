@@ -15,9 +15,7 @@ import { pushOrgRepos } from "./git/pushOrgRepos";
  * @param sandbox - The Vercel Sandbox instance
  * @returns true if push succeeded or there were no changes, false on error
  */
-export async function pushSandboxToGithub(
-  sandbox: Sandbox
-): Promise<boolean> {
+export async function pushSandboxToGithub(sandbox: Sandbox): Promise<boolean> {
   logger.log("Pushing sandbox files to GitHub");
 
   // Configure git user for commits
@@ -25,18 +23,14 @@ export async function pushSandboxToGithub(
     !(await runGitCommand(
       sandbox,
       ["config", "user.email", "agent@recoupable.com"],
-      "configure git email"
+      "configure git email",
     ))
   ) {
     return false;
   }
 
   if (
-    !(await runGitCommand(
-      sandbox,
-      ["config", "user.name", "Recoup Agent"],
-      "configure git name"
-    ))
+    !(await runGitCommand(sandbox, ["config", "user.name", "Recoup Agent"], "configure git name"))
   ) {
     return false;
   }
@@ -67,11 +61,7 @@ export async function pushSandboxToGithub(
   if (diffResult.exitCode !== 0) {
     // There are staged changes — commit them
     if (
-      !(await runGitCommand(
-        sandbox,
-        ["commit", "-m", "Update sandbox files"],
-        "commit changes"
-      ))
+      !(await runGitCommand(sandbox, ["commit", "-m", "Update sandbox files"], "commit changes"))
     ) {
       return false;
     }
@@ -82,11 +72,7 @@ export async function pushSandboxToGithub(
 
   // Force push — sandbox files are the source of truth
   if (
-    !(await runGitCommand(
-      sandbox,
-      ["push", "--force", "origin", "HEAD:main"],
-      "push to remote"
-    ))
+    !(await runGitCommand(sandbox, ["push", "--force", "origin", "HEAD:main"], "push to remote"))
   ) {
     return false;
   }

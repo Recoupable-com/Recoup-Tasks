@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@trigger.dev/sdk/v3", () => ({
   logger: { log: vi.fn(), error: vi.fn() },
-  schemaTask: vi.fn((config) => config),
+  schemaTask: vi.fn(config => config),
 }));
 
 const mockStop = vi.fn().mockResolvedValue(undefined);
@@ -23,9 +23,7 @@ vi.mock("../../sandboxes/logStep", () => ({
 }));
 
 vi.mock("../../sandboxes/provisionSandbox", () => ({
-  provisionSandbox: vi
-    .fn()
-    .mockResolvedValue({ githubRepo: "https://github.com/org/repo" }),
+  provisionSandbox: vi.fn().mockResolvedValue({ githubRepo: "https://github.com/org/repo" }),
 }));
 
 vi.mock("../../sandboxes/snapshotAndPersist", () => ({
@@ -36,15 +34,9 @@ vi.mock("../../sandboxes/snapshotAndPersist", () => ({
 }));
 
 const { setupSandboxTask } = await import("../setupSandboxTask");
-const { getOrCreateSandbox } = await import(
-  "../../sandboxes/getOrCreateSandbox"
-);
-const { provisionSandbox } = await import(
-  "../../sandboxes/provisionSandbox"
-);
-const { snapshotAndPersist } = await import(
-  "../../sandboxes/snapshotAndPersist"
-);
+const { getOrCreateSandbox } = await import("../../sandboxes/getOrCreateSandbox");
+const { provisionSandbox } = await import("../../sandboxes/provisionSandbox");
+const { snapshotAndPersist } = await import("../../sandboxes/snapshotAndPersist");
 
 beforeEach(() => {
   vi.clearAllMocks();
