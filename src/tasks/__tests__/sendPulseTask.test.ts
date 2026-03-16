@@ -2,13 +2,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mockRun = vi.fn();
 const mockTagsAdd = vi.fn();
-const mockRunsPoll = vi.fn();
 
 vi.mock("@trigger.dev/sdk/v3", () => ({
   logger: { log: vi.fn(), error: vi.fn() },
   metadata: { set: vi.fn(), append: vi.fn() },
   tags: { add: (...args: unknown[]) => mockTagsAdd(...args) },
-  runs: { poll: (...args: unknown[]) => mockRunsPoll(...args) },
   task: (config: { run: unknown }) => {
     mockRun.mockImplementation(config.run as (...args: unknown[]) => unknown);
     return config;
@@ -19,6 +17,18 @@ const mockExecutePulseInSandbox = vi.fn();
 vi.mock("../../pulse/executePulseInSandbox", () => ({
   executePulseInSandbox: (...args: unknown[]) =>
     mockExecutePulseInSandbox(...args),
+}));
+
+const mockPollSandboxUntilStopped = vi.fn();
+vi.mock("../../pulse/pollSandboxUntilStopped", () => ({
+  pollSandboxUntilStopped: (...args: unknown[]) =>
+    mockPollSandboxUntilStopped(...args),
+}));
+
+const mockFetchLatestAccountEmailId = vi.fn();
+vi.mock("../../pulse/fetchLatestAccountEmailId", () => ({
+  fetchLatestAccountEmailId: (...args: unknown[]) =>
+    mockFetchLatestAccountEmailId(...args),
 }));
 
 vi.mock("../../sandboxes/logStep", () => ({
@@ -40,9 +50,8 @@ describe("sendPulseTask", () => {
       sandboxId: "sbx-1",
       runId: "child-run-1",
     });
-    mockRunsPoll.mockResolvedValueOnce({
-      output: { stdout: "No room created" },
-    });
+    mockPollSandboxUntilStopped.mockResolvedValueOnce(undefined);
+    mockFetchLatestAccountEmailId.mockResolvedValueOnce(null);
 
     const result = await mockRun(basePayload);
 
@@ -58,44 +67,45 @@ describe("sendPulseTask", () => {
     );
   });
 
-  it("adds room tag when PULSE_ROOM_ID is found in child run stdout", async () => {
+  it("polls sandbox, fetches email, and adds email tag", async () => {
     mockExecutePulseInSandbox.mockResolvedValueOnce({
       sandboxId: "sbx-1",
       runId: "child-run-1",
     });
-    mockRunsPoll.mockResolvedValueOnce({
-      output: { stdout: "Agent output...\nPULSE_ROOM_ID:room-abc-123\nDone" },
-    });
+    mockPollSandboxUntilStopped.mockResolvedValueOnce(undefined);
+    mockFetchLatestAccountEmailId.mockResolvedValueOnce("resend-email-xyz");
 
     await mockRun(basePayload);
 
-    expect(mockRunsPoll).toHaveBeenCalledWith("child-run-1", { pollIntervalMs: 10000 });
-    expect(mockTagsAdd).toHaveBeenCalledWith("room:room-abc-123");
+    expect(mockPollSandboxUntilStopped).toHaveBeenCalledWith("sbx-1", expect.any(String));
+    expect(mockFetchLatestAccountEmailId).toHaveBeenCalledWith("acc_123", expect.any(String));
+    expect(mockTagsAdd).toHaveBeenCalledWith("email:resend-email-xyz");
   });
 
-  it("does not add room tag when no PULSE_ROOM_ID in stdout", async () => {
+  it("does not add email tag when no email found", async () => {
     mockExecutePulseInSandbox.mockResolvedValueOnce({
       sandboxId: "sbx-1",
       runId: "child-run-1",
     });
-    mockRunsPoll.mockResolvedValueOnce({
-      output: { stdout: "Agent output without room ID" },
-    });
+    mockPollSandboxUntilStopped.mockResolvedValueOnce(undefined);
+    mockFetchLatestAccountEmailId.mockResolvedValueOnce(null);
 
     await mockRun(basePayload);
 
     expect(mockTagsAdd).not.toHaveBeenCalled();
   });
 
-  it("does not poll when runId is undefined", async () => {
+  it("still succeeds if polling fails", async () => {
     mockExecutePulseInSandbox.mockResolvedValueOnce({
       sandboxId: "sbx-1",
-      runId: undefined,
+      runId: "child-run-1",
     });
+    mockPollSandboxUntilStopped.mockRejectedValueOnce(new Error("Timeout"));
 
-    await mockRun(basePayload);
+    const result = await mockRun(basePayload);
 
-    expect(mockRunsPoll).not.toHaveBeenCalled();
+    expect(result).toEqual({ sandboxId: "sbx-1", runId: "child-run-1" });
+    expect(mockFetchLatestAccountEmailId).not.toHaveBeenCalled();
     expect(mockTagsAdd).not.toHaveBeenCalled();
   });
 });

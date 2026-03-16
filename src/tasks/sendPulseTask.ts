@@ -1,13 +1,14 @@
-import { runs, tags, task } from "@trigger.dev/sdk/v3";
+import { tags, task } from "@trigger.dev/sdk/v3";
 import { executePulseInSandbox } from "../pulse/executePulseInSandbox";
-import { extractRoomIdFromStdout } from "../pulse/extractRoomIdFromStdout";
+import { pollSandboxUntilStopped } from "../pulse/pollSandboxUntilStopped";
+import { fetchLatestAccountEmailId } from "../pulse/fetchLatestAccountEmailId";
 import { logStep } from "../sandboxes/logStep";
+import { RECOUP_API_KEY } from "../consts";
 
 /**
  * Task that executes a pulse for a single account.
- * Tagged with account:<accountId> for easy querying via GET /api/tasks/runs?account_id=<id>.
- * After execution, polls the child sandbox run for stdout and adds room:<roomId> tag
- * if the agent outputs PULSE_ROOM_ID:<id>.
+ * Tagged with account:<accountId> for querying via GET /api/tasks/runs?account_id=<id>.
+ * After sandbox stops, fetches the latest email for the account and adds email:<emailId> tag.
  */
 export const sendPulseTask = task({
   id: "send-pulse-task",
@@ -20,20 +21,17 @@ export const sendPulseTask = task({
       throw new Error(`Failed to execute pulse in sandbox for account ${accountId}`);
     }
 
-    // Poll the child sandbox run for stdout to extract room ID
-    if (result.runId) {
-      try {
-        const childRun = await runs.poll(result.runId, { pollIntervalMs: 10000 });
-        const stdout = (childRun.output as { stdout?: string })?.stdout ?? "";
-        const roomId = extractRoomIdFromStdout(stdout);
+    // Wait for sandbox to finish, then tag with the email ID
+    try {
+      await pollSandboxUntilStopped(result.sandboxId, RECOUP_API_KEY!);
 
-        if (roomId) {
-          await tags.add(`room:${roomId}`);
-          logStep("Added room tag", false, { roomId });
-        }
-      } catch {
-        logStep("Failed to poll child run for room ID", false);
+      const emailId = await fetchLatestAccountEmailId(accountId, RECOUP_API_KEY!);
+      if (emailId) {
+        await tags.add(`email:${emailId}`);
+        logStep("Tagged with email ID", false, { emailId });
       }
+    } catch {
+      logStep("Failed to tag email ID (sandbox poll timeout or error)", false);
     }
 
     logStep("Pulse executed successfully", true, { accountId, ...result });
