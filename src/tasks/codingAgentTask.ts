@@ -9,7 +9,7 @@ import { codingAgentPayloadSchema } from "../schemas/codingAgentSchema";
 import { getOrCreateSandbox } from "../sandboxes/getOrCreateSandbox";
 import { syncMonorepoSubmodules } from "../sandboxes/git/syncMonorepoSubmodules";
 import { CODING_AGENT_ACCOUNT_ID } from "../consts";
-import { PROGRESS_PROMPT_PREFIX } from "./promptPrefixes";
+import { PROGRESS_PROMPT_PREFIX, PROGRESS_PROMPT_SUFFIX } from "./promptPrefixes";
 
 /**
  * Background task that spins up a sandbox, clones the Recoup monorepo
@@ -42,7 +42,7 @@ export const codingAgentTask = schemaTask({
       logStep("Running AI agent");
       const agentResult = await runClaudeCodeAgent(sandbox, {
         label: "Coding agent",
-        message: `${PROGRESS_PROMPT_PREFIX} ${prompt}`,
+        message: `${PROGRESS_PROMPT_PREFIX} ${prompt}. ${PROGRESS_PROMPT_SUFFIX}`,
       });
 
       logStep("Agent completed", true, {
