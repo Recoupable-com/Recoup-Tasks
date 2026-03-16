@@ -8,6 +8,7 @@ import { configureGitAuth } from "../sandboxes/configureGitAuth";
 import { getSandboxEnv } from "../sandboxes/getSandboxEnv";
 import { updatePRPayloadSchema } from "../schemas/updatePRSchema";
 import { CODING_AGENT_ACCOUNT_ID } from "../consts";
+import { PROGRESS_PROMPT_PREFIX } from "./promptPrefixes";
 
 /**
  * Background task that resumes a sandbox from a snapshot, applies feedback
@@ -44,7 +45,7 @@ export const updatePRTask = schemaTask({
       logStep("Running AI agent with feedback");
       const agentResult = await runClaudeCodeAgent(sandbox, {
         label: "Apply feedback",
-        message: `Read PROGRESS.md in the mono repo codebase first, then apply the following feedback given on the existing changes on branch "${branch}":\n\n${feedback}\n\nPlease make the requested changes.`,
+        message: `${PROGRESS_PROMPT_PREFIX} apply the following feedback given on the existing changes on branch "${branch}":\n\n${feedback}\n\nPlease make the requested changes.`,
         env,
       });
 
