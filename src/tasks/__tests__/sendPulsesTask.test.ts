@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const mockRun = vi.fn();
 vi.mock("@trigger.dev/sdk/v3", () => ({
   logger: { log: vi.fn(), error: vi.fn() },
+  metadata: { set: vi.fn(), append: vi.fn() },
   schedules: {
     task: (config: { run: unknown }) => {
       mockRun.mockImplementation(config.run as (...args: unknown[]) => unknown);
@@ -18,10 +19,11 @@ vi.mock("../../recoup/fetchActivePulses", () => ({
   fetchActivePulses: (...args: unknown[]) => mockFetchActivePulses(...args),
 }));
 
-const mockTriggerAndWait = vi.fn();
+const mockBatchTriggerAndWait = vi.fn();
 vi.mock("../sendPulseTask", () => ({
   sendPulseTask: {
-    triggerAndWait: (...args: unknown[]) => mockTriggerAndWait(...args),
+    batchTriggerAndWait: (...args: unknown[]) =>
+      mockBatchTriggerAndWait(...args),
   },
 }));
 
@@ -40,20 +42,21 @@ describe("sendPulsesTask", () => {
   };
 
   it("processes a single account in test mode (externalId)", async () => {
-    mockTriggerAndWait.mockResolvedValueOnce({ ok: true, output: { sandboxId: "sbx-1", runId: "run-1" } });
+    mockBatchTriggerAndWait.mockResolvedValueOnce({
+      runs: [{ ok: true, output: { sandboxId: "sbx-1", runId: "run-1" } }],
+    });
 
     const result = await mockRun({ ...basePayload, externalId: "account-1" });
 
     expect(result).toEqual({ sent: 1, failed: 0 });
     expect(mockFetchActivePulses).not.toHaveBeenCalled();
-    expect(mockTriggerAndWait).toHaveBeenCalledOnce();
-    expect(mockTriggerAndWait).toHaveBeenCalledWith(
-      expect.objectContaining({
-        accountId: "account-1",
-        prompt: expect.any(String),
-      }),
-      { tags: ["account:account-1"] },
-    );
+    expect(mockBatchTriggerAndWait).toHaveBeenCalledOnce();
+    expect(mockBatchTriggerAndWait).toHaveBeenCalledWith([
+      {
+        payload: { accountId: "account-1", prompt: expect.any(String) },
+        options: { tags: ["account:account-1"] },
+      },
+    ]);
   });
 
   it("fetches active pulses when no externalId", async () => {
@@ -61,15 +64,18 @@ describe("sendPulsesTask", () => {
       { account_id: "account-1" },
       { account_id: "account-2" },
     ]);
-    mockTriggerAndWait
-      .mockResolvedValueOnce({ ok: true, output: { sandboxId: "sbx-1", runId: "run-1" } })
-      .mockResolvedValueOnce({ ok: true, output: { sandboxId: "sbx-2", runId: "run-2" } });
+    mockBatchTriggerAndWait.mockResolvedValueOnce({
+      runs: [
+        { ok: true, output: { sandboxId: "sbx-1", runId: "run-1" } },
+        { ok: true, output: { sandboxId: "sbx-2", runId: "run-2" } },
+      ],
+    });
 
     const result = await mockRun(basePayload);
 
     expect(result).toEqual({ sent: 2, failed: 0 });
     expect(mockFetchActivePulses).toHaveBeenCalledOnce();
-    expect(mockTriggerAndWait).toHaveBeenCalledTimes(2);
+    expect(mockBatchTriggerAndWait).toHaveBeenCalledOnce();
   });
 
   it("returns early when no active pulses", async () => {
@@ -78,11 +84,13 @@ describe("sendPulsesTask", () => {
     const result = await mockRun(basePayload);
 
     expect(result).toEqual({ sent: 0, failed: 0 });
-    expect(mockTriggerAndWait).not.toHaveBeenCalled();
+    expect(mockBatchTriggerAndWait).not.toHaveBeenCalled();
   });
 
   it("counts failures when sub-task returns ok: false", async () => {
-    mockTriggerAndWait.mockResolvedValueOnce({ ok: false, error: "Sandbox error" });
+    mockBatchTriggerAndWait.mockResolvedValueOnce({
+      runs: [{ ok: false, error: "Sandbox error" }],
+    });
 
     const result = await mockRun({ ...basePayload, externalId: "account-1" });
 
@@ -95,10 +103,13 @@ describe("sendPulsesTask", () => {
       { account_id: "account-2" },
       { account_id: "account-3" },
     ]);
-    mockTriggerAndWait
-      .mockResolvedValueOnce({ ok: true, output: { sandboxId: "sbx-1", runId: "run-1" } })
-      .mockResolvedValueOnce({ ok: false, error: "Failed" })
-      .mockResolvedValueOnce({ ok: true, output: { sandboxId: "sbx-3", runId: "run-3" } });
+    mockBatchTriggerAndWait.mockResolvedValueOnce({
+      runs: [
+        { ok: true, output: { sandboxId: "sbx-1", runId: "run-1" } },
+        { ok: false, error: "Failed" },
+        { ok: true, output: { sandboxId: "sbx-3", runId: "run-3" } },
+      ],
+    });
 
     const result = await mockRun(basePayload);
 
@@ -108,14 +119,26 @@ describe("sendPulsesTask", () => {
   it("tags each sub-task with account:<accountId>", async () => {
     mockFetchActivePulses.mockResolvedValueOnce([
       { account_id: "account-abc" },
+      { account_id: "account-xyz" },
     ]);
-    mockTriggerAndWait.mockResolvedValueOnce({ ok: true, output: { sandboxId: "sbx-1", runId: "run-1" } });
+    mockBatchTriggerAndWait.mockResolvedValueOnce({
+      runs: [
+        { ok: true, output: { sandboxId: "sbx-1", runId: "run-1" } },
+        { ok: true, output: { sandboxId: "sbx-2", runId: "run-2" } },
+      ],
+    });
 
     await mockRun(basePayload);
 
-    expect(mockTriggerAndWait).toHaveBeenCalledWith(
-      expect.objectContaining({ accountId: "account-abc" }),
-      { tags: ["account:account-abc"] },
-    );
+    expect(mockBatchTriggerAndWait).toHaveBeenCalledWith([
+      {
+        payload: { accountId: "account-abc", prompt: expect.any(String) },
+        options: { tags: ["account:account-abc"] },
+      },
+      {
+        payload: { accountId: "account-xyz", prompt: expect.any(String) },
+        options: { tags: ["account:account-xyz"] },
+      },
+    ]);
   });
 });
