@@ -1,5 +1,6 @@
-import { logger, task } from "@trigger.dev/sdk/v3";
+import { task } from "@trigger.dev/sdk/v3";
 import { executePulseInSandbox } from "../pulse/executePulseInSandbox";
+import { logStep } from "../sandboxes/logStep";
 
 /**
  * Task that executes a pulse for a single account.
@@ -8,7 +9,7 @@ import { executePulseInSandbox } from "../pulse/executePulseInSandbox";
 export const sendPulseTask = task({
   id: "send-pulse-task",
   run: async ({ accountId, prompt }: { accountId: string; prompt: string }) => {
-    logger.log("Executing pulse for account", { accountId });
+    logStep("Executing pulse for account", true, { accountId });
 
     const result = await executePulseInSandbox({ accountId, prompt });
 
@@ -16,7 +17,7 @@ export const sendPulseTask = task({
       throw new Error(`Failed to execute pulse in sandbox for account ${accountId}`);
     }
 
-    logger.log("Pulse executed successfully", { accountId, ...result });
+    logStep("Pulse executed successfully", true, { accountId, ...result });
 
     return result;
   },
