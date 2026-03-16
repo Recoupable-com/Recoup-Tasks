@@ -1,6 +1,6 @@
 import { logger, schedules } from "@trigger.dev/sdk/v3";
 import { fetchActivePulses } from "../recoup/fetchActivePulses";
-import { executePulseInSandbox } from "../pulse/executePulseInSandbox";
+import { sendPulseTask } from "./sendPulseTask";
 
 const DEFAULT_PULSE_PROMPT = `You are sending a daily Pulse email. Your job is to surface what's MOST RELEVANT RIGHT NOW and deliver genuine value.
 
@@ -143,23 +143,15 @@ export const sendPulsesTask = schedules.task({
     for (const accountId of accountIds) {
       logger.log("Processing pulse for account", { accountId });
 
-      try {
-        const result = await executePulseInSandbox({
-          accountId,
-          prompt: DEFAULT_PULSE_PROMPT,
-        });
+      const result = await sendPulseTask.triggerAndWait(
+        { accountId, prompt: DEFAULT_PULSE_PROMPT },
+        { tags: [`account:${accountId}`] },
+      );
 
-        if (result) {
-          sent++;
-        } else {
-          logger.error("Failed to execute pulse in sandbox", { accountId });
-          failed++;
-        }
-      } catch (error) {
-        logger.error("Exception while processing pulse", {
-          accountId,
-          error: error instanceof Error ? error.message : String(error),
-        });
+      if (result.ok) {
+        sent++;
+      } else {
+        logger.error("Pulse sub-task failed", { accountId, error: result.error });
         failed++;
       }
     }
