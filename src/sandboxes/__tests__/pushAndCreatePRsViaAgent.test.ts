@@ -88,6 +88,25 @@ describe("pushAndCreatePRsViaAgent", () => {
     expect(message).toContain("Add dark mode support");
   });
 
+  it("instructs agent to push mono root changes directly to main", async () => {
+    const { runClaudeCodeAgent } = await import("../runClaudeCodeAgent");
+    vi.mocked(runClaudeCodeAgent).mockResolvedValueOnce({
+      exitCode: 0,
+      stdout: "",
+      stderr: "",
+    });
+
+    const sandbox = {} as any;
+    await pushAndCreatePRsViaAgent(sandbox, {
+      prompt: "Update progress",
+      branch: "agent/update-progress-123",
+    });
+
+    const message = vi.mocked(runClaudeCodeAgent).mock.calls[0][1].message;
+    expect(message).toContain("mono repo root");
+    expect(message).toContain("push directly to main");
+  });
+
   it("includes submodule config in the agent message", async () => {
     const { runClaudeCodeAgent } = await import("../runClaudeCodeAgent");
     vi.mocked(runClaudeCodeAgent).mockResolvedValueOnce({
