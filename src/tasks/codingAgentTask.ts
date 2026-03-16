@@ -41,7 +41,7 @@ export const codingAgentTask = schemaTask({
       logStep("Running AI agent");
       const agentResult = await runClaudeCodeAgent(sandbox, {
         label: "Coding agent",
-        message: prompt,
+        message: `Read PROGRESS.md in the mono repo codebase first, then ${prompt}`,
       });
 
       logStep("Agent completed", true, {
