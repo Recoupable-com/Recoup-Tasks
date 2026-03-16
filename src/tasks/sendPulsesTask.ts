@@ -1,6 +1,7 @@
 import { logger, schedules } from "@trigger.dev/sdk/v3";
 import { fetchActivePulses } from "../recoup/fetchActivePulses";
-import { executePulseInSandbox } from "../pulse/executePulseInSandbox";
+import { logStep } from "../sandboxes/logStep";
+import { sendPulseTask } from "./sendPulseTask";
 
 const DEFAULT_PULSE_PROMPT = `You are sending a daily Pulse email. Your job is to surface what's MOST RELEVANT RIGHT NOW and deliver genuine value.
 
@@ -112,7 +113,7 @@ export const sendPulsesTask = schedules.task({
   id: "send-pulses-task",
   cron: { pattern: "0 9 * * *", timezone: "America/New_York" }, // Run daily at 9 AM ET
   run: async (payload) => {
-    logger.log("Starting send pulses task", {
+    logStep("Starting send pulses task", true, {
       timestamp: payload.timestamp,
       timezone: payload.timezone,
       externalId: payload.externalId,
@@ -123,48 +124,40 @@ export const sendPulsesTask = schedules.task({
     let accountIds: string[];
 
     if (payload.externalId) {
-      logger.log("Test mode: processing single account", { accountId: payload.externalId });
+      logStep("Test mode: processing single account", true, { accountId: payload.externalId });
       accountIds = [payload.externalId];
     } else {
       const activePulses = await fetchActivePulses();
 
       if (activePulses.length === 0) {
-        logger.log("No active pulses found, skipping");
+        logStep("No active pulses found, skipping");
         return { sent: 0, failed: 0 };
       }
 
-      logger.log("Processing active pulses", { count: activePulses.length });
+      logStep(`Processing ${activePulses.length} active pulses`);
       accountIds = activePulses.map((pulse) => pulse.account_id);
     }
+
+    const batchResult = await sendPulseTask.batchTriggerAndWait(
+      accountIds.map((accountId) => ({
+        payload: { accountId, prompt: DEFAULT_PULSE_PROMPT },
+        options: { tags: [`account:${accountId}`] },
+      })),
+    );
 
     let sent = 0;
     let failed = 0;
 
-    for (const accountId of accountIds) {
-      logger.log("Processing pulse for account", { accountId });
-
-      try {
-        const result = await executePulseInSandbox({
-          accountId,
-          prompt: DEFAULT_PULSE_PROMPT,
-        });
-
-        if (result) {
-          sent++;
-        } else {
-          logger.error("Failed to execute pulse in sandbox", { accountId });
-          failed++;
-        }
-      } catch (error) {
-        logger.error("Exception while processing pulse", {
-          accountId,
-          error: error instanceof Error ? error.message : String(error),
-        });
+    for (const run of batchResult.runs) {
+      if (run.ok) {
+        sent++;
+      } else {
+        logger.error("Pulse sub-task failed", { error: run.error });
         failed++;
       }
     }
 
-    logger.log("Send pulses task completed", { sent, failed });
+    logStep(`Send pulses task completed: ${sent} sent, ${failed} failed`, true, { sent, failed });
 
     return { sent, failed };
   },
