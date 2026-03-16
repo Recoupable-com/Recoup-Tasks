@@ -35,6 +35,10 @@ vi.mock("../../sandboxes/logStep", () => ({
   logStep: vi.fn(),
 }));
 
+vi.mock("../../consts", () => ({
+  RECOUP_API_KEY: "test-api-key",
+}));
+
 // Import after mocks
 await import("../sendPulseTask");
 

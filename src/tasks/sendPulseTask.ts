@@ -22,16 +22,22 @@ export const sendPulseTask = task({
     }
 
     // Wait for sandbox to finish, then tag with the email ID
-    try {
-      await pollSandboxUntilStopped(result.sandboxId, RECOUP_API_KEY!);
+    if (!RECOUP_API_KEY) {
+      logStep("Skipping email tagging: RECOUP_API_KEY not configured", false);
+    } else {
+      try {
+        await pollSandboxUntilStopped(result.sandboxId, RECOUP_API_KEY);
 
-      const emailId = await fetchLatestAccountEmailId(accountId, RECOUP_API_KEY!);
-      if (emailId) {
-        await tags.add(`email:${emailId}`);
-        logStep("Tagged with email ID", false, { emailId });
+        const emailId = await fetchLatestAccountEmailId(accountId, RECOUP_API_KEY);
+        if (emailId) {
+          await tags.add(`email:${emailId}`);
+          logStep("Tagged with email ID", false, { emailId });
+        }
+      } catch (error) {
+        logStep("Failed to tag email ID (sandbox poll timeout or error)", false, {
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
-    } catch {
-      logStep("Failed to tag email ID (sandbox poll timeout or error)", false);
     }
 
     logStep("Pulse executed successfully", true, { accountId, ...result });
