@@ -103,7 +103,11 @@ NEVER DO THIS:
 - Pretend to have data you don't have
 - Send walls of text - keep it scannable
 
-Use send_email with the html parameter to deliver.`;
+Use send_email with the html parameter to deliver.
+
+IMPORTANT: After sending the email, output exactly on its own line:
+PULSE_ROOM_ID:<the room_id from the generate response>
+This is required for tracking which email was sent by this task run.`;
 
 /**
  * Scheduled task that sends pulses to all accounts with active pulse subscriptions.
