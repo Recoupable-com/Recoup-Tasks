@@ -132,6 +132,39 @@ describe("codingAgentTask", () => {
     expect(configureGitAuth).toHaveBeenCalledOnce();
   });
 
+  it("sends failed callback when an error occurs during execution", async () => {
+    const { runClaudeCodeAgent } = await import("../../sandboxes/runClaudeCodeAgent");
+    const { notifyCodingAgentCallback } = await import("../../sandboxes/notifyCodingAgentCallback");
+    vi.mocked(runClaudeCodeAgent).mockRejectedValueOnce(new Error("Sandbox crashed"));
+
+    await mockRun(basePayload);
+
+    expect(notifyCodingAgentCallback).toHaveBeenCalledWith(
+      expect.objectContaining({
+        threadId: "slack:C123:123.456",
+        status: "failed",
+        message: "Sandbox crashed",
+      }),
+    );
+    expect(mockSandboxStop).toHaveBeenCalledOnce();
+  });
+
+  it("sends failed callback when cloneMonorepoViaAgent throws", async () => {
+    const { cloneMonorepoViaAgent } = await import("../../sandboxes/cloneMonorepoViaAgent");
+    const { notifyCodingAgentCallback } = await import("../../sandboxes/notifyCodingAgentCallback");
+    vi.mocked(cloneMonorepoViaAgent).mockRejectedValueOnce(new Error("Clone failed"));
+
+    await mockRun(basePayload);
+
+    expect(notifyCodingAgentCallback).toHaveBeenCalledWith(
+      expect.objectContaining({
+        threadId: "slack:C123:123.456",
+        status: "failed",
+        message: "Clone failed",
+      }),
+    );
+  });
+
   it("syncs monorepo submodules after cloning and before running agent", async () => {
     const { cloneMonorepoViaAgent } = await import("../../sandboxes/cloneMonorepoViaAgent");
     const { syncMonorepoSubmodules } = await import("../../sandboxes/git/syncMonorepoSubmodules");

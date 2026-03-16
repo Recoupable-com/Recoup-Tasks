@@ -76,6 +76,16 @@ export const codingAgentTask = schemaTask({
       metadata.set("currentStep", "Complete");
 
       return { branch, snapshotId, prs, stdout: agentResult.stdout, stderr: agentResult.stderr };
+    } catch (error) {
+      logStep("Task failed, notifying Slack", true, {
+        error: error instanceof Error ? error.message : String(error),
+      });
+
+      await notifyCodingAgentCallback({
+        threadId: callbackThreadId,
+        status: "failed",
+        message: error instanceof Error ? error.message : String(error),
+      });
     } finally {
       logStep("Stopping sandbox", false, { sandboxId: sandbox.sandboxId });
       await sandbox.stop();
