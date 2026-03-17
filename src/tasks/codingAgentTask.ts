@@ -2,6 +2,7 @@ import { metadata, schemaTask } from "@trigger.dev/sdk/v3";
 import { cloneMonorepoViaAgent } from "../sandboxes/cloneMonorepoViaAgent";
 import { runClaudeCodeAgent } from "../sandboxes/runClaudeCodeAgent";
 import { pushAndCreatePRsViaAgent } from "../sandboxes/pushAndCreatePRsViaAgent";
+import { parseGitHubPRUrls } from "../sandboxes/parsePRUrls";
 import { notifyCodingAgentCallback } from "../sandboxes/notifyCodingAgentCallback";
 import { logStep } from "../sandboxes/logStep";
 import { configureGitAuth } from "../sandboxes/configureGitAuth";
@@ -56,7 +57,19 @@ export const codingAgentTask = schemaTask({
       const slug = prompt.slice(0, 30).replace(/[^a-zA-Z0-9]/g, "-").toLowerCase();
       const branch = `agent/${slug}-${timestamp}`;
 
-      const prs = await pushAndCreatePRsViaAgent(sandbox, { prompt, branch });
+      const pushPRs = await pushAndCreatePRsViaAgent(sandbox, { prompt, branch });
+
+      // Also parse any PRs the main agent created directly (e.g. via gh pr create),
+      // which appear as raw GitHub URLs in its stdout rather than PR_CREATED sentinels.
+      const agentPRs = parseGitHubPRUrls(agentResult.stdout);
+
+      // Merge, deduplicating by URL. Push agent PRs take precedence (they use PR_CREATED
+      // sentinels and are guaranteed to target the correct baseBranch).
+      const prsByUrl = new Map(agentPRs.map((pr) => [pr.url, pr]));
+      for (const pr of pushPRs) {
+        prsByUrl.set(pr.url, pr);
+      }
+      const prs = Array.from(prsByUrl.values());
 
       logStep("Taking snapshot");
       const { snapshotId } = await sandbox.snapshot();
