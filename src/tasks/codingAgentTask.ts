@@ -56,7 +56,7 @@ export const codingAgentTask = schemaTask({
       const slug = prompt.slice(0, 30).replace(/[^a-zA-Z0-9]/g, "-").toLowerCase();
       const branch = `agent/${slug}-${timestamp}`;
 
-      const prs = await pushAndCreatePRsViaAgent(sandbox, { prompt, branch });
+      const prs = await pushAndCreatePRsViaAgent(sandbox, { prompt, branch, agentStdout: agentResult.stdout });
 
       logStep("Taking snapshot");
       const { snapshotId } = await sandbox.snapshot();
