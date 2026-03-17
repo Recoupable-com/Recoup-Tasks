@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parsePRUrls, parseGitHubPRUrls } from "../parsePRUrls";
+import { parsePRUrls } from "../parsePRUrls";
 
 describe("parsePRUrls", () => {
   it("parses multiple PR_CREATED lines", () => {
@@ -70,69 +70,5 @@ describe("parsePRUrls", () => {
 
   it("returns empty array for empty string", () => {
     expect(parsePRUrls("")).toEqual([]);
-  });
-});
-
-describe("parseGitHubPRUrls", () => {
-  it("extracts PR URLs from raw gh pr create output", () => {
-    const stdout = [
-      "Some agent log",
-      "https://github.com/recoupable/admin/pull/7",
-      "More output",
-    ].join("\n");
-
-    const result = parseGitHubPRUrls(stdout);
-
-    expect(result).toEqual([
-      {
-        repo: "recoupable/admin",
-        number: 7,
-        url: "https://github.com/recoupable/admin/pull/7",
-        baseBranch: "main",
-      },
-    ]);
-  });
-
-  it("extracts multiple PR URLs and deduplicates", () => {
-    const stdout = [
-      "https://github.com/recoupable/admin/pull/7",
-      "https://github.com/recoupable/api/pull/42",
-      "https://github.com/recoupable/admin/pull/7",
-    ].join("\n");
-
-    const result = parseGitHubPRUrls(stdout);
-
-    expect(result).toHaveLength(2);
-    expect(result[0].url).toBe("https://github.com/recoupable/admin/pull/7");
-    expect(result[1].url).toBe("https://github.com/recoupable/api/pull/42");
-  });
-
-  it("uses baseBranch from SUBMODULE_CONFIG for known repos", () => {
-    const stdout = "https://github.com/recoupable/api/pull/99\n";
-    const result = parseGitHubPRUrls(stdout);
-
-    expect(result).toEqual([
-      {
-        repo: "recoupable/api",
-        number: 99,
-        url: "https://github.com/recoupable/api/pull/99",
-        baseBranch: "test",
-      },
-    ]);
-  });
-
-  it("defaults baseBranch to main for unknown repos", () => {
-    const stdout = "https://github.com/recoupable/unknown/pull/1\n";
-    const result = parseGitHubPRUrls(stdout);
-
-    expect(result[0].baseBranch).toBe("main");
-  });
-
-  it("returns empty array when no GitHub PR URLs are present", () => {
-    expect(parseGitHubPRUrls("Just some text\nhttps://example.com/pull/1\n")).toEqual([]);
-  });
-
-  it("returns empty array for empty string", () => {
-    expect(parseGitHubPRUrls("")).toEqual([]);
   });
 });

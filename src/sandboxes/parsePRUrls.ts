@@ -35,34 +35,3 @@ export function parsePRUrls(stdout: string): ParsedPR[] {
 
   return prs;
 }
-
-/**
- * Scans raw text for any GitHub PR URLs (e.g. from `gh pr create` output).
- * Useful for extracting PRs created by the main agent that don't use PR_CREATED sentinels.
- * Deduplicates by URL.
- *
- * @param text - Raw text to scan (e.g. main agent stdout)
- * @returns Array of parsed PR objects
- */
-export function parseGitHubPRUrls(text: string): ParsedPR[] {
-  const regex = /https:\/\/github\.com\/([\w.-]+\/[\w.-]+)\/pull\/(\d+)/g;
-  const seen = new Set<string>();
-  const prs: ParsedPR[] = [];
-
-  let match;
-  while ((match = regex.exec(text)) !== null) {
-    const url = match[0];
-    if (seen.has(url)) continue;
-    seen.add(url);
-
-    const repo = match[1];
-    const number = parseInt(match[2], 10);
-
-    const configEntry = Object.values(SUBMODULE_CONFIG).find((c) => c.repo === repo);
-    const baseBranch = configEntry?.baseBranch ?? "main";
-
-    prs.push({ repo, number, url, baseBranch });
-  }
-
-  return prs;
-}
