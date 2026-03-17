@@ -8,4 +8,6 @@ export const SUBMODULE_CONFIG: Record<string, { repo: string; baseBranch: string
   bash: { repo: "recoupable/bash", baseBranch: "main" },
   skills: { repo: "recoupable/skills", baseBranch: "main" },
   cli: { repo: "recoupable/cli", baseBranch: "main" },
+  admin: { repo: "recoupable/admin", baseBranch: "main" },
+  marketing: { repo: "recoupable/marketing", baseBranch: "main" },
 };
