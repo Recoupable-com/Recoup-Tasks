@@ -1,5 +1,5 @@
 export const PROGRESS_PROMPT_PREFIX =
-  "Read PROGRESS_USAGE.md and PROGRESS.md in the mono repo codebase first, then";
+  "Run `git log --oneline -10` in each relevant submodule to understand what was recently worked on, then";
 
 export const PROGRESS_PROMPT_SUFFIX =
-  "Then update PROGRESS.md in the mono repo codebase with your changes so the next dev knows where you left off.";
+  "Commit all your changes with a descriptive message so the next developer knows what was worked on.";
