@@ -107,6 +107,44 @@ describe("pushAndCreatePRsViaAgent", () => {
     expect(message).toContain("push directly to main");
   });
 
+  it("includes agent stdout context in the message when provided", async () => {
+    const { runClaudeCodeAgent } = await import("../runClaudeCodeAgent");
+    vi.mocked(runClaudeCodeAgent).mockResolvedValueOnce({
+      exitCode: 0,
+      stdout: "",
+      stderr: "",
+    });
+
+    const sandbox = {} as any;
+    await pushAndCreatePRsViaAgent(sandbox, {
+      prompt: "Fix bug",
+      branch: "agent/fix-123",
+      agentStdout: "Changed files in api submodule: routes/auth.ts",
+    });
+
+    const message = vi.mocked(runClaudeCodeAgent).mock.calls[0][1].message;
+    expect(message).toContain("Context from coding agent");
+    expect(message).toContain("Changed files in api submodule: routes/auth.ts");
+  });
+
+  it("omits agent context section when agentStdout is not provided", async () => {
+    const { runClaudeCodeAgent } = await import("../runClaudeCodeAgent");
+    vi.mocked(runClaudeCodeAgent).mockResolvedValueOnce({
+      exitCode: 0,
+      stdout: "",
+      stderr: "",
+    });
+
+    const sandbox = {} as any;
+    await pushAndCreatePRsViaAgent(sandbox, {
+      prompt: "Fix bug",
+      branch: "agent/fix-123",
+    });
+
+    const message = vi.mocked(runClaudeCodeAgent).mock.calls[0][1].message;
+    expect(message).not.toContain("Context from coding agent");
+  });
+
   it("includes submodule config in the agent message", async () => {
     const { runClaudeCodeAgent } = await import("../runClaudeCodeAgent");
     vi.mocked(runClaudeCodeAgent).mockResolvedValueOnce({

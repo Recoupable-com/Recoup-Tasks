@@ -110,8 +110,10 @@ describe("codingAgentTask", () => {
     expect(mockSandboxStop).toHaveBeenCalledOnce();
   });
 
-  it("passes prompt and branch to pushAndCreatePRsViaAgent", async () => {
+  it("passes prompt, branch, and agentStdout to pushAndCreatePRsViaAgent", async () => {
     const { pushAndCreatePRsViaAgent } = await import("../../sandboxes/pushAndCreatePRsViaAgent");
+    const { runClaudeCodeAgent } = await import("../../sandboxes/runClaudeCodeAgent");
+    vi.mocked(runClaudeCodeAgent).mockResolvedValueOnce({ exitCode: 0, stdout: "agent output here", stderr: "" });
 
     await mockRun(basePayload);
 
@@ -120,6 +122,7 @@ describe("codingAgentTask", () => {
       expect.objectContaining({
         prompt: "Fix the login bug",
         branch: expect.stringContaining("agent/"),
+        agentStdout: "agent output here",
       }),
     );
   });

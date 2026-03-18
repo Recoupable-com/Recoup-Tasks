@@ -6,6 +6,7 @@ import { SUBMODULE_CONFIG } from "./submoduleConfig";
 interface PushAndCreatePRsOptions {
   prompt: string;
   branch: string;
+  agentStdout?: string;
 }
 
 /**
@@ -21,15 +22,29 @@ export async function pushAndCreatePRsViaAgent(
   sandbox: Sandbox,
   options: PushAndCreatePRsOptions,
 ): Promise<ParsedPR[]> {
-  const { prompt, branch } = options;
+  const { prompt, branch, agentStdout } = options;
 
   const submoduleInstructions = Object.entries(SUBMODULE_CONFIG)
     .map(([name, { repo, baseBranch }]) => `  - ${name}: repo=${repo}, base branch=${baseBranch}`)
     .join("\n");
 
+  const agentContextSection = agentStdout
+    ? [
+        `## Context from coding agent`,
+        ``,
+        `The following is the stdout from the coding agent that just made changes. Use this to understand what was changed and which submodules need PRs:`,
+        ``,
+        `\`\`\``,
+        agentStdout.slice(-4000).replace(/```/g, "\\`\\`\\`"),
+        `\`\`\``,
+        ``,
+      ].join("\n")
+    : "";
+
   const result = await runClaudeCodeAgent(sandbox, {
     label: "Push and create PRs via agent",
     message: [
+      agentContextSection,
       `There are two steps: first handle mono repo root changes, then handle submodule changes.`,
       ``,
       `## Step 1: Push mono repo root changes directly to main`,
