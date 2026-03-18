@@ -35,7 +35,7 @@ export async function pushAndCreatePRsViaAgent(
         `The following is the stdout from the coding agent that just made changes. Use this to understand what was changed and which submodules need PRs:`,
         ``,
         `\`\`\``,
-        agentStdout.slice(-4000),
+        agentStdout.slice(-4000).replace(/```/g, "\\`\\`\\`"),
         `\`\`\``,
         ``,
       ].join("\n")
