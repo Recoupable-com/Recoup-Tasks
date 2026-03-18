@@ -51,7 +51,10 @@ export const codingAgentTask = schemaTask({
         stderr: agentResult.stderr.slice(-2000),
       });
 
-      logStep("Creating PRs via agent");
+      logStep("Creating PRs via agent", true, {
+        agentStdoutLength: agentResult.stdout.length,
+        agentStdoutTail: agentResult.stdout.slice(-500),
+      });
       const timestamp = Date.now();
       const slug = prompt.slice(0, 30).replace(/[^a-zA-Z0-9]/g, "-").toLowerCase();
       const branch = `agent/${slug}-${timestamp}`;
