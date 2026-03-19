@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { CODING_AGENT_ACCOUNT_ID } from "../../consts";
 
 const mockRun = vi.fn();
 vi.mock("@trigger.dev/sdk/v3", () => ({
@@ -158,7 +159,7 @@ describe("updatePRTask", () => {
 
     await mockRun(basePayload);
 
-    expect(getSandboxEnv).toHaveBeenCalledWith("ccbed42f-4d91-4834-b954-2a64a77d8665");
+    expect(getSandboxEnv).toHaveBeenCalledWith(CODING_AGENT_ACCOUNT_ID);
 
     const expectedEnv = {
       RECOUP_API_KEY: "test-key",
