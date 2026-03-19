@@ -158,7 +158,7 @@ describe("updatePRTask", () => {
 
     await mockRun(basePayload);
 
-    expect(getSandboxEnv).toHaveBeenCalledWith("04e3aba9-c130-4fb8-8b92-34e95d43e66b");
+    expect(getSandboxEnv).toHaveBeenCalledWith("ccbed42f-4d91-4834-b954-2a64a77d8665");
 
     const expectedEnv = {
       RECOUP_API_KEY: "test-key",
