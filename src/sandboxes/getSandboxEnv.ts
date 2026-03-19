@@ -20,5 +20,10 @@ export function getSandboxEnv(
     env.GITHUB_TOKEN = githubToken;
   }
 
+  const chartmetricRefreshToken = process.env.CHARTMETRIC_REFRESH_TOKEN;
+  if (chartmetricRefreshToken) {
+    env.CHARTMETRIC_REFRESH_TOKEN = chartmetricRefreshToken;
+  }
+
   return env;
 }
