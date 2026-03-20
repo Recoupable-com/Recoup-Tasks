@@ -20,10 +20,7 @@ export function getSandboxEnv(
     env.GITHUB_TOKEN = githubToken;
   }
 
-  const chartmetricRefreshToken = process.env.CHARTMETRIC_REFRESH_TOKEN;
-  if (chartmetricRefreshToken) {
-    env.CHARTMETRIC_REFRESH_TOKEN = chartmetricRefreshToken;
-  }
+  env.CHARTMETRIC_BASE_URL = "https://recoup-api.vercel.app/api/chartmetric";
 
   return env;
 }
