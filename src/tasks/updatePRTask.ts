@@ -69,15 +69,17 @@ export const updatePRTask = schemaTask({
       logStep("Taking new snapshot");
       const newSnapshot = await sandbox.snapshot();
 
-      const callbackPayload = {
-        threadId: callbackThreadId,
-        status: "updated" as const,
-        snapshotId: newSnapshot.snapshotId,
-        stdout: agentResult.stdout,
-        stderr: agentResult.stderr,
-      };
-      logStep("Notifying bot", true, callbackPayload);
-      await notifyCodingAgentCallback(callbackPayload);
+      if (callbackThreadId) {
+        const callbackPayload = {
+          threadId: callbackThreadId,
+          status: "updated" as const,
+          snapshotId: newSnapshot.snapshotId,
+          stdout: agentResult.stdout,
+          stderr: agentResult.stderr,
+        };
+        logStep("Notifying bot", true, callbackPayload);
+        await notifyCodingAgentCallback(callbackPayload);
+      }
 
       metadata.set("currentStep", "Complete");
 
