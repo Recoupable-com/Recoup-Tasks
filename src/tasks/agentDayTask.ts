@@ -7,8 +7,8 @@ import { waitForPRChecks } from "../github/waitForPRChecks";
 import { fetchPRReviews } from "../github/fetchPRReviews";
 import { assessPRFeedback } from "../ai/assessPRFeedback";
 import { getVercelPreviewUrl } from "../github/getVercelPreviewUrl";
-import { mergePR } from "../github/mergePR";
 import { postToSlackChannel } from "../slack/postToSlackChannel";
+import { sendTelegramMessage } from "../telegram/sendTelegramMessage";
 import { logStep } from "../sandboxes/logStep";
 import { getOrCreateSandbox } from "../sandboxes/getOrCreateSandbox";
 import { CODING_AGENT_ACCOUNT_ID } from "../consts";
@@ -26,7 +26,7 @@ const PR_CHECK_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
  * 3. Triggers the coding-agent task to implement it and open PRs
  * 4. Reviews each PR: waits for checks, assesses human feedback, applies fixes
  * 5. Tests Vercel preview deployments (api/chat repos)
- * 6. Merges approved PRs
+ * 6. Sends Telegram notification with PR links for human review/merge
  * 7. Posts a summary to the #dev Slack channel
  */
 export const agentDayTask = schedules.task({
@@ -79,7 +79,7 @@ export const agentDayTask = schedules.task({
     }
 
     // Step 5: Review each PR — wait for checks, implement feedback, test preview
-    const mergedPRs: typeof prs = [];
+    const reviewedPRs: typeof prs = [];
     let currentSnapshotId = snapshotId;
 
     for (const pr of prs) {
@@ -156,29 +156,36 @@ export const agentDayTask = schedules.task({
         }
       }
 
-      // Step 6: Merge the PR
-      logStep(`Merging PR #${pr.number} in ${pr.repo}`);
-      const merged = await mergePR(pr.repo, pr.number);
-
-      if (merged) {
-        mergedPRs.push(pr);
-        logStep(`Merged PR #${pr.number}`, true, { url: pr.url });
-      } else {
-        logger.warn(`Could not merge PR #${pr.number} in ${pr.repo}`);
-      }
+      reviewedPRs.push(pr);
     }
 
-    // Step 7: Post summary to Slack
+    // Step 6: Send Telegram notification with PR links for human review/merge
     const date = new Date(payload.timestamp).toDateString();
-    const prLines = mergedPRs.map((pr) => `• <${pr.url}|${pr.repo} #${pr.number}>`).join("\n");
-    const unmergedCount = prs.length - mergedPRs.length;
+    const prLines = reviewedPRs
+      .map((pr) => `• <a href="${pr.url}">${pr.repo} #${pr.number}</a>`)
+      .join("\n");
+
+    const telegramMessage = [
+      `🤖 <b>Agent Day — ${date}</b>`,
+      ``,
+      `${reviewedPRs.length} PR${reviewedPRs.length !== 1 ? "s" : ""} ready for review:`,
+      prLines,
+      ``,
+      `<b>Feature:</b> ${featurePrompt.slice(0, 280)}${featurePrompt.length > 280 ? "…" : ""}`,
+    ].join("\n");
+
+    await sendTelegramMessage(telegramMessage);
+
+    // Step 7: Post summary to Slack
+    const slackPrLines = reviewedPRs
+      .map((pr) => `• <${pr.url}|${pr.repo} #${pr.number}>`)
+      .join("\n");
 
     const slackLines = [
       `🤖 *Agent Day — ${date}*`,
       ``,
-      `Implemented and merged *${mergedPRs.length}* PR${mergedPRs.length !== 1 ? "s" : ""}:`,
-      prLines || "_(none)_",
-      unmergedCount > 0 ? `\n_${unmergedCount} PR(s) could not be merged automatically._` : "",
+      `Opened *${reviewedPRs.length}* PR${reviewedPRs.length !== 1 ? "s" : ""} for review:`,
+      slackPrLines || "_(none)_",
       ``,
       `*Feature:* ${featurePrompt.slice(0, 280)}${featurePrompt.length > 280 ? "…" : ""}`,
     ];
@@ -186,11 +193,11 @@ export const agentDayTask = schedules.task({
     await postToSlackChannel(AGENT_DAY_SLACK_CHANNEL, slackLines.filter(Boolean).join("\n"));
 
     logStep("Agent Day task completed", true, {
-      mergedPRs: mergedPRs.length,
+      reviewedPRs: reviewedPRs.length,
       totalPRs: prs.length,
     });
 
-    return { success: true, prs: mergedPRs, featurePrompt };
+    return { success: true, prs: reviewedPRs, featurePrompt };
     } finally {
       logStep("Stopping AI reasoning sandbox", false);
       await aiSandbox.stop();
