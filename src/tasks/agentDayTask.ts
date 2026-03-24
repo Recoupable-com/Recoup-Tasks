@@ -10,6 +10,8 @@ import { getVercelPreviewUrl } from "../github/getVercelPreviewUrl";
 import { mergePR } from "../github/mergePR";
 import { postToSlackChannel } from "../slack/postToSlackChannel";
 import { logStep } from "../sandboxes/logStep";
+import { getOrCreateSandbox } from "../sandboxes/getOrCreateSandbox";
+import { CODING_AGENT_ACCOUNT_ID } from "../consts";
 
 const AGENT_DAY_SLACK_CHANNEL = "C08HN8RKJHZ";
 const MAX_REVIEW_ITERATIONS = 3;
@@ -37,14 +39,19 @@ export const agentDayTask = schedules.task({
       date: new Date(payload.timestamp).toDateString(),
     });
 
+    // Create a sandbox for AI reasoning (feature planning + feedback assessment)
+    logStep("Creating sandbox for AI reasoning");
+    const { sandbox: aiSandbox } = await getOrCreateSandbox(CODING_AGENT_ACCOUNT_ID);
+
+    try {
     // Step 1: Gather recent commits to understand what has been built recently
     logStep("Fetching recent commits from all submodules");
     const recentCommits = await fetchRecentSubmoduleCommits();
     logStep("Recent commits fetched", true, { submoduleCount: recentCommits.length });
 
-    // Step 2: Use Claude to plan the next feature based on recent work
+    // Step 2: Use Claude Code in sandbox to plan the next feature based on recent work
     logStep("Generating feature prompt from recent commits");
-    const featurePrompt = await generateFeaturePrompt(recentCommits);
+    const featurePrompt = await generateFeaturePrompt(aiSandbox, recentCommits);
     logStep("Feature prompt generated", true, { preview: featurePrompt.slice(0, 300) });
 
     // Step 3 & 4: Trigger the coding agent to implement the feature and open PRs
@@ -93,7 +100,7 @@ export const agentDayTask = schedules.task({
         logStep(`Review iteration ${iteration + 1} for PR #${pr.number}`);
 
         const feedback = await fetchPRReviews(pr.repo, pr.number);
-        const assessment = await assessPRFeedback(pr.repo, featurePrompt, feedback);
+        const assessment = await assessPRFeedback(aiSandbox, pr.repo, featurePrompt, feedback);
 
         logStep(`Feedback assessed for PR #${pr.number}`, true, {
           hasActionableFeedback: assessment.hasActionableFeedback,
@@ -184,5 +191,9 @@ export const agentDayTask = schedules.task({
     });
 
     return { success: true, prs: mergedPRs, featurePrompt };
+    } finally {
+      logStep("Stopping AI reasoning sandbox", false);
+      await aiSandbox.stop();
+    }
   },
 });

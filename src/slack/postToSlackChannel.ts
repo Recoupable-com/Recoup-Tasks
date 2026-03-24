@@ -1,4 +1,5 @@
 import { logger } from "@trigger.dev/sdk/v3";
+import { logStep } from "../sandboxes/logStep";
 
 /**
  * Posts a plain-text message to a Slack channel using the bot token.
@@ -31,6 +32,6 @@ export async function postToSlackChannel(channelId: string, text: string): Promi
     return false;
   }
 
-  logger.log("Posted message to Slack", { channel: channelId });
+  logStep("Posted message to Slack", false, { channel: channelId });
   return true;
 }

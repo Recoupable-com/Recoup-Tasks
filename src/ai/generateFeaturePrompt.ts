@@ -1,7 +1,9 @@
-import { logger } from "@trigger.dev/sdk/v3";
+import type { Sandbox } from "@vercel/sandbox";
 import type { SubmoduleCommit } from "../github/fetchRecentSubmoduleCommits";
+import { runClaudeCodeAgent } from "../sandboxes/runClaudeCodeAgent";
+import { logStep } from "../sandboxes/logStep";
 
-const SYSTEM_PROMPT = `You are a senior software engineer on the Recoupable platform — a music industry management tool for record labels and artist managers.
+const SYSTEM_CONTEXT = `You are a senior software engineer on the Recoupable platform — a music industry management tool for record labels and artist managers.
 
 The platform has these main components:
 - chat: Next.js frontend where music managers chat with their AI agent
@@ -26,21 +28,15 @@ Respond with ONLY an implementation prompt for an AI coding agent. The prompt sh
 - NOT ask for planning or approval — just direct the agent to implement it`;
 
 /**
- * Uses the Anthropic API to generate an actionable feature implementation prompt
+ * Uses Claude Code in a sandbox to generate an actionable feature implementation prompt
  * based on the recent commit history across monorepo submodules.
  *
- * Falls back to a generic improvement prompt if the API call fails.
+ * Falls back to a generic improvement prompt if the sandbox call fails.
  */
 export async function generateFeaturePrompt(
+  sandbox: Sandbox,
   recentCommits: SubmoduleCommit[],
 ): Promise<string> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-
-  if (!apiKey) {
-    logger.warn("Missing ANTHROPIC_API_KEY — using fallback feature prompt");
-    return getFallbackPrompt();
-  }
-
   const commitsContext = recentCommits
     .map(
       ({ submodule, commits }) =>
@@ -48,48 +44,34 @@ export async function generateFeaturePrompt(
     )
     .join("\n\n");
 
-  const userMessage = `Here are the most recent commits across the Recoupable monorepo:
+  const message = `${SYSTEM_CONTEXT}
+
+Here are the most recent commits across the Recoupable monorepo:
 
 ${commitsContext}
 
 Based on this recent work, write a specific implementation prompt for an AI coding agent to implement the next most valuable feature.`;
 
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-5",
-        max_tokens: 1024,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: "user", content: userMessage }],
-      }),
+    const result = await runClaudeCodeAgent(sandbox, {
+      label: "Generate feature prompt",
+      message,
     });
 
-    if (!response.ok) {
-      logger.error("Anthropic API error generating feature prompt", { status: response.status });
+    const text = result.stdout.trim();
+
+    if (result.exitCode !== 0 || !text) {
+      logStep("Claude Code failed to generate feature prompt", false, {
+        exitCode: result.exitCode,
+        stderr: result.stderr.slice(-500),
+      });
       return getFallbackPrompt();
     }
 
-    const data = (await response.json()) as {
-      content: Array<{ type: string; text: string }>;
-    };
-
-    const text = data.content.find((c) => c.type === "text")?.text?.trim();
-
-    if (!text) {
-      logger.warn("Empty response from Anthropic API");
-      return getFallbackPrompt();
-    }
-
-    logger.log("Generated Agent Day feature prompt", { preview: text.slice(0, 200) });
+    logStep("Generated Agent Day feature prompt", false, { preview: text.slice(0, 200) });
     return text;
   } catch (error) {
-    logger.error("Failed to generate feature prompt", { error });
+    logStep("Failed to generate feature prompt", false, { error: String(error) });
     return getFallbackPrompt();
   }
 }

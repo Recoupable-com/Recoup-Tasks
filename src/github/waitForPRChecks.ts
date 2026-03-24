@@ -1,4 +1,5 @@
-import { logger, wait } from "@trigger.dev/sdk/v3";
+import { wait } from "@trigger.dev/sdk/v3";
+import { logStep } from "../sandboxes/logStep";
 
 export interface PRCheckResult {
   allPassed: boolean;
@@ -32,7 +33,7 @@ export async function waitForPRChecks(
   });
 
   if (!prRes.ok) {
-    logger.warn(`Failed to fetch PR #${prNumber} from ${repo}`, { status: prRes.status });
+    logStep(`Failed to fetch PR #${prNumber} from ${repo}`, false, { status: prRes.status });
     return { allPassed: false, failedChecks: [], pendingChecks: ["fetch-failed"] };
   }
 
@@ -46,7 +47,7 @@ export async function waitForPRChecks(
     );
 
     if (!checksRes.ok) {
-      logger.warn(`Failed to fetch check runs for ${repo}/${headSha}`);
+      logStep(`Failed to fetch check runs for ${repo}/${headSha}`, false);
       return { allPassed: false, failedChecks: [], pendingChecks: ["fetch-failed"] };
     }
 
@@ -67,7 +68,7 @@ export async function waitForPRChecks(
       );
 
       if (pending.length === 0) {
-        logger.log(`All checks complete for PR #${prNumber}`, {
+        logStep(`All checks complete for PR #${prNumber}`, false, {
           total: checks.length,
           failed: failed.length,
         });
@@ -78,7 +79,7 @@ export async function waitForPRChecks(
         };
       }
 
-      logger.log(`Waiting for ${pending.length} checks on PR #${prNumber}`, {
+      logStep(`Waiting for ${pending.length} checks on PR #${prNumber}`, false, {
         pending: pending.map((c) => c.name),
       });
     }
