@@ -2,6 +2,7 @@ import type { Sandbox } from "@vercel/sandbox";
 import type { SubmoduleCommit } from "../github/fetchRecentSubmoduleCommits";
 import { runClaudeCodeAgent } from "../sandboxes/runClaudeCodeAgent";
 import { logStep } from "../sandboxes/logStep";
+import { getFallbackPrompt } from "./getFallbackPrompt";
 
 const SYSTEM_CONTEXT = `You are a senior software engineer on the Recoupable platform — a music industry management tool for record labels and artist managers.
 
@@ -74,17 +75,4 @@ Based on this recent work, write a specific implementation prompt for an AI codi
     logStep("Failed to generate feature prompt", false, { error: String(error) });
     return getFallbackPrompt();
   }
-}
-
-function getFallbackPrompt(): string {
-  return [
-    "Read PROGRESS_USAGE.md and PROGRESS.md in the mono repo codebase first.",
-    "",
-    "Review the last 10 commits across the api, chat, admin, and tasks submodules.",
-    "Identify the single most impactful small improvement that builds on recent work",
-    "— a bug fix, a missing endpoint, a UI polish, or a small new feature.",
-    "",
-    "Implement it end-to-end (API route + frontend if needed), write any relevant tests,",
-    "then update PROGRESS.md with what you built.",
-  ].join("\n");
 }
