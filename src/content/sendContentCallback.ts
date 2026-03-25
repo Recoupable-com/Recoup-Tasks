@@ -3,20 +3,6 @@ import { NEW_API_BASE_URL } from "../consts";
 import type { ContentRunResult } from "./pollContentRuns";
 
 /**
- * Determines overall status from individual run results.
- */
-export function resolveOverallStatus(
-  results: ContentRunResult[],
-): "completed" | "failed" | "timeout" {
-  const allCompleted = results.every(r => r.status === "completed");
-  const anyTimeout = results.some(r => r.status === "timeout");
-
-  if (anyTimeout) return "timeout";
-  if (allCompleted) return "completed";
-  return "failed";
-}
-
-/**
  * Sends aggregated content run results to the callback endpoint.
  * Throws on missing env vars or failed callback.
  */

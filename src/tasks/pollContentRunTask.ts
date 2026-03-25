@@ -2,10 +2,8 @@ import { schemaTask } from "@trigger.dev/sdk/v3";
 import { pollContentRunPayloadSchema } from "../schemas/pollContentRunSchema";
 import { logStep } from "../sandboxes/logStep";
 import { pollContentRuns } from "../content/pollContentRuns";
-import {
-  resolveOverallStatus,
-  sendContentCallback,
-} from "../content/sendContentCallback";
+import { resolveOverallStatus } from "../content/resolveOverallStatus";
+import { sendContentCallback } from "../content/sendContentCallback";
 
 /**
  * Polls Trigger.dev create-content task runs until all are finished,

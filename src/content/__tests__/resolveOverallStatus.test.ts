@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { resolveOverallStatus } from "../sendContentCallback";
+import { resolveOverallStatus } from "../resolveOverallStatus";
 import type { ContentRunResult } from "../pollContentRuns";
 
 describe("resolveOverallStatus", () => {

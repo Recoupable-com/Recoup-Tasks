@@ -2,7 +2,6 @@ import { runs, wait } from "@trigger.dev/sdk/v3";
 import { logStep } from "../sandboxes/logStep";
 
 const POLL_INTERVAL_SECONDS = 30;
-const MAX_ATTEMPTS = 60;
 const RETRIEVAL_FAILURE_THRESHOLD = 3;
 
 export type ContentRunResult = {
@@ -14,8 +13,8 @@ export type ContentRunResult = {
 };
 
 /**
- * Polls Trigger.dev create-content runs until all are finished or max attempts reached.
- * Returns aggregated results for each run.
+ * Polls Trigger.dev create-content runs until all are finished.
+ * Bounded by the task's maxDuration rather than an internal attempt limit.
  */
 export async function pollContentRuns(
   runIds: string[],
@@ -23,10 +22,8 @@ export async function pollContentRuns(
   const pendingRunIds = new Set(runIds);
   const results: ContentRunResult[] = [];
   const retrievalFailures = new Map<string, number>();
-  let attempts = 0;
 
-  while (pendingRunIds.size > 0 && attempts < MAX_ATTEMPTS) {
-    attempts++;
+  while (pendingRunIds.size > 0) {
 
     for (const runId of Array.from(pendingRunIds)) {
       try {
@@ -88,10 +85,6 @@ export async function pollContentRuns(
     if (pendingRunIds.size > 0) {
       await wait.for({ seconds: POLL_INTERVAL_SECONDS });
     }
-  }
-
-  for (const runId of pendingRunIds) {
-    results.push({ runId, status: "timeout" });
   }
 
   return results;
