@@ -1,6 +1,6 @@
-import { logger, schemaTask, wait } from "@trigger.dev/sdk/v3";
+import { logger, schemaTask, wait, runs } from "@trigger.dev/sdk/v3";
 import { pollContentRunPayloadSchema } from "../schemas/pollContentRunSchema";
-import { runs } from "@trigger.dev/sdk/v3";
+import { NEW_API_BASE_URL } from "../consts";
 
 const POLL_INTERVAL_SECONDS = 30;
 const MAX_ATTEMPTS = 60; // 30 min total
@@ -101,7 +101,7 @@ export const pollContentRunTask = schemaTask({
     }
 
     // Call callback endpoint
-    const callbackUrl = `${process.env.RECOUP_API_BASE_URL}/api/content-agent/callback`;
+    const callbackUrl = `${NEW_API_BASE_URL}/api/content-agent/callback`;
     const callbackSecret = process.env.CODING_AGENT_CALLBACK_SECRET;
 
     logger.info("Calling callback", { callbackUrl, overallStatus, resultCount: results.length });
