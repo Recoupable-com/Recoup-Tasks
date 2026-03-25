@@ -102,7 +102,7 @@ export const pollContentRunTask = schemaTask({
 
     // Call callback endpoint
     const callbackUrl = `${process.env.RECOUP_API_BASE_URL}/api/content-agent/callback`;
-    const callbackSecret = process.env.CONTENT_AGENT_CALLBACK_SECRET;
+    const callbackSecret = process.env.CODING_AGENT_CALLBACK_SECRET;
 
     logger.info("Calling callback", { callbackUrl, overallStatus, resultCount: results.length });
 
