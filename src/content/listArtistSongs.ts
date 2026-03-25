@@ -78,7 +78,7 @@ async function listMp3sInRepo(
     tree: Array<{ path: string; type: string }>;
   };
 
-  const artistPrefix = `artists/${artistSlug}/`;
+  const artistPrefix = `artists/${artistSlug}/songs/`;
   return data.tree
     .filter(
       entry =>
