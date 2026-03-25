@@ -6,8 +6,8 @@ import { resolveOverallStatus } from "../content/resolveOverallStatus";
 import { sendContentCallback } from "../content/sendContentCallback";
 
 /**
- * Polls Trigger.dev create-content task runs until all are finished,
- * then calls the content-agent callback endpoint with results.
+ * Waits for Trigger.dev create-content task runs to finish using
+ * native runs.poll(), then calls the content-agent callback with results.
  */
 export const pollContentRunTask = schemaTask({
   id: "poll-content-run",

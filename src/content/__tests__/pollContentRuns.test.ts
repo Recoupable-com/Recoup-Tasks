@@ -2,10 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@trigger.dev/sdk/v3", () => ({
   runs: {
-    retrieve: vi.fn(),
-  },
-  wait: {
-    for: vi.fn().mockResolvedValue(undefined),
+    poll: vi.fn(),
   },
 }));
 
@@ -13,19 +10,18 @@ vi.mock("../../sandboxes/logStep", () => ({
   logStep: vi.fn(),
 }));
 
-import { runs, wait } from "@trigger.dev/sdk/v3";
+import { runs } from "@trigger.dev/sdk/v3";
 import { pollContentRuns } from "../pollContentRuns";
 
-const mockRetrieve = vi.mocked(runs.retrieve);
-const mockWaitFor = vi.mocked(wait.for);
+const mockPoll = vi.mocked(runs.poll);
 
 beforeEach(() => {
   vi.clearAllMocks();
 });
 
 describe("pollContentRuns", () => {
-  it("returns completed results when all runs finish on first poll", async () => {
-    mockRetrieve.mockResolvedValue({
+  it("returns completed results when all runs finish", async () => {
+    mockPoll.mockResolvedValue({
       status: "COMPLETED",
       output: { videoSourceUrl: "https://v.mp4", captionText: "caption" },
     } as any);
@@ -36,11 +32,13 @@ describe("pollContentRuns", () => {
       { runId: "run-1", status: "completed", videoUrl: "https://v.mp4", captionText: "caption" },
       { runId: "run-2", status: "completed", videoUrl: "https://v.mp4", captionText: "caption" },
     ]);
-    expect(mockWaitFor).not.toHaveBeenCalled();
+    expect(mockPoll).toHaveBeenCalledTimes(2);
+    expect(mockPoll).toHaveBeenCalledWith("run-1", { pollIntervalMs: 30_000 });
+    expect(mockPoll).toHaveBeenCalledWith("run-2", { pollIntervalMs: 30_000 });
   });
 
   it("returns failed result for FAILED run status", async () => {
-    mockRetrieve.mockResolvedValue({ status: "FAILED" } as any);
+    mockPoll.mockResolvedValue({ status: "FAILED" } as any);
 
     const results = await pollContentRuns(["run-1"]);
 
@@ -50,7 +48,7 @@ describe("pollContentRuns", () => {
   });
 
   it("returns failed result for CANCELED run status", async () => {
-    mockRetrieve.mockResolvedValue({ status: "CANCELED" } as any);
+    mockPoll.mockResolvedValue({ status: "CANCELED" } as any);
 
     const results = await pollContentRuns(["run-1"]);
 
@@ -59,57 +57,18 @@ describe("pollContentRuns", () => {
     ]);
   });
 
-  it("polls again when run is still in progress", async () => {
-    let callCount = 0;
-    mockRetrieve.mockImplementation(async () => {
-      callCount++;
-      if (callCount <= 1) {
-        return { status: "EXECUTING" } as any;
-      }
-      return {
-        status: "COMPLETED",
-        output: { videoSourceUrl: "https://v.mp4" },
-      } as any;
-    });
+  it("returns failed result when runs.poll throws", async () => {
+    mockPoll.mockRejectedValue(new Error("Poll timeout"));
 
     const results = await pollContentRuns(["run-1"]);
 
     expect(results).toEqual([
-      { runId: "run-1", status: "completed", videoUrl: "https://v.mp4", captionText: undefined },
-    ]);
-    expect(mockWaitFor).toHaveBeenCalledTimes(1);
-  });
-
-  it("marks run as failed after 3 consecutive retrieval errors", async () => {
-    mockRetrieve.mockRejectedValue(new Error("Network error"));
-
-    const results = await pollContentRuns(["run-1"]);
-
-    expect(results).toEqual([
-      { runId: "run-1", status: "failed", error: "Retrieval failed 3 consecutive times" },
-    ]);
-  });
-
-  it("resets retrieval failure count on successful retrieve", async () => {
-    let callCount = 0;
-    mockRetrieve.mockImplementation(async () => {
-      callCount++;
-      if (callCount === 1) throw new Error("Network error");
-      if (callCount === 2) return { status: "EXECUTING" } as any;
-      if (callCount === 3) throw new Error("Network error");
-      if (callCount === 4) return { status: "EXECUTING" } as any;
-      return { status: "COMPLETED", output: null } as any;
-    });
-
-    const results = await pollContentRuns(["run-1"]);
-
-    expect(results).toEqual([
-      { runId: "run-1", status: "completed", videoUrl: undefined, captionText: undefined },
+      { runId: "run-1", status: "failed", error: "Poll timeout" },
     ]);
   });
 
   it("handles null output gracefully", async () => {
-    mockRetrieve.mockResolvedValue({
+    mockPoll.mockResolvedValue({
       status: "COMPLETED",
       output: null,
     } as any);
@@ -118,6 +77,37 @@ describe("pollContentRuns", () => {
 
     expect(results).toEqual([
       { runId: "run-1", status: "completed", videoUrl: undefined, captionText: undefined },
+    ]);
+  });
+
+  it("polls all runs concurrently", async () => {
+    let resolveOrder: string[] = [];
+    mockPoll.mockImplementation(async (runId: any) => {
+      resolveOrder.push(runId);
+      return { status: "COMPLETED", output: null } as any;
+    });
+
+    await pollContentRuns(["run-1", "run-2", "run-3"]);
+
+    expect(resolveOrder).toEqual(["run-1", "run-2", "run-3"]);
+    expect(mockPoll).toHaveBeenCalledTimes(3);
+  });
+
+  it("handles mixed results — some completed, some failed", async () => {
+    mockPoll
+      .mockResolvedValueOnce({
+        status: "COMPLETED",
+        output: { videoSourceUrl: "https://v.mp4" },
+      } as any)
+      .mockResolvedValueOnce({ status: "FAILED" } as any)
+      .mockRejectedValueOnce(new Error("Network error"));
+
+    const results = await pollContentRuns(["run-1", "run-2", "run-3"]);
+
+    expect(results).toEqual([
+      { runId: "run-1", status: "completed", videoUrl: "https://v.mp4", captionText: undefined },
+      { runId: "run-2", status: "failed", error: "Run failed" },
+      { runId: "run-3", status: "failed", error: "Network error" },
     ]);
   });
 });
