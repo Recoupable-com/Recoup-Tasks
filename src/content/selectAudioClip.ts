@@ -41,6 +41,7 @@ export interface SelectedAudioClip {
  * @param artistSlug - Artist directory name
  * @param clipDuration - How long the clip should be (seconds)
  * @param lipsync - Whether to prefer clips with lyrics (for lipsync mode)
+ * @param songs - Optional list of song slugs to restrict selection to
  * @returns Selected audio clip with all metadata
  */
 export async function selectAudioClip({
@@ -48,16 +49,28 @@ export async function selectAudioClip({
   artistSlug,
   clipDuration,
   lipsync,
+  songs,
 }: {
   githubRepo: string;
   artistSlug: string;
   clipDuration: number;
   lipsync: boolean;
+  songs?: string[];
 }): Promise<SelectedAudioClip> {
   // Step 1: List available songs
-  const songPaths = await listArtistSongs(githubRepo, artistSlug);
+  let songPaths = await listArtistSongs(githubRepo, artistSlug);
   if (songPaths.length === 0) {
     throw new Error(`No mp3 files found for artist ${artistSlug}`);
+  }
+
+  // Filter to allowed songs if specified
+  if (songs && songs.length > 0) {
+    songPaths = songPaths.filter(path =>
+      songs.some(slug => path.includes(`/songs/${slug}/`)),
+    );
+    if (songPaths.length === 0) {
+      throw new Error(`None of the specified songs [${songs.join(", ")}] were found`);
+    }
   }
 
   // Step 2: Pick a random song
