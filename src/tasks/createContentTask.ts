@@ -95,6 +95,7 @@ export const createContentTask = schemaTask({
       artistSlug: payload.artistSlug,
       clipDuration: DEFAULT_PIPELINE_CONFIG.clipDuration,
       lipsync: payload.lipsync,
+      songs: payload.songs,
     });
 
     // --- Step 4: Fetch artist/audience context ---
