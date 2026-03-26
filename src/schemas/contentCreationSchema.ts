@@ -14,6 +14,8 @@ export const createContentPayloadSchema = z.object({
   upscale: z.boolean().default(false),
   /** GitHub repo URL so the task can fetch artist files (face-guide, songs). */
   githubRepo: z.string().url("githubRepo must be a valid URL"),
+  /** Optional list of song slugs to restrict which songs the pipeline picks from. */
+  songs: z.array(z.string()).optional(),
 });
 
 export type CreateContentPayload = z.infer<typeof createContentPayloadSchema>;
