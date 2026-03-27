@@ -10,6 +10,10 @@ export interface TemplateData {
   imagePrompt: string;
   /** Whether this template uses the artist's face-guide for identity. Defaults to true. */
   usesFaceGuide: boolean;
+  /** Overrides the default face-swap / no-face instruction when set. */
+  customInstruction: string | null;
+  /** Overrides the default person-centric motion prompt when set. */
+  customMotionPrompt: string | null;
   styleGuide: Record<string, unknown> | null;
   captionGuide: Record<string, unknown> | null;
   captionExamples: string[];
@@ -61,11 +65,15 @@ export async function loadTemplate(templateName: string): Promise<TemplateData> 
   const imagePrompt = (sg?.imagePrompt as string) ?? "";
   // Default to true — most templates use the artist's face
   const usesFaceGuide = (sg?.usesFaceGuide as boolean) ?? true;
+  const customInstruction = (sg?.customInstruction as string) ?? null;
+  const customMotionPrompt = (sg?.customMotionPrompt as string) ?? null;
 
   return {
     name: templateName,
     imagePrompt,
     usesFaceGuide,
+    customInstruction,
+    customMotionPrompt,
     styleGuide,
     captionGuide,
     captionExamples,
@@ -128,6 +136,12 @@ export function buildMotionPrompt(template: TemplateData): string {
   const mood = template.videoMoods.length > 0
     ? template.videoMoods[Math.floor(Math.random() * template.videoMoods.length)]
     : "";
+
+  if (template.customMotionPrompt) {
+    return template.customMotionPrompt
+      .replace("{movement}", movement)
+      .replace("{mood}", mood);
+  }
 
   return `Completely static camera. The person stares at the camera. Movement: ${movement}.${mood ? ` Energy: ${mood}.` : ""} Shot on phone, low light, grainy.`;
 }
