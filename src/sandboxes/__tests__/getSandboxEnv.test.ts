@@ -35,6 +35,22 @@ describe("getSandboxEnv", () => {
     expect(env).not.toHaveProperty("GITHUB_TOKEN");
   });
 
+  it("includes CHARTMETRIC_REFRESH_TOKEN when set", () => {
+    process.env.CHARTMETRIC_REFRESH_TOKEN = "test-cm-token";
+
+    const env = getSandboxEnv("acc_123");
+
+    expect(env.CHARTMETRIC_REFRESH_TOKEN).toBe("test-cm-token");
+  });
+
+  it("omits CHARTMETRIC_REFRESH_TOKEN when not set", () => {
+    delete process.env.CHARTMETRIC_REFRESH_TOKEN;
+
+    const env = getSandboxEnv("acc_123");
+
+    expect(env).not.toHaveProperty("CHARTMETRIC_REFRESH_TOKEN");
+  });
+
   it("throws when RECOUP_API_KEY is missing", () => {
     delete process.env.RECOUP_API_KEY;
 
