@@ -11,7 +11,7 @@ import { CODING_AGENT_ACCOUNT_ID } from "../consts";
 import { PROGRESS_PROMPT_PREFIX, PROGRESS_PROMPT_SUFFIX } from "./promptPrefixes";
 
 /**
- * Background task that resumes a sandbox from a snapshot, applies feedback
+ * Background task that resumes a named sandbox, applies feedback
  * via the Claude Code agent, and pushes the updates to the existing PR branch.
  */
 export const updatePRTask = schemaTask({
@@ -22,20 +22,19 @@ export const updatePRTask = schemaTask({
     maxAttempts: 0,
   },
   run: async (payload) => {
-    const { feedback, snapshotId, branch, repo, callbackThreadId } = payload;
+    const { feedback, branch, repo, callbackThreadId } = payload;
     const { token, teamId, projectId } = getVercelSandboxCredentials();
 
-    logStep("Resuming sandbox from snapshot");
+    logStep("Resuming sandbox by name");
 
-    const sandbox = await Sandbox.create({
+    const sandbox = await Sandbox.get({
+      name: CODING_AGENT_ACCOUNT_ID,
       token,
       teamId,
       projectId,
-      source: { type: "snapshot", snapshotId },
-      timeout: 30 * 60 * 1000,
     });
 
-    logStep("Sandbox resumed", false, { sandboxId: sandbox.sandboxId, snapshotId });
+    logStep("Sandbox resumed", false, { sandboxId: sandbox.name });
 
     try {
       await configureGitAuth(sandbox);
@@ -66,13 +65,9 @@ export const updatePRTask = schemaTask({
         ].join("\n"),
       });
 
-      logStep("Taking new snapshot");
-      const newSnapshot = await sandbox.snapshot();
-
       const callbackPayload = {
         threadId: callbackThreadId,
         status: "updated" as const,
-        snapshotId: newSnapshot.snapshotId,
         stdout: agentResult.stdout,
         stderr: agentResult.stderr,
       };
@@ -80,10 +75,8 @@ export const updatePRTask = schemaTask({
       await notifyCodingAgentCallback(callbackPayload);
 
       metadata.set("currentStep", "Complete");
-
-      return { snapshotId: newSnapshot.snapshotId };
     } finally {
-      logStep("Stopping sandbox", false, { sandboxId: sandbox.sandboxId });
+      logStep("Stopping sandbox", false, { sandboxId: sandbox.name });
       await sandbox.stop();
     }
   },

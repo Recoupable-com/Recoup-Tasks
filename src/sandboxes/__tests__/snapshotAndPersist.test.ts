@@ -5,12 +5,10 @@ vi.mock("@trigger.dev/sdk/v3", () => ({
 }));
 
 vi.mock("../../recoup/updateAccountSnapshot", () => ({
-  updateAccountSnapshot: vi.fn().mockResolvedValue({ success: true, snapshotId: "snap_123" }),
+  updateAccountSnapshot: vi.fn().mockResolvedValue({ success: true }),
 }));
 
 const { snapshotAndPersist } = await import("../snapshotAndPersist");
-
-const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
 function createMockSandbox() {
   return {
@@ -26,26 +24,31 @@ beforeEach(() => {
 });
 
 describe("snapshotAndPersist", () => {
-  it("passes 7-day expiration to sandbox.snapshot()", async () => {
-    const sandbox = createMockSandbox();
-    await snapshotAndPersist(sandbox, "acc_456");
-    expect(sandbox.snapshot).toHaveBeenCalledWith({ expiration: SEVEN_DAYS_MS });
-  });
-
-  it("returns the snapshot result", async () => {
-    const sandbox = createMockSandbox();
-    const result = await snapshotAndPersist(sandbox, "acc_456");
-    expect(result.snapshotId).toBe("snap_123");
-  });
-
-  it("persists snapshot with github repo when provided", async () => {
+  it("persists github repo without snapshotId", async () => {
     const sandbox = createMockSandbox();
     const { updateAccountSnapshot } = await import("../../recoup/updateAccountSnapshot");
     await snapshotAndPersist(sandbox, "acc_456", "https://github.com/org/repo");
     expect(updateAccountSnapshot).toHaveBeenCalledWith(
       "acc_456",
-      "snap_123",
+      undefined,
       "https://github.com/org/repo",
+    );
+  });
+
+  it("does not take a sandbox snapshot", async () => {
+    const sandbox = createMockSandbox();
+    await snapshotAndPersist(sandbox, "acc_456");
+    expect(sandbox.snapshot).not.toHaveBeenCalled();
+  });
+
+  it("persists without snapshotId when no github repo", async () => {
+    const sandbox = createMockSandbox();
+    const { updateAccountSnapshot } = await import("../../recoup/updateAccountSnapshot");
+    await snapshotAndPersist(sandbox, "acc_456");
+    expect(updateAccountSnapshot).toHaveBeenCalledWith(
+      "acc_456",
+      undefined,
+      undefined,
     );
   });
 });

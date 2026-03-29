@@ -20,7 +20,7 @@ import {
 /**
  * Background task that connects to an existing Vercel Sandbox, ensures OpenClaw
  * is installed with AI Gateway, runs a command with arguments, captures
- * output, takes a snapshot, and updates the account's snapshot ID.
+ * output, persists metadata, and pushes to GitHub.
  */
 export const runSandboxCommandTask = schemaTask({
   id: "run-sandbox-command",
@@ -42,7 +42,7 @@ export const runSandboxCommandTask = schemaTask({
       accountId,
     });
 
-    const sandbox = await Sandbox.get({ sandboxId, token, teamId, projectId });
+    const sandbox = await Sandbox.get({ name: sandboxId, token, teamId, projectId });
 
     logStep("Connected to sandbox");
 
@@ -91,20 +91,12 @@ export const runSandboxCommandTask = schemaTask({
       logStep("Pushing to GitHub");
       await pushSandboxToGithub(sandbox);
 
-      const snapshotResult = await snapshotAndPersist(
-        sandbox,
-        accountId,
-        githubRepo ?? undefined
-      );
+      await snapshotAndPersist(sandbox, accountId, githubRepo ?? undefined);
 
       const result: SandboxResult = {
         stdout,
         stderr,
         exitCode,
-        snapshot: {
-          id: snapshotResult.snapshotId,
-          expiresAt: snapshotResult.expiresAt.toISOString(),
-        },
       };
 
       logStep("Sandbox command completed successfully");

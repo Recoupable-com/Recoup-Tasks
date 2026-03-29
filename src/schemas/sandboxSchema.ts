@@ -12,18 +12,10 @@ export type RunSandboxCommandPayload = z.infer<
   typeof runSandboxCommandPayloadSchema
 >;
 
-export const snapshotSchema = z.object({
-  id: z.string(),
-  expiresAt: z.string(),
-});
-
-export type Snapshot = z.infer<typeof snapshotSchema>;
-
 export const sandboxResultSchema = z.object({
   stdout: z.string(),
   stderr: z.string(),
   exitCode: z.number(),
-  snapshot: snapshotSchema,
 });
 
 export type SandboxResult = z.infer<typeof sandboxResultSchema>;

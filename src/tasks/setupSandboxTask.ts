@@ -29,25 +29,19 @@ export const setupSandboxTask = schemaTask({
       const { githubRepo } = await provisionSandbox(sandbox, sandboxId, accountId);
       logStep("Provisioning complete", false);
 
-      logStep("Taking snapshot");
-      const snapshotResult = await snapshotAndPersist(
-        sandbox,
-        accountId,
-        githubRepo,
-      );
+      logStep("Persisting sandbox metadata");
+      await snapshotAndPersist(sandbox, accountId, githubRepo);
 
       logStep("Sandbox setup complete", true, {
-        sandboxId: sandbox.sandboxId,
+        sandboxId: sandbox.name,
         githubRepo: githubRepo ?? null,
-        snapshotId: snapshotResult.snapshotId,
       });
 
       return {
         githubRepo: githubRepo ?? null,
-        snapshotId: snapshotResult.snapshotId,
       };
     } finally {
-      logStep("Stopping sandbox", false, { sandboxId: sandbox.sandboxId });
+      logStep("Stopping sandbox", false, { sandboxId: sandbox.name });
       await sandbox.stop();
     }
   },

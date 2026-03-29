@@ -61,14 +61,10 @@ export const codingAgentTask = schemaTask({
 
       const prs = await pushAndCreatePRsViaAgent(sandbox, { prompt, branch, agentStdout: agentResult.stdout });
 
-      logStep("Taking snapshot");
-      const { snapshotId } = await sandbox.snapshot();
-
       const callbackPayload = {
         threadId: callbackThreadId,
         status: (prs.length > 0 ? "pr_created" : "no_changes") as "pr_created" | "no_changes",
         branch,
-        snapshotId,
         prs,
         stdout: agentResult.stdout,
         stderr: agentResult.stderr,
@@ -78,9 +74,9 @@ export const codingAgentTask = schemaTask({
 
       metadata.set("currentStep", "Complete");
 
-      return { branch, snapshotId, prs, stdout: agentResult.stdout, stderr: agentResult.stderr };
+      return { branch, prs, stdout: agentResult.stdout, stderr: agentResult.stderr };
     } finally {
-      logStep("Stopping sandbox", false, { sandboxId: sandbox.sandboxId });
+      logStep("Stopping sandbox", false, { sandboxId: sandbox.name });
       await sandbox.stop();
     }
   },

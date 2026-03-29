@@ -12,7 +12,6 @@ vi.mock("@trigger.dev/sdk/v3", () => ({
 }));
 
 const mockSandboxStop = vi.fn();
-const mockSandboxSnapshot = vi.fn().mockResolvedValue({ snapshotId: "snap_123" });
 const mockGetOrCreateSandbox = vi.fn();
 
 vi.mock("../../sandboxes/getOrCreateSandbox", () => ({
@@ -60,9 +59,8 @@ beforeEach(() => {
   mockGetOrCreateSandbox.mockResolvedValue({
     sandboxId: "sbx-123",
     sandbox: {
-      sandboxId: "sbx-123",
+      name: "sbx-123",
       stop: mockSandboxStop,
-      snapshot: mockSandboxSnapshot,
     },
   });
 });
