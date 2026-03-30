@@ -110,8 +110,8 @@ export const createContentTask = schemaTask({
     // --- Step 5: Generate image ---
     logStep("Generating image");
     const referenceImagePath = pickRandomReferenceImage(template);
-    const instruction = template.customInstruction
-      ?? (template.usesFaceGuide ? FACE_SWAP_INSTRUCTION : NO_FACE_INSTRUCTION);
+    // Build prompt: face-swap instruction (if needed) + template scene + style guide
+    const instruction = template.usesFaceGuide ? FACE_SWAP_INSTRUCTION : NO_FACE_INSTRUCTION;
     const basePrompt = `${instruction} ${template.imagePrompt}`;
     const fullPrompt = buildImagePrompt(basePrompt, template.styleGuide);
     let imageUrl = await generateContentImage({
