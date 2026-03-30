@@ -1,9 +1,12 @@
 import { logger } from "@trigger.dev/sdk/v3";
 import { listArtistSongs, parseSongPath } from "./listArtistSongs";
+import { filterSongPaths } from "./filterSongPaths";
 import { fetchGithubFile } from "./fetchGithubFile";
 import { transcribeSong } from "./transcribeSong";
 import { analyzeClips, type SongClip } from "./analyzeClips";
 import type { SongLyrics } from "./transcribeSong";
+import type { CreateContentPayload } from "../schemas/contentCreationSchema";
+import { DEFAULT_PIPELINE_CONFIG } from "./defaultPipelineConfig";
 
 export interface SelectedAudioClip {
   /** Original song filename */
@@ -43,22 +46,19 @@ export interface SelectedAudioClip {
  * @param lipsync - Whether to prefer clips with lyrics (for lipsync mode)
  * @returns Selected audio clip with all metadata
  */
-export async function selectAudioClip({
-  githubRepo,
-  artistSlug,
-  clipDuration,
-  lipsync,
-}: {
-  githubRepo: string;
-  artistSlug: string;
-  clipDuration: number;
-  lipsync: boolean;
-}): Promise<SelectedAudioClip> {
+export async function selectAudioClip(
+  payload: Pick<CreateContentPayload, "githubRepo" | "artistSlug" | "lipsync" | "songs">,
+): Promise<SelectedAudioClip> {
+  const { githubRepo, artistSlug, lipsync, songs } = payload;
+  const clipDuration = DEFAULT_PIPELINE_CONFIG.clipDuration;
   // Step 1: List available songs
-  const songPaths = await listArtistSongs(githubRepo, artistSlug);
+  let songPaths = await listArtistSongs(githubRepo, artistSlug);
   if (songPaths.length === 0) {
     throw new Error(`No mp3 files found for artist ${artistSlug}`);
   }
+
+  // Step 1b: Filter to allowed songs if specified
+  songPaths = filterSongPaths(songPaths, songs, artistSlug);
 
   // Step 2: Pick a random song
   const encodedPath = songPaths[Math.floor(Math.random() * songPaths.length)];
