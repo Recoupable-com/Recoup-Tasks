@@ -1,5 +1,5 @@
-import { logger } from "@trigger.dev/sdk/v3";
 import { parseSongPath } from "./listArtistSongs";
+import { logStep } from "../sandboxes/logStep";
 
 /**
  * Filters song paths to only include those matching the given slugs.
@@ -32,6 +32,6 @@ export function filterSongPaths(
     );
   }
 
-  logger.log("Filtered to specified songs", { songs, matchCount: filtered.length });
+  logStep("Filtered to specified songs", false, { songs, matchCount: filtered.length });
   return filtered;
 }

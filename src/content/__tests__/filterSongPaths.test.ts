@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
 import { filterSongPaths } from "../filterSongPaths";
 
-vi.mock("@trigger.dev/sdk/v3", () => ({
-  logger: { log: vi.fn() },
+vi.mock("../../sandboxes/logStep", () => ({
+  logStep: vi.fn(),
 }));
 
 describe("filterSongPaths", () => {
