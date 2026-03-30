@@ -1,5 +1,6 @@
 import { logger } from "@trigger.dev/sdk/v3";
 import { listArtistSongs, parseSongPath } from "./listArtistSongs";
+import { filterSongPaths } from "./filterSongPaths";
 import { fetchGithubFile } from "./fetchGithubFile";
 import { transcribeSong } from "./transcribeSong";
 import { analyzeClips, type SongClip } from "./analyzeClips";
@@ -64,15 +65,7 @@ export async function selectAudioClip({
 
   // Step 1b: Filter to allowed songs if specified
   if (songs && songs.length > 0) {
-    songPaths = songPaths.filter(path =>
-      songs.some(slug => path.includes(`/songs/${slug}`)),
-    );
-    if (songPaths.length === 0) {
-      throw new Error(
-        `None of the specified songs [${songs.join(", ")}] were found for artist ${artistSlug}`,
-      );
-    }
-    logger.log("Filtered to specified songs", { songs, matchCount: songPaths.length });
+    songPaths = filterSongPaths(songPaths, songs, artistSlug);
   }
 
   // Step 2: Pick a random song
