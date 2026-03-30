@@ -13,7 +13,6 @@ import { generateCaption } from "../content/generateCaption";
 import { fetchArtistContext } from "../content/fetchArtistContext";
 import { fetchAudienceContext } from "../content/fetchAudienceContext";
 import { renderFinalVideo } from "../content/renderFinalVideo";
-import { DEFAULT_PIPELINE_CONFIG } from "../content/defaultPipelineConfig";
 import {
   loadTemplate,
   pickRandomReferenceImage,
@@ -90,10 +89,7 @@ export const createContentTask = schemaTask({
 
     // --- Step 3: Select audio clip ---
     logStep("Selecting audio clip");
-    const audioClip = await selectAudioClip(
-      payload,
-      DEFAULT_PIPELINE_CONFIG.clipDuration,
-    );
+    const audioClip = await selectAudioClip(payload);
 
     // --- Step 4: Fetch artist/audience context ---
     logStep("Fetching artist context");

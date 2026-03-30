@@ -175,15 +175,12 @@ async function testUpscaleVideo(): Promise<void> {
 async function testAudio(): Promise<void> {
   setupFal();
   const { selectAudioClip } = await import("./selectAudioClip.js");
-  const { DEFAULT_PIPELINE_CONFIG } = await import("./defaultPipelineConfig.js");
-
   console.log("\n🎵 Testing: Audio Selection\n");
   console.log("  🔄 Finding songs, transcribing, analyzing...\n");
 
   const clip = await selectAudioClip({
     githubRepo: GITHUB_REPO,
     artistSlug: ARTIST_SLUG,
-    clipDuration: DEFAULT_PIPELINE_CONFIG.clipDuration,
     lipsync: false,
   });
 

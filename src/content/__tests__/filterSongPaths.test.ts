@@ -70,6 +70,27 @@ describe("filterSongPaths", () => {
     ]);
   });
 
+  it("returns all paths when songs is undefined", () => {
+    const songPaths = [
+      "artists/gatsby-grace/songs/hiccups/hiccups.mp3",
+      "artists/gatsby-grace/songs/adhd/adhd.mp3",
+    ];
+
+    const result = filterSongPaths(songPaths, undefined, artistSlug);
+
+    expect(result).toEqual(songPaths);
+  });
+
+  it("returns all paths when songs is empty", () => {
+    const songPaths = [
+      "artists/gatsby-grace/songs/hiccups/hiccups.mp3",
+    ];
+
+    const result = filterSongPaths(songPaths, [], artistSlug);
+
+    expect(result).toEqual(songPaths);
+  });
+
   it("works with org repo encoded paths", () => {
     const songPaths = [
       "__ORG_REPO__https://github.com/org/repo__artists/gatsby-grace/songs/hiccups/hiccups.mp3",

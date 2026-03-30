@@ -6,6 +6,7 @@ import { transcribeSong } from "./transcribeSong";
 import { analyzeClips, type SongClip } from "./analyzeClips";
 import type { SongLyrics } from "./transcribeSong";
 import type { CreateContentPayload } from "../schemas/contentCreationSchema";
+import { DEFAULT_PIPELINE_CONFIG } from "./defaultPipelineConfig";
 
 export interface SelectedAudioClip {
   /** Original song filename */
@@ -47,9 +48,9 @@ export interface SelectedAudioClip {
  */
 export async function selectAudioClip(
   payload: Pick<CreateContentPayload, "githubRepo" | "artistSlug" | "lipsync" | "songs">,
-  clipDuration: number,
 ): Promise<SelectedAudioClip> {
   const { githubRepo, artistSlug, lipsync, songs } = payload;
+  const clipDuration = DEFAULT_PIPELINE_CONFIG.clipDuration;
   // Step 1: List available songs
   let songPaths = await listArtistSongs(githubRepo, artistSlug);
   if (songPaths.length === 0) {
@@ -57,9 +58,7 @@ export async function selectAudioClip(
   }
 
   // Step 1b: Filter to allowed songs if specified
-  if (songs && songs.length > 0) {
-    songPaths = filterSongPaths(songPaths, songs, artistSlug);
-  }
+  songPaths = filterSongPaths(songPaths, songs, artistSlug);
 
   // Step 2: Pick a random song
   const encodedPath = songPaths[Math.floor(Math.random() * songPaths.length)];

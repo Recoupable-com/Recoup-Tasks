@@ -4,6 +4,7 @@ import { parseSongPath } from "./listArtistSongs";
 /**
  * Filters song paths to only include those matching the given slugs.
  * Uses exact slug matching against the directory name under /songs/.
+ * Returns songPaths unmodified when songs is empty or undefined.
  *
  * @param songPaths - Encoded song paths from listArtistSongs
  * @param songs - Song slugs to keep (e.g. ["hiccups", "adhd"])
@@ -12,9 +13,11 @@ import { parseSongPath } from "./listArtistSongs";
  */
 export function filterSongPaths(
   songPaths: string[],
-  songs: string[],
+  songs: string[] | undefined,
   artistSlug: string,
 ): string[] {
+  if (!songs || songs.length === 0) return songPaths;
+
   const requested = new Set(songs.map(s => s.trim().toLowerCase()).filter(Boolean));
 
   const filtered = songPaths.filter(encodedPath => {
