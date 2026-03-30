@@ -90,13 +90,10 @@ export const createContentTask = schemaTask({
 
     // --- Step 3: Select audio clip ---
     logStep("Selecting audio clip");
-    const audioClip = await selectAudioClip({
-      githubRepo: payload.githubRepo,
-      artistSlug: payload.artistSlug,
-      clipDuration: DEFAULT_PIPELINE_CONFIG.clipDuration,
-      lipsync: payload.lipsync,
-      songs: payload.songs,
-    });
+    const audioClip = await selectAudioClip(
+      payload,
+      DEFAULT_PIPELINE_CONFIG.clipDuration,
+    );
 
     // --- Step 4: Fetch artist/audience context ---
     logStep("Fetching artist context");

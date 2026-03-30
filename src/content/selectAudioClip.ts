@@ -5,6 +5,7 @@ import { fetchGithubFile } from "./fetchGithubFile";
 import { transcribeSong } from "./transcribeSong";
 import { analyzeClips, type SongClip } from "./analyzeClips";
 import type { SongLyrics } from "./transcribeSong";
+import type { CreateContentPayload } from "../schemas/contentCreationSchema";
 
 export interface SelectedAudioClip {
   /** Original song filename */
@@ -44,19 +45,11 @@ export interface SelectedAudioClip {
  * @param lipsync - Whether to prefer clips with lyrics (for lipsync mode)
  * @returns Selected audio clip with all metadata
  */
-export async function selectAudioClip({
-  githubRepo,
-  artistSlug,
-  clipDuration,
-  lipsync,
-  songs,
-}: {
-  githubRepo: string;
-  artistSlug: string;
-  clipDuration: number;
-  lipsync: boolean;
-  songs?: string[];
-}): Promise<SelectedAudioClip> {
+export async function selectAudioClip(
+  payload: Pick<CreateContentPayload, "githubRepo" | "artistSlug" | "lipsync" | "songs">,
+  clipDuration: number,
+): Promise<SelectedAudioClip> {
+  const { githubRepo, artistSlug, lipsync, songs } = payload;
   // Step 1: List available songs
   let songPaths = await listArtistSongs(githubRepo, artistSlug);
   if (songPaths.length === 0) {
