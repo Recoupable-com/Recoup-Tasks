@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { selectAttachedAudioClip } from "../selectAttachedAudioClip";
 
-vi.mock("@trigger.dev/sdk/v3", () => ({
-  logger: { log: vi.fn() },
+vi.mock("../../sandboxes/logStep", () => ({
+  logStep: vi.fn(),
 }));
 
 vi.mock("../transcribeSong", () => ({

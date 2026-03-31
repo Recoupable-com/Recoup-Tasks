@@ -10,6 +10,7 @@ import { upscaleImage } from "../content/upscaleImage";
 import { upscaleVideo } from "../content/upscaleVideo";
 import { selectAudioClip } from "../content/selectAudioClip";
 import { selectAttachedAudioClip } from "../content/selectAttachedAudioClip";
+import { fetchFaceGuideFromUrl } from "../content/fetchFaceGuideFromUrl";
 import { generateCaption } from "../content/generateCaption";
 import { fetchArtistContext } from "../content/fetchArtistContext";
 import { fetchAudienceContext } from "../content/fetchAudienceContext";
@@ -74,21 +75,7 @@ export const createContentTask = schemaTask({
     if (template.usesFaceGuide) {
       const imageUrl = payload.images?.[0];
       if (imageUrl) {
-        // Use the user-provided image as the face guide
-        logStep("Using provided image as face-guide");
-        const response = await fetch(imageUrl);
-        if (!response.ok) {
-          throw new Error(`Failed to download image: ${response.status}`);
-        }
-        const imageBuffer = Buffer.from(await response.arrayBuffer());
-        logStep("Uploading face-guide to fal.ai storage", true, {
-          sizeBytes: imageBuffer.byteLength,
-        });
-        const contentType = response.headers.get("content-type") || "image/png";
-        const originalName = new URL(imageUrl).pathname.split("/").pop() || "face-guide.png";
-        const faceGuideFile = new File([new Uint8Array(imageBuffer)], originalName, { type: contentType });
-        faceGuideUrl = await fal.storage.upload(faceGuideFile);
-        logStep("Face-guide uploaded", false, { faceGuideUrl });
+        faceGuideUrl = await fetchFaceGuideFromUrl(imageUrl);
       } else {
         logStep("Fetching face-guide from GitHub");
         const faceGuideBuffer = await fetchGithubFile(

@@ -1,4 +1,4 @@
-import { logger } from "@trigger.dev/sdk/v3";
+import { logStep } from "../sandboxes/logStep";
 import { transcribeSong } from "./transcribeSong";
 import { analyzeClips, type SongClip } from "./analyzeClips";
 import { DEFAULT_PIPELINE_CONFIG } from "./defaultPipelineConfig";
@@ -22,7 +22,7 @@ export async function selectAttachedAudioClip({
   const clipDuration = DEFAULT_PIPELINE_CONFIG.clipDuration;
 
   // Download the attached audio
-  logger.log("Downloading attached audio", { url: audioUrl });
+  logStep("Downloading attached audio", { url: audioUrl });
   const response = await fetch(audioUrl);
   if (!response.ok) {
     throw new Error(`Failed to download attached audio: ${response.status} ${response.statusText}`);
@@ -35,7 +35,7 @@ export async function selectAttachedAudioClip({
   const songFilename = urlPath.split("/").pop() ?? "attached-audio.mp3";
   const songTitle = songFilename.replace(/\.(mp3|wav|m4a|ogg|aac)$/i, "");
 
-  logger.log("Attached audio downloaded", { songTitle, sizeBytes: songBuffer.byteLength });
+  logStep("Attached audio downloaded", { songTitle, sizeBytes: songBuffer.byteLength });
 
   // Transcribe
   const lyrics = await transcribeSong(songBuffer, songFilename);
@@ -68,7 +68,7 @@ export async function selectAttachedAudioClip({
   );
   const clipLyrics = clipSegments.map(s => s.text).join(" ");
 
-  logger.log("Attached audio clip selected", {
+  logStep("Attached audio clip selected", {
     songTitle,
     startSeconds: selectedClip.startSeconds,
     clipLyrics: clipLyrics.slice(0, 80),
