@@ -72,22 +72,23 @@ export const createContentTask = schemaTask({
     // --- Step 2: Fetch face-guide (only if template uses it) ---
     let faceGuideUrl: string | null = null;
     if (template.usesFaceGuide) {
-      if (payload.attachedImageUrl) {
-        // Use the user-attached image as the face guide
-        logStep("Using attached image as face-guide");
-        const response = await fetch(payload.attachedImageUrl);
+      const imageUrl = payload.images?.[0];
+      if (imageUrl) {
+        // Use the user-provided image as the face guide
+        logStep("Using provided image as face-guide");
+        const response = await fetch(imageUrl);
         if (!response.ok) {
-          throw new Error(`Failed to download attached image: ${response.status}`);
+          throw new Error(`Failed to download image: ${response.status}`);
         }
         const imageBuffer = Buffer.from(await response.arrayBuffer());
-        logStep("Uploading attached face-guide to fal.ai storage", true, {
+        logStep("Uploading face-guide to fal.ai storage", true, {
           sizeBytes: imageBuffer.byteLength,
         });
         const contentType = response.headers.get("content-type") || "image/png";
-        const originalName = new URL(payload.attachedImageUrl).pathname.split("/").pop() || "face-guide.png";
+        const originalName = new URL(imageUrl).pathname.split("/").pop() || "face-guide.png";
         const faceGuideFile = new File([new Uint8Array(imageBuffer)], originalName, { type: contentType });
         faceGuideUrl = await fal.storage.upload(faceGuideFile);
-        logStep("Attached face-guide uploaded", false, { faceGuideUrl });
+        logStep("Face-guide uploaded", false, { faceGuideUrl });
       } else {
         logStep("Fetching face-guide from GitHub");
         const faceGuideBuffer = await fetchGithubFile(
@@ -107,11 +108,13 @@ export const createContentTask = schemaTask({
     }
 
     // --- Step 3: Select audio clip ---
+    // If any song entry is a URL, use it directly; otherwise select from repo
+    const songUrl = payload.songs?.find(s => s.startsWith("http"));
     let audioClip;
-    if (payload.attachedAudioUrl) {
-      logStep("Using attached audio");
+    if (songUrl) {
+      logStep("Using song URL from songs array");
       audioClip = await selectAttachedAudioClip({
-        attachedAudioUrl: payload.attachedAudioUrl,
+        audioUrl: songUrl,
         lipsync: payload.lipsync,
       });
     } else {

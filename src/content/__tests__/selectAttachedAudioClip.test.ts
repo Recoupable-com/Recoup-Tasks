@@ -47,7 +47,7 @@ describe("selectAttachedAudioClip", () => {
     ]);
 
     await selectAttachedAudioClip({
-      attachedAudioUrl: "https://blob.vercel-storage.com/song.mp3",
+      audioUrl: "https://blob.vercel-storage.com/song.mp3",
       lipsync: false,
     });
 
@@ -62,7 +62,7 @@ describe("selectAttachedAudioClip", () => {
 
     await expect(
       selectAttachedAudioClip({
-        attachedAudioUrl: "https://example.com/missing.mp3",
+        audioUrl: "https://example.com/missing.mp3",
         lipsync: false,
       }),
     ).rejects.toThrow("Failed to download attached audio: 404 Not Found");
@@ -77,7 +77,7 @@ describe("selectAttachedAudioClip", () => {
     vi.mocked(analyzeClips).mockResolvedValue([]);
 
     const result = await selectAttachedAudioClip({
-      attachedAudioUrl: "https://blob.vercel-storage.com/content-attachments/audio/my-track.mp3",
+      audioUrl: "https://blob.vercel-storage.com/content-attachments/audio/my-track.mp3",
       lipsync: false,
     });
 
@@ -96,7 +96,7 @@ describe("selectAttachedAudioClip", () => {
     ]);
 
     const result = await selectAttachedAudioClip({
-      attachedAudioUrl: "https://blob.vercel-storage.com/song.mp3",
+      audioUrl: "https://blob.vercel-storage.com/song.mp3",
       lipsync: false,
     });
 
@@ -116,7 +116,7 @@ describe("selectAttachedAudioClip", () => {
     ]);
 
     const result = await selectAttachedAudioClip({
-      attachedAudioUrl: "https://blob.vercel-storage.com/song.mp3",
+      audioUrl: "https://blob.vercel-storage.com/song.mp3",
       lipsync: true,
     });
 
@@ -134,7 +134,7 @@ describe("selectAttachedAudioClip", () => {
     ]);
 
     const result = await selectAttachedAudioClip({
-      attachedAudioUrl: "https://blob.vercel-storage.com/song.mp3",
+      audioUrl: "https://blob.vercel-storage.com/song.mp3",
       lipsync: false,
     });
 
