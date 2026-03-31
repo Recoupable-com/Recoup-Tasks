@@ -8,7 +8,8 @@ import { generateContentVideo } from "../content/generateContentVideo";
 import { generateAudioVideo } from "../content/generateAudioVideo";
 import { upscaleImage } from "../content/upscaleImage";
 import { upscaleVideo } from "../content/upscaleVideo";
-import { selectAudioClip } from "../content/selectAudioClip";
+import { resolveFaceGuide } from "../content/resolveFaceGuide";
+import { resolveAudioClip } from "../content/resolveAudioClip";
 import { generateCaption } from "../content/generateCaption";
 import { fetchArtistContext } from "../content/fetchArtistContext";
 import { fetchAudienceContext } from "../content/fetchAudienceContext";
@@ -69,27 +70,15 @@ export const createContentTask = schemaTask({
     const template = await loadTemplate(payload.template);
 
     // --- Step 2: Fetch face-guide (only if template uses it) ---
-    let faceGuideUrl: string | null = null;
-    if (template.usesFaceGuide) {
-      logStep("Fetching face-guide");
-      const faceGuideBuffer = await fetchGithubFile(
-        payload.githubRepo,
-        `artists/${payload.artistSlug}/context/images/face-guide.png`,
-      );
-      if (!faceGuideBuffer) {
-        throw new Error(`face-guide.png not found for artist ${payload.artistSlug}`);
-      }
-      logStep("Uploading face-guide to fal.ai storage", true, {
-        sizeBytes: faceGuideBuffer.byteLength,
-      });
-      const faceGuideFile = new File([faceGuideBuffer], "face-guide.png", { type: "image/png" });
-      faceGuideUrl = await fal.storage.upload(faceGuideFile);
-      logStep("Face-guide uploaded", false, { faceGuideUrl });
-    }
+    const faceGuideUrl = await resolveFaceGuide({
+      usesFaceGuide: template.usesFaceGuide,
+      images: payload.images,
+      githubRepo: payload.githubRepo,
+      artistSlug: payload.artistSlug,
+    });
 
     // --- Step 3: Select audio clip ---
-    logStep("Selecting audio clip");
-    const audioClip = await selectAudioClip(payload);
+    const audioClip = await resolveAudioClip(payload);
 
     // --- Step 4: Fetch artist/audience context ---
     logStep("Fetching artist context");
