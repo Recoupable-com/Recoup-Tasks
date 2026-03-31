@@ -85,6 +85,23 @@ describe("selectAttachedAudioClip", () => {
     expect(result.songTitle).toBe("my-track");
   });
 
+  it("decodes URL-encoded filenames from Slack URLs", async () => {
+    vi.mocked(transcribeSong).mockResolvedValue({
+      title: "Singin in the Rain 2",
+      fullLyrics: "",
+      segments: [],
+    });
+    vi.mocked(analyzeClips).mockResolvedValue([]);
+
+    const result = await selectAttachedAudioClip({
+      audioUrl: "https://blob.vercel-storage.com/content-attachments/audio/1774985247995-Singin%20in%20the%20Rain%202.mp3",
+      lipsync: false,
+    });
+
+    expect(result.songFilename).toBe("1774985247995-Singin-in-the-Rain-2.mp3");
+    expect(result.songTitle).toBe("1774985247995-Singin-in-the-Rain-2");
+  });
+
   it("transcribes the downloaded audio", async () => {
     vi.mocked(transcribeSong).mockResolvedValue({
       title: "song",

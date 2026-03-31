@@ -25,22 +25,52 @@ export async function transcribeSong(
   songBuffer: Buffer,
   songFilename: string,
 ): Promise<SongLyrics> {
-  logger.log("Transcribing song", { filename: songFilename });
+  logger.log("Transcribing song", {
+    filename: songFilename,
+    bufferSize: songBuffer.byteLength,
+  });
 
   // Upload audio to fal storage
   const file = new File([songBuffer], songFilename, { type: "audio/mpeg" });
-  const audioUrl = await fal.storage.upload(file);
+  logger.log("Uploading audio to fal storage", {
+    fileName: file.name,
+    fileSize: file.size,
+    fileType: file.type,
+  });
+
+  let audioUrl: string;
+  try {
+    audioUrl = await fal.storage.upload(file);
+    logger.log("Audio uploaded to fal storage", { audioUrl });
+  } catch (uploadError) {
+    logger.log("fal.storage.upload failed", {
+      error: String(uploadError),
+      message: (uploadError as Error).message,
+    });
+    throw uploadError;
+  }
 
   // Transcribe with Whisper
-  const result = await fal.subscribe("fal-ai/whisper" as string, {
-    input: {
-      audio_url: audioUrl,
-      task: "transcribe",
-      chunk_level: "word",
-      language: "en",
-    },
-    logs: true,
-  });
+  let result;
+  try {
+    result = await fal.subscribe("fal-ai/whisper" as string, {
+      input: {
+        audio_url: audioUrl,
+        task: "transcribe",
+        chunk_level: "word",
+        language: "en",
+      },
+      logs: true,
+    });
+  } catch (whisperError) {
+    logger.log("fal-ai/whisper failed", {
+      error: String(whisperError),
+      message: (whisperError as Error).message,
+      audioUrl,
+      filename: songFilename,
+    });
+    throw whisperError;
+  }
 
   const data = result.data as unknown as {
     text?: string;
