@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { selectAttachedAudioClip } from "../selectAttachedAudioClip";
 
 vi.mock("@trigger.dev/sdk/v3", () => ({
@@ -30,6 +30,10 @@ describe("selectAttachedAudioClip", () => {
         arrayBuffer: () => Promise.resolve(new ArrayBuffer(100)),
       }),
     );
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("downloads audio from the provided URL", async () => {

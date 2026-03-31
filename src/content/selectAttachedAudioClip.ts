@@ -49,7 +49,7 @@ export async function selectAttachedAudioClip({
       lyrics: "",
       reason: "fallback — no clips analyzed",
       mood: "unknown",
-      hasLyrics: true,
+      hasLyrics: false,
     });
   }
 

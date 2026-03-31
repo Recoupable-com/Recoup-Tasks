@@ -83,7 +83,9 @@ export const createContentTask = schemaTask({
         logStep("Uploading attached face-guide to fal.ai storage", true, {
           sizeBytes: imageBuffer.byteLength,
         });
-        const faceGuideFile = new File([new Uint8Array(imageBuffer)], "face-guide.png", { type: "image/png" });
+        const contentType = response.headers.get("content-type") || "image/png";
+        const originalName = new URL(payload.attachedImageUrl).pathname.split("/").pop() || "face-guide.png";
+        const faceGuideFile = new File([new Uint8Array(imageBuffer)], originalName, { type: contentType });
         faceGuideUrl = await fal.storage.upload(faceGuideFile);
         logStep("Attached face-guide uploaded", false, { faceGuideUrl });
       } else {
