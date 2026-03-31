@@ -16,6 +16,10 @@ export const createContentPayloadSchema = z.object({
   githubRepo: z.string().url("githubRepo must be a valid URL"),
   /** Optional list of song slugs to restrict which songs the pipeline picks from. */
   songs: z.array(z.string()).optional(),
+  /** Public URL of a user-attached audio file to use instead of selecting from Git songs. */
+  attachedAudioUrl: z.string().url().optional(),
+  /** Public URL of a user-attached image to use as the face guide instead of the repo face-guide.png. */
+  attachedImageUrl: z.string().url().optional(),
 });
 
 export type CreateContentPayload = z.infer<typeof createContentPayloadSchema>;

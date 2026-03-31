@@ -9,6 +9,7 @@ import { generateAudioVideo } from "../content/generateAudioVideo";
 import { upscaleImage } from "../content/upscaleImage";
 import { upscaleVideo } from "../content/upscaleVideo";
 import { selectAudioClip } from "../content/selectAudioClip";
+import { selectAttachedAudioClip } from "../content/selectAttachedAudioClip";
 import { generateCaption } from "../content/generateCaption";
 import { fetchArtistContext } from "../content/fetchArtistContext";
 import { fetchAudienceContext } from "../content/fetchAudienceContext";
@@ -71,25 +72,50 @@ export const createContentTask = schemaTask({
     // --- Step 2: Fetch face-guide (only if template uses it) ---
     let faceGuideUrl: string | null = null;
     if (template.usesFaceGuide) {
-      logStep("Fetching face-guide");
-      const faceGuideBuffer = await fetchGithubFile(
-        payload.githubRepo,
-        `artists/${payload.artistSlug}/context/images/face-guide.png`,
-      );
-      if (!faceGuideBuffer) {
-        throw new Error(`face-guide.png not found for artist ${payload.artistSlug}`);
+      if (payload.attachedImageUrl) {
+        // Use the user-attached image as the face guide
+        logStep("Using attached image as face-guide");
+        const response = await fetch(payload.attachedImageUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to download attached image: ${response.status}`);
+        }
+        const imageBuffer = Buffer.from(await response.arrayBuffer());
+        logStep("Uploading attached face-guide to fal.ai storage", true, {
+          sizeBytes: imageBuffer.byteLength,
+        });
+        const faceGuideFile = new File([new Uint8Array(imageBuffer)], "face-guide.png", { type: "image/png" });
+        faceGuideUrl = await fal.storage.upload(faceGuideFile);
+        logStep("Attached face-guide uploaded", false, { faceGuideUrl });
+      } else {
+        logStep("Fetching face-guide from GitHub");
+        const faceGuideBuffer = await fetchGithubFile(
+          payload.githubRepo,
+          `artists/${payload.artistSlug}/context/images/face-guide.png`,
+        );
+        if (!faceGuideBuffer) {
+          throw new Error(`face-guide.png not found for artist ${payload.artistSlug}`);
+        }
+        logStep("Uploading face-guide to fal.ai storage", true, {
+          sizeBytes: faceGuideBuffer.byteLength,
+        });
+        const faceGuideFile = new File([faceGuideBuffer], "face-guide.png", { type: "image/png" });
+        faceGuideUrl = await fal.storage.upload(faceGuideFile);
+        logStep("Face-guide uploaded", false, { faceGuideUrl });
       }
-      logStep("Uploading face-guide to fal.ai storage", true, {
-        sizeBytes: faceGuideBuffer.byteLength,
-      });
-      const faceGuideFile = new File([faceGuideBuffer], "face-guide.png", { type: "image/png" });
-      faceGuideUrl = await fal.storage.upload(faceGuideFile);
-      logStep("Face-guide uploaded", false, { faceGuideUrl });
     }
 
     // --- Step 3: Select audio clip ---
-    logStep("Selecting audio clip");
-    const audioClip = await selectAudioClip(payload);
+    let audioClip;
+    if (payload.attachedAudioUrl) {
+      logStep("Using attached audio");
+      audioClip = await selectAttachedAudioClip({
+        attachedAudioUrl: payload.attachedAudioUrl,
+        lipsync: payload.lipsync,
+      });
+    } else {
+      logStep("Selecting audio clip from repo");
+      audioClip = await selectAudioClip(payload);
+    }
 
     // --- Step 4: Fetch artist/audience context ---
     logStep("Fetching artist context");
