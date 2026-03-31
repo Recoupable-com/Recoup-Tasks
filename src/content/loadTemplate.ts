@@ -1,5 +1,6 @@
 import path from "node:path";
 import fs from "node:fs/promises";
+import { logger } from "@trigger.dev/sdk/v3";
 
 /**
  * Template data loaded from the bundled templates directory.
@@ -18,29 +19,95 @@ export interface TemplateData {
   referenceImagePaths: string[];
 }
 
-/** Base path to the bundled templates directory. */
-const TEMPLATES_DIR = path.resolve(__dirname, "../content/templates");
+/**
+ * Resolves the templates directory. Tries multiple strategies because
+ * esbuild changes __dirname at bundle time:
+ *   1. __dirname-relative (works locally with tsx)
+ *   2. process.cwd()-relative (works in Trigger.dev deployments where
+ *      additionalFiles preserves source-root-relative paths)
+ */
+async function resolveTemplatesDir(): Promise<string> {
+  const candidates = [
+    path.resolve(__dirname, "../content/templates"),
+    path.resolve(process.cwd(), "src/content/templates"),
+  ];
+
+  for (const dir of candidates) {
+    try {
+      await fs.access(dir);
+      return dir;
+    } catch {
+      // not found, try next
+    }
+  }
+
+  logger.error("Template directory not found", {
+    __dirname,
+    cwd: process.cwd(),
+    candidates,
+  });
+  throw new Error(
+    `Templates directory not found. Tried: ${candidates.join(", ")}`,
+  );
+}
 
 /**
  * Load all template data (style guide, caption guide, moods, movements, reference images).
  */
 export async function loadTemplate(templateName: string): Promise<TemplateData> {
-  const templateDir = path.join(TEMPLATES_DIR, templateName);
+  const templatesDir = await resolveTemplatesDir();
+  const templateDir = path.join(templatesDir, templateName);
+
+  logger.log("loadTemplate: resolving paths", {
+    __dirname,
+    cwd: process.cwd(),
+    templatesDir,
+    templateDir,
+  });
+
+  // Check the template directory exists
+  try {
+    await fs.access(templateDir);
+  } catch {
+    logger.error("loadTemplate: template directory does not exist", {
+      templateDir,
+    });
+    throw new Error(`Template directory not found: ${templateDir}`);
+  }
+
+  // List what's actually in the template directory
+  try {
+    const entries = await fs.readdir(templateDir, { recursive: true });
+    logger.log("loadTemplate: directory contents", {
+      templateDir,
+      files: entries,
+    });
+  } catch (err) {
+    logger.error("loadTemplate: failed to list directory", {
+      templateDir,
+      error: String(err),
+    });
+  }
 
   const styleGuide = await loadJsonFile<Record<string, unknown>>(
     path.join(templateDir, "style-guide.json"),
+    "style-guide.json",
   );
   const captionGuide = await loadJsonFile<Record<string, unknown>>(
     path.join(templateDir, "caption-guide.json"),
+    "caption-guide.json",
   );
   const captionExamples = await loadJsonFile<string[]>(
     path.join(templateDir, "references", "captions", "examples.json"),
+    "references/captions/examples.json",
   ) ?? [];
   const videoMoods = await loadJsonFile<string[]>(
     path.join(templateDir, "video-moods.json"),
+    "video-moods.json",
   ) ?? [];
   const videoMovements = await loadJsonFile<string[]>(
     path.join(templateDir, "video-movements.json"),
+    "video-movements.json",
   ) ?? [];
 
   // Discover reference images
@@ -52,15 +119,29 @@ export async function loadTemplate(templateName: string): Promise<TemplateData> 
       .filter(f => /\.(png|jpg|jpeg|webp)$/i.test(f))
       .sort()
       .map(f => path.join(imagesDir, f));
+    logger.log("loadTemplate: reference images found", {
+      count: referenceImagePaths.length,
+    });
   } catch {
-    // No images directory
+    logger.warn("loadTemplate: no reference images directory", { imagesDir });
   }
 
   // Read template-level fields from the style guide
   const sg = styleGuide as Record<string, unknown> | null;
   const imagePrompt = (sg?.imagePrompt as string) ?? "";
-  // Default to true — most templates use the artist's face
   const usesFaceGuide = (sg?.usesFaceGuide as boolean) ?? true;
+
+  logger.log("loadTemplate: result summary", {
+    template: templateName,
+    hasStyleGuide: styleGuide !== null,
+    hasCaptionGuide: captionGuide !== null,
+    captionExamplesCount: captionExamples.length,
+    videoMoodsCount: videoMoods.length,
+    videoMovementsCount: videoMovements.length,
+    referenceImagesCount: referenceImagePaths.length,
+    imagePromptLength: imagePrompt.length,
+    usesFaceGuide,
+  });
 
   return {
     name: templateName,
@@ -132,12 +213,21 @@ export function buildMotionPrompt(template: TemplateData): string {
   return `Completely static camera. The person stares at the camera. Movement: ${movement}.${mood ? ` Energy: ${mood}.` : ""} Shot on phone, low light, grainy.`;
 }
 
-/** Load a JSON file, returning null if it doesn't exist. */
-async function loadJsonFile<T>(filePath: string): Promise<T | null> {
+/** Load a JSON file, returning null if it doesn't exist. Logs the outcome. */
+async function loadJsonFile<T>(filePath: string, label: string): Promise<T | null> {
   try {
     const raw = await fs.readFile(filePath, "utf-8");
-    return JSON.parse(raw) as T;
-  } catch {
+    const parsed = JSON.parse(raw) as T;
+    logger.log(`loadTemplate: loaded ${label}`, {
+      path: filePath,
+      sizeBytes: raw.length,
+    });
+    return parsed;
+  } catch (err) {
+    logger.warn(`loadTemplate: FAILED to load ${label}`, {
+      path: filePath,
+      error: String(err),
+    });
     return null;
   }
 }
