@@ -108,7 +108,8 @@ async function clipAndUploadAudio(
       "-i", inputPath,
       "-ss", String(startSeconds),
       "-t", String(durationSeconds),
-      "-c", "copy",
+      "-c:a", "libmp3lame",
+      "-q:a", "2",
       clippedPath,
     ]);
 
