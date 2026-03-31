@@ -43,7 +43,7 @@ import { FACE_SWAP_INSTRUCTION, NO_FACE_INSTRUCTION } from "../content/contentPr
 export const createContentTask = schemaTask({
   id: "create-content",
   schema: createContentPayloadSchema,
-  maxDuration: 60 * 10,
+  maxDuration: 60 * 30,
   machine: "medium-1x",
   retry: {
     maxAttempts: 0,
