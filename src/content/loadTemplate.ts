@@ -76,11 +76,14 @@ export async function loadTemplate(templateName: string): Promise<TemplateData> 
   }
 
   // List what's actually in the template directory
+  const MAX_SAMPLE_FILES = 10;
   try {
     const entries = await fs.readdir(templateDir, { recursive: true });
     logger.log("loadTemplate: directory contents", {
       templateDir,
-      files: entries,
+      totalFiles: entries.length,
+      sampleFiles: entries.slice(0, MAX_SAMPLE_FILES),
+      ...(entries.length > MAX_SAMPLE_FILES && { hasMore: true }),
     });
   } catch (err) {
     logger.error("loadTemplate: failed to list directory", {
@@ -213,7 +216,10 @@ export function buildMotionPrompt(template: TemplateData): string {
   return `Completely static camera. The person stares at the camera. Movement: ${movement}.${mood ? ` Energy: ${mood}.` : ""} Shot on phone, low light, grainy.`;
 }
 
-/** Load a JSON file, returning null if it doesn't exist. Logs the outcome. */
+/**
+ * Load a JSON file. Returns null if the file doesn't exist.
+ * Rethrows parse errors and unexpected I/O failures so callers surface real bugs.
+ */
 async function loadJsonFile<T>(filePath: string, label: string): Promise<T | null> {
   try {
     const raw = await fs.readFile(filePath, "utf-8");
@@ -223,11 +229,15 @@ async function loadJsonFile<T>(filePath: string, label: string): Promise<T | nul
       sizeBytes: raw.length,
     });
     return parsed;
-  } catch (err) {
+  } catch (err: unknown) {
+    if (err instanceof Error && "code" in err && (err as NodeJS.ErrnoException).code === "ENOENT") {
+      logger.warn(`loadTemplate: file not found ${label}`, { path: filePath });
+      return null;
+    }
     logger.warn(`loadTemplate: FAILED to load ${label}`, {
       path: filePath,
       error: String(err),
     });
-    return null;
+    throw err;
   }
 }
