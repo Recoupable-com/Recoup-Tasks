@@ -3,20 +3,20 @@ import { fal } from "@fal-ai/client";
 import { logger } from "@trigger.dev/sdk/v3";
 import { logStep } from "../sandboxes/logStep";
 import { DEFAULT_PIPELINE_CONFIG } from "./defaultPipelineConfig";
+import { falSubscribe } from "./falSubscribe";
 
 /**
- * Generates an AI image of the artist using fal.ai.
+ * Generates an AI image using fal.ai.
  *
- * Takes two images:
- *   1. Face-guide (headshot on white/plain background) — the artist's identity
- *   2. Reference image (composition with a different person) — the scene/setting
+ * Takes up to two images:
+ *   1. Guide image (face-guide headshot or album cover) — the primary subject
+ *   2. Reference image (scene composition from template) — the setting
  *
- * The prompt tells the model to replace the person in the reference scene
- * with the person from the face-guide headshot.
+ * The prompt tells the model how to combine these images.
  *
- * @param faceGuideUrl - fal storage URL of the artist's face-guide (headshot)
+ * @param faceGuideUrl - fal storage URL of the guide image (face or album cover)
  * @param referenceImagePath - local path to a template reference image (or null)
- * @param prompt - Scene/style prompt that instructs the face swap
+ * @param prompt - Scene/style prompt with instructions for how to use the images
  * @returns URL of the generated image
  */
 export async function generateContentImage({
@@ -24,14 +24,14 @@ export async function generateContentImage({
   referenceImagePath,
   prompt,
 }: {
-  /** Face-guide URL — omit for templates that don't use the artist's face. */
+  /** Guide image URL — omit for templates that don't use an input image. */
   faceGuideUrl?: string;
   referenceImagePath: string | null;
   prompt: string;
 }): Promise<string> {
   const config = DEFAULT_PIPELINE_CONFIG;
 
-  // Build image_urls: face-guide (if provided) + reference image (if provided)
+  // Build image_urls: guide image (if provided) + reference image (if provided)
   const imageUrls: string[] = [];
   if (faceGuideUrl) imageUrls.push(faceGuideUrl);
 
@@ -45,15 +45,6 @@ export async function generateContentImage({
     imageUrls.push(refUrl);
   }
 
-  const input = {
-    prompt,
-    image_urls: imageUrls,
-    aspect_ratio: config.aspectRatio,
-    resolution: config.resolution,
-    output_format: "png",
-    num_images: 1,
-  };
-
   logStep("Generating image", false, {
     model: config.imageModel,
     promptLength: prompt.length,
@@ -62,26 +53,14 @@ export async function generateContentImage({
     hasReferenceImage: Boolean(referenceImagePath),
   });
 
-  let result;
-  try {
-    result = await fal.subscribe(config.imageModel, { input, logs: true });
-  } catch (error: unknown) {
-    const err = error as Record<string, unknown>;
-    let body: string;
-    try {
-      body = JSON.stringify(err.body ?? err).slice(0, 1000);
-    } catch {
-      body = String(err).slice(0, 1000);
-    }
-    logger.error("fal.ai image generation failed", {
-      model: config.imageModel,
-      status: err.status,
-      message: err.message,
-      body,
-      promptLength: prompt.length,
-    });
-    throw error;
-  }
+  const result = await falSubscribe(config.imageModel, {
+    prompt,
+    image_urls: imageUrls,
+    aspect_ratio: config.aspectRatio,
+    resolution: config.resolution,
+    output_format: "png",
+    num_images: 1,
+  });
 
   const data = result.data as Record<string, unknown>;
   const imageUrl = extractFalUrl(data);
