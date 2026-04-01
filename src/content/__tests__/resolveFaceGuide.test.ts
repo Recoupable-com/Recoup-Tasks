@@ -26,16 +26,30 @@ describe("resolveFaceGuide", () => {
     vi.clearAllMocks();
   });
 
-  it("returns null when template does not use face guide", async () => {
+  it("returns null when usesFaceGuide is false and no images provided", async () => {
     const result = await resolveFaceGuide({
       usesFaceGuide: false,
-      images: ["https://example.com/face.png"],
+      images: undefined,
       githubRepo: "https://github.com/test/repo",
       artistSlug: "artist",
     });
 
     expect(result).toBeNull();
     expect(fetchImageFromUrl).not.toHaveBeenCalled();
+  });
+
+  it("passes attached images through even when usesFaceGuide is false", async () => {
+    vi.mocked(fetchImageFromUrl).mockResolvedValue("https://fal.ai/uploaded.png");
+
+    const result = await resolveFaceGuide({
+      usesFaceGuide: false,
+      images: ["https://example.com/album-cover.png"],
+      githubRepo: "https://github.com/test/repo",
+      artistSlug: "artist",
+    });
+
+    expect(fetchImageFromUrl).toHaveBeenCalledWith("https://example.com/album-cover.png");
+    expect(result).toBe("https://fal.ai/uploaded.png");
   });
 
   it("uses fetchImageFromUrl when images array has entries", async () => {

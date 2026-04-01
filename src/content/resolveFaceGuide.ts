@@ -21,12 +21,13 @@ export async function resolveFaceGuide({
   githubRepo: string;
   artistSlug: string;
 }): Promise<string | null> {
-  if (!usesFaceGuide) return null;
-
+  // Always pass attached images through (e.g. album cover art — no face-swap needed).
   const imageUrl = images?.[0];
   if (imageUrl) {
     return fetchImageFromUrl(imageUrl);
   }
+
+  if (!usesFaceGuide) return null;
 
   logStep("Fetching face-guide from GitHub");
   const buffer = await fetchGithubFile(
