@@ -38,5 +38,77 @@ describe("createContentPayloadSchema", () => {
 
     expect(result.success).toBe(false);
   });
+
+  it("accepts songs with a mix of slugs and URLs", () => {
+    const result = createContentPayloadSchema.safeParse({
+      accountId: "acc_123",
+      artistSlug: "gatsby-grace",
+      template: "artist-caption-bedroom",
+      githubRepo: "https://github.com/recoupable/test-repo",
+      songs: ["hiccups", "https://example.com/unreleased-track.mp3"],
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.songs).toEqual(["hiccups", "https://example.com/unreleased-track.mp3"]);
+    }
+  });
+
+  it("accepts images as an array of URLs", () => {
+    const result = createContentPayloadSchema.safeParse({
+      accountId: "acc_123",
+      artistSlug: "gatsby-grace",
+      template: "artist-caption-bedroom",
+      githubRepo: "https://github.com/recoupable/test-repo",
+      images: ["https://example.com/face.png"],
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.images).toEqual(["https://example.com/face.png"]);
+    }
+  });
+
+  it("rejects images with non-URL strings", () => {
+    const result = createContentPayloadSchema.safeParse({
+      accountId: "acc_123",
+      artistSlug: "gatsby-grace",
+      template: "artist-caption-bedroom",
+      githubRepo: "https://github.com/recoupable/test-repo",
+      images: ["not-a-url"],
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("does not accept attachedAudioUrl (removed)", () => {
+    const result = createContentPayloadSchema.safeParse({
+      accountId: "acc_123",
+      artistSlug: "gatsby-grace",
+      template: "artist-caption-bedroom",
+      githubRepo: "https://github.com/recoupable/test-repo",
+      attachedAudioUrl: "https://example.com/song.mp3",
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).not.toHaveProperty("attachedAudioUrl");
+    }
+  });
+
+  it("does not accept attachedImageUrl (removed)", () => {
+    const result = createContentPayloadSchema.safeParse({
+      accountId: "acc_123",
+      artistSlug: "gatsby-grace",
+      template: "artist-caption-bedroom",
+      githubRepo: "https://github.com/recoupable/test-repo",
+      attachedImageUrl: "https://example.com/face.png",
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).not.toHaveProperty("attachedImageUrl");
+    }
+  });
 });
 
