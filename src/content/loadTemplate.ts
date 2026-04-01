@@ -2,7 +2,7 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import { logStep } from "../sandboxes/logStep";
 import { resolveTemplatesDir } from "./resolveTemplatesDir";
-import { logTemplateContents } from "./logTemplateContents";
+import { loadJsonFile } from "./loadJsonFile";
 
 /**
  * Template data loaded from the bundled templates directory.
@@ -41,8 +41,6 @@ export async function loadTemplate(templateName: string): Promise<TemplateData> 
   } catch {
     throw new Error(`Template directory not found: ${templateDir}`);
   }
-
-  await logTemplateContents(templateDir);
 
   const styleGuide = await loadJsonFile<Record<string, unknown>>(
     path.join(templateDir, "style-guide.json"),
@@ -166,29 +164,4 @@ export function buildMotionPrompt(template: TemplateData): string {
     : "";
 
   return `Completely static camera. The person stares at the camera. Movement: ${movement}.${mood ? ` Energy: ${mood}.` : ""} Shot on phone, low light, grainy.`;
-}
-
-/**
- * Load a JSON file. Returns null if the file doesn't exist.
- * Rethrows parse errors and unexpected I/O failures so callers surface real bugs.
- */
-async function loadJsonFile<T>(filePath: string, label: string): Promise<T | null> {
-  try {
-    const raw = await fs.readFile(filePath, "utf-8");
-    const parsed = JSON.parse(raw) as T;
-    logStep(`loadTemplate: loaded ${label}`, false, {
-      path: filePath,
-      sizeBytes: raw.length,
-    });
-    return parsed;
-  } catch (err: unknown) {
-    if (err instanceof Error && "code" in err && (err as NodeJS.ErrnoException).code === "ENOENT") {
-      return null;
-    }
-    logStep(`loadTemplate: FAILED to load ${label}`, true, {
-      path: filePath,
-      error: String(err),
-    });
-    throw err;
-  }
 }
