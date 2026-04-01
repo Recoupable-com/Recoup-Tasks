@@ -44,23 +44,38 @@ export async function generateContentImage({
     imageUrls.push(refUrl);
   }
 
+  const input = {
+    prompt,
+    image_urls: imageUrls,
+    aspect_ratio: config.aspectRatio,
+    resolution: config.resolution,
+    output_format: "png",
+    num_images: 1,
+  };
+
   logger.log("Generating image", {
     model: config.imageModel,
-    prompt: prompt.slice(0, 100),
+    prompt: prompt.slice(0, 200),
     imageCount: imageUrls.length,
+    imageUrls,
+    input: JSON.stringify(input).slice(0, 500),
   });
 
-  const result = await fal.subscribe(config.imageModel, {
-    input: {
-      prompt,
-      image_urls: imageUrls,
-      aspect_ratio: config.aspectRatio,
-      resolution: config.resolution,
-      output_format: "png",
-      num_images: 1,
-    },
-    logs: true,
-  });
+  let result;
+  try {
+    result = await fal.subscribe(config.imageModel, { input, logs: true });
+  } catch (error: unknown) {
+    const err = error as Record<string, unknown>;
+    logger.error("fal.ai image generation failed", {
+      model: config.imageModel,
+      status: err.status,
+      message: err.message,
+      body: JSON.stringify(err.body ?? err).slice(0, 1000),
+      imageUrls,
+      promptLength: prompt.length,
+    });
+    throw error;
+  }
 
   const data = result.data as Record<string, unknown>;
   const imageUrl = extractFalUrl(data);
