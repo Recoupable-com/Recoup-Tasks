@@ -21,8 +21,11 @@ export async function resolveTemplatesDir(dirname: string): Promise<string> {
     try {
       await fs.access(dir);
       return dir;
-    } catch {
-      // not found, try next
+    } catch (err: unknown) {
+      if (err instanceof Error && "code" in err && (err as NodeJS.ErrnoException).code === "ENOENT") {
+        continue;
+      }
+      throw err;
     }
   }
 

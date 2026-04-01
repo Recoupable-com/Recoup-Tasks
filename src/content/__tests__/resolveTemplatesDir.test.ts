@@ -27,7 +27,9 @@ describe("resolveTemplatesDir", () => {
   });
 
   it("falls back to cwd-relative path when __dirname path missing", async () => {
-    vi.mocked(fs.access).mockRejectedValueOnce(new Error("ENOENT"));
+    const err = new Error("ENOENT") as NodeJS.ErrnoException;
+    err.code = "ENOENT";
+    vi.mocked(fs.access).mockRejectedValueOnce(err);
     vi.mocked(fs.access).mockResolvedValueOnce(undefined);
 
     const result = await resolveTemplatesDir("/wrong/path");
@@ -36,8 +38,19 @@ describe("resolveTemplatesDir", () => {
     expect(fs.access).toHaveBeenCalledTimes(2);
   });
 
+  it("rethrows permission errors instead of falling through", async () => {
+    const err = new Error("EACCES") as NodeJS.ErrnoException;
+    err.code = "EACCES";
+    vi.mocked(fs.access).mockRejectedValueOnce(err);
+
+    await expect(resolveTemplatesDir("/app/src/content")).rejects.toThrow("EACCES");
+    expect(fs.access).toHaveBeenCalledTimes(1);
+  });
+
   it("throws when no candidate directory exists", async () => {
-    vi.mocked(fs.access).mockRejectedValue(new Error("ENOENT"));
+    const err = new Error("ENOENT") as NodeJS.ErrnoException;
+    err.code = "ENOENT";
+    vi.mocked(fs.access).mockRejectedValue(err);
 
     await expect(resolveTemplatesDir("/wrong/path")).rejects.toThrow(
       "Templates directory not found",
