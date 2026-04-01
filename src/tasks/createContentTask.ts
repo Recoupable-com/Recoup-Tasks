@@ -20,7 +20,7 @@ import {
   buildImagePrompt,
   buildMotionPrompt,
 } from "../content/loadTemplate";
-import { FACE_SWAP_INSTRUCTION, NO_FACE_INSTRUCTION } from "../content/contentPrompts";
+import { resolveImageInstruction } from "../content/resolveImageInstruction";
 
 /**
  * Content-creation task — full pipeline that generates a social-ready video.
@@ -92,8 +92,11 @@ export const createContentTask = schemaTask({
     // --- Step 5: Generate image ---
     logStep("Generating image");
     const referenceImagePath = pickRandomReferenceImage(template);
-    // Build prompt: face-swap instruction (if needed) + template scene + style guide
-    const instruction = template.usesFaceGuide ? FACE_SWAP_INSTRUCTION : NO_FACE_INSTRUCTION;
+    // Build prompt: custom/face-swap/no-face instruction + template scene + style guide
+    const instruction = resolveImageInstruction({
+      styleGuide: template.styleGuide,
+      usesFaceGuide: template.usesFaceGuide,
+    });
     const basePrompt = `${instruction} ${template.imagePrompt}`;
     const fullPrompt = buildImagePrompt(basePrompt, template.styleGuide);
     let imageUrl = await generateContentImage({
