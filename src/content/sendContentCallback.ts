@@ -16,7 +16,8 @@ export async function sendContentCallback(
     throw new Error("CODING_AGENT_CALLBACK_SECRET is required");
   }
 
-  const callbackUrl = `${NEW_API_BASE_URL}/api/content-agent/callback`;
+  const baseUrl = process.env.CONTENT_AGENT_CALLBACK_URL ?? `${NEW_API_BASE_URL}/api/content-agent/callback`;
+  const callbackUrl = baseUrl;
 
   logStep("Calling callback", true, {
     callbackUrl,
