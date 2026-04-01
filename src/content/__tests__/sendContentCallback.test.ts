@@ -10,7 +10,11 @@ import type { ContentRunResult } from "../pollContentRuns";
 const originalEnv = process.env;
 
 beforeEach(() => {
-  process.env = { ...originalEnv, CODING_AGENT_CALLBACK_SECRET: "test-secret" };
+  process.env = {
+    ...originalEnv,
+    CODING_AGENT_CALLBACK_SECRET: "test-secret",
+    CONTENT_AGENT_CALLBACK_URL: "https://recoup-api.vercel.app/api/content-agent/callback",
+  };
   vi.clearAllMocks();
 });
 
@@ -26,6 +30,14 @@ describe("sendContentCallback", () => {
     await expect(
       sendContentCallback("thread-1", "completed", []),
     ).rejects.toThrow("CODING_AGENT_CALLBACK_SECRET is required");
+  });
+
+  it("throws when CONTENT_AGENT_CALLBACK_URL is missing", async () => {
+    delete process.env.CONTENT_AGENT_CALLBACK_URL;
+
+    await expect(
+      sendContentCallback("thread-1", "completed", []),
+    ).rejects.toThrow("CONTENT_AGENT_CALLBACK_URL is required");
   });
 
   it("sends correct payload to callback endpoint", async () => {
@@ -49,6 +61,18 @@ describe("sendContentCallback", () => {
       results,
     });
     expect((options?.headers as Record<string, string>)["x-callback-secret"]).toBe("test-secret");
+  });
+
+  it("uses CONTENT_AGENT_CALLBACK_URL env var", async () => {
+    process.env.CONTENT_AGENT_CALLBACK_URL = "https://preview.example.com/api/content-agent/callback";
+    const mockFetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(null, { status: 200 }),
+    );
+
+    await sendContentCallback("thread-1", "completed", []);
+
+    const [url] = mockFetch.mock.calls[0];
+    expect(url).toBe("https://preview.example.com/api/content-agent/callback");
   });
 
   it("throws on non-ok response", async () => {

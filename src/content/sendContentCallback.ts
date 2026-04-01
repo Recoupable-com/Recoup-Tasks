@@ -1,5 +1,4 @@
 import { logStep } from "../sandboxes/logStep";
-import { NEW_API_BASE_URL } from "../consts";
 import type { ContentRunResult } from "./pollContentRuns";
 
 /**
@@ -16,7 +15,10 @@ export async function sendContentCallback(
     throw new Error("CODING_AGENT_CALLBACK_SECRET is required");
   }
 
-  const callbackUrl = `${NEW_API_BASE_URL}/api/content-agent/callback`;
+  const callbackUrl = process.env.CONTENT_AGENT_CALLBACK_URL;
+  if (!callbackUrl) {
+    throw new Error("CONTENT_AGENT_CALLBACK_URL is required");
+  }
 
   logStep("Calling callback", true, {
     callbackUrl,
