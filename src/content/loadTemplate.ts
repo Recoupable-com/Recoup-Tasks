@@ -1,5 +1,8 @@
 import path from "node:path";
 import fs from "node:fs/promises";
+import { logStep } from "../sandboxes/logStep";
+import { resolveTemplatesDir } from "./resolveTemplatesDir";
+import { logTemplateContents } from "./logTemplateContents";
 
 /**
  * Template data loaded from the bundled templates directory.
@@ -18,29 +21,48 @@ export interface TemplateData {
   referenceImagePaths: string[];
 }
 
-/** Base path to the bundled templates directory. */
-const TEMPLATES_DIR = path.resolve(__dirname, "../content/templates");
-
 /**
  * Load all template data (style guide, caption guide, moods, movements, reference images).
  */
 export async function loadTemplate(templateName: string): Promise<TemplateData> {
-  const templateDir = path.join(TEMPLATES_DIR, templateName);
+  const templatesDir = await resolveTemplatesDir(__dirname);
+  const templateDir = path.join(templatesDir, templateName);
+
+  logStep("loadTemplate: resolving paths", false, {
+    __dirname,
+    cwd: process.cwd(),
+    templatesDir,
+    templateDir,
+  });
+
+  // Check the template directory exists
+  try {
+    await fs.access(templateDir);
+  } catch {
+    throw new Error(`Template directory not found: ${templateDir}`);
+  }
+
+  await logTemplateContents(templateDir);
 
   const styleGuide = await loadJsonFile<Record<string, unknown>>(
     path.join(templateDir, "style-guide.json"),
+    "style-guide.json",
   );
   const captionGuide = await loadJsonFile<Record<string, unknown>>(
     path.join(templateDir, "caption-guide.json"),
+    "caption-guide.json",
   );
   const captionExamples = await loadJsonFile<string[]>(
     path.join(templateDir, "references", "captions", "examples.json"),
+    "references/captions/examples.json",
   ) ?? [];
   const videoMoods = await loadJsonFile<string[]>(
     path.join(templateDir, "video-moods.json"),
+    "video-moods.json",
   ) ?? [];
   const videoMovements = await loadJsonFile<string[]>(
     path.join(templateDir, "video-movements.json"),
+    "video-movements.json",
   ) ?? [];
 
   // Discover reference images
@@ -52,15 +74,29 @@ export async function loadTemplate(templateName: string): Promise<TemplateData> 
       .filter(f => /\.(png|jpg|jpeg|webp)$/i.test(f))
       .sort()
       .map(f => path.join(imagesDir, f));
+    logStep("loadTemplate: reference images found", false, {
+      count: referenceImagePaths.length,
+    });
   } catch {
-    // No images directory
+    logStep("loadTemplate: no reference images directory", false, { imagesDir });
   }
 
   // Read template-level fields from the style guide
   const sg = styleGuide as Record<string, unknown> | null;
   const imagePrompt = (sg?.imagePrompt as string) ?? "";
-  // Default to true — most templates use the artist's face
   const usesFaceGuide = (sg?.usesFaceGuide as boolean) ?? true;
+
+  logStep("loadTemplate: result summary", false, {
+    template: templateName,
+    hasStyleGuide: styleGuide !== null,
+    hasCaptionGuide: captionGuide !== null,
+    captionExamplesCount: captionExamples.length,
+    videoMoodsCount: videoMoods.length,
+    videoMovementsCount: videoMovements.length,
+    referenceImagesCount: referenceImagePaths.length,
+    imagePromptLength: imagePrompt.length,
+    usesFaceGuide,
+  });
 
   return {
     name: templateName,
@@ -132,12 +168,27 @@ export function buildMotionPrompt(template: TemplateData): string {
   return `Completely static camera. The person stares at the camera. Movement: ${movement}.${mood ? ` Energy: ${mood}.` : ""} Shot on phone, low light, grainy.`;
 }
 
-/** Load a JSON file, returning null if it doesn't exist. */
-async function loadJsonFile<T>(filePath: string): Promise<T | null> {
+/**
+ * Load a JSON file. Returns null if the file doesn't exist.
+ * Rethrows parse errors and unexpected I/O failures so callers surface real bugs.
+ */
+async function loadJsonFile<T>(filePath: string, label: string): Promise<T | null> {
   try {
     const raw = await fs.readFile(filePath, "utf-8");
-    return JSON.parse(raw) as T;
-  } catch {
-    return null;
+    const parsed = JSON.parse(raw) as T;
+    logStep(`loadTemplate: loaded ${label}`, false, {
+      path: filePath,
+      sizeBytes: raw.length,
+    });
+    return parsed;
+  } catch (err: unknown) {
+    if (err instanceof Error && "code" in err && (err as NodeJS.ErrnoException).code === "ENOENT") {
+      return null;
+    }
+    logStep(`loadTemplate: FAILED to load ${label}`, true, {
+      path: filePath,
+      error: String(err),
+    });
+    throw err;
   }
 }
