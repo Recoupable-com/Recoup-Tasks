@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import { fal } from "@fal-ai/client";
 import { logger } from "@trigger.dev/sdk/v3";
+import { logStep } from "../sandboxes/logStep";
 import { DEFAULT_PIPELINE_CONFIG } from "./defaultPipelineConfig";
 
 /**
@@ -53,7 +54,7 @@ export async function generateContentImage({
     num_images: 1,
   };
 
-  logger.log("Generating image", {
+  logStep("Generating image", false, {
     model: config.imageModel,
     promptLength: prompt.length,
     imageCount: imageUrls.length,
