@@ -13,6 +13,6 @@ export function resolveImageInstruction({
   usesFaceGuide: boolean;
 }): string {
   const custom = styleGuide?.customInstruction;
-  if (typeof custom === "string" && custom.length > 0) return custom;
+  if (typeof custom === "string" && custom.trim().length > 0) return custom.trim();
   return usesFaceGuide ? FACE_SWAP_INSTRUCTION : NO_FACE_INSTRUCTION;
 }

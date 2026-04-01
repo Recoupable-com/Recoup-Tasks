@@ -42,4 +42,12 @@ describe("resolveImageInstruction", () => {
     });
     expect(result).toBe(FACE_SWAP_INSTRUCTION);
   });
+
+  it("treats whitespace-only customInstruction as empty", () => {
+    const result = resolveImageInstruction({
+      styleGuide: { customInstruction: "   " },
+      usesFaceGuide: false,
+    });
+    expect(result).toBe(NO_FACE_INSTRUCTION);
+  });
 });

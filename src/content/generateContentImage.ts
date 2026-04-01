@@ -55,10 +55,10 @@ export async function generateContentImage({
 
   logger.log("Generating image", {
     model: config.imageModel,
-    prompt: prompt.slice(0, 200),
+    promptLength: prompt.length,
     imageCount: imageUrls.length,
-    imageUrls,
-    input: JSON.stringify(input).slice(0, 500),
+    hasFaceGuide: Boolean(faceGuideUrl),
+    hasReferenceImage: Boolean(referenceImagePath),
   });
 
   let result;
@@ -66,12 +66,17 @@ export async function generateContentImage({
     result = await fal.subscribe(config.imageModel, { input, logs: true });
   } catch (error: unknown) {
     const err = error as Record<string, unknown>;
+    let body: string;
+    try {
+      body = JSON.stringify(err.body ?? err).slice(0, 1000);
+    } catch {
+      body = String(err).slice(0, 1000);
+    }
     logger.error("fal.ai image generation failed", {
       model: config.imageModel,
       status: err.status,
       message: err.message,
-      body: JSON.stringify(err.body ?? err).slice(0, 1000),
-      imageUrls,
+      body,
       promptLength: prompt.length,
     });
     throw error;
