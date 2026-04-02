@@ -1,0 +1,48 @@
+import { describe, it, expect, vi } from "vitest";
+
+vi.mock("ai", () => {
+  class MockToolLoopAgent {
+    config: Record<string, unknown>;
+    constructor(config: Record<string, unknown>) {
+      this.config = config;
+    }
+  }
+  return {
+    ToolLoopAgent: MockToolLoopAgent,
+    stepCountIs: vi.fn((n: number) => `step-count-${n}`),
+    Output: { object: vi.fn((opts: unknown) => ({ type: "object", opts })) },
+  };
+});
+
+import { createClipAnalysisAgent } from "../createClipAnalysisAgent";
+
+describe("createClipAnalysisAgent", () => {
+  it("returns an agent configured with google/gemini-2.5-flash", () => {
+    const agent = createClipAnalysisAgent();
+    const config = (agent as unknown as { config: Record<string, unknown> }).config;
+    expect(config.model).toBe("google/gemini-2.5-flash");
+  });
+
+  it("sets stopWhen to stepCountIs(1)", () => {
+    const agent = createClipAnalysisAgent();
+    const config = (agent as unknown as { config: Record<string, unknown> }).config;
+    expect(config.stopWhen).toBe("step-count-1");
+  });
+
+  it("defines an output schema for structured SongClip[] responses", () => {
+    const agent = createClipAnalysisAgent();
+    const config = (agent as unknown as { config: Record<string, unknown> }).config;
+    expect(config.output).toBeDefined();
+  });
+
+  it("includes a static system prompt as instructions", () => {
+    const agent = createClipAnalysisAgent();
+    const config = (agent as unknown as { config: Record<string, unknown> }).config;
+    expect(config.instructions).toEqual(expect.any(String));
+    const instructions = config.instructions as string;
+    expect(instructions).toContain("WORD DENSITY");
+    expect(instructions).toContain("RELATABILITY");
+    expect(instructions).toContain("startSeconds");
+    expect(instructions).toContain("hasLyrics");
+  });
+});
