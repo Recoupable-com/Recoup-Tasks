@@ -27,4 +27,15 @@ describe("createClipAnalysisAgent", () => {
     const config = (agent as unknown as { config: Record<string, unknown> }).config;
     expect(config.stopWhen).toBe("step-count-1");
   });
+
+  it("includes a static system prompt as instructions", () => {
+    const agent = createClipAnalysisAgent();
+    const config = (agent as unknown as { config: Record<string, unknown> }).config;
+    expect(config.instructions).toEqual(expect.any(String));
+    const instructions = config.instructions as string;
+    expect(instructions).toContain("WORD DENSITY");
+    expect(instructions).toContain("RELATABILITY");
+    expect(instructions).toContain("startSeconds");
+    expect(instructions).toContain("hasLyrics");
+  });
 });

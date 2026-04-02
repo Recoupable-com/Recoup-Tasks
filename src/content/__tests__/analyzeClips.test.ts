@@ -98,6 +98,31 @@ describe("analyzeClips", () => {
     expect(result[0].relatability).toBe(9);
   });
 
+  it("passes only dynamic song data as the prompt, not system instructions", async () => {
+    mockGenerate.mockResolvedValue({
+      text: JSON.stringify([
+        {
+          startSeconds: 0,
+          lyrics: "hello world",
+          reason: "catchy",
+          mood: "happy",
+          hasLyrics: true,
+          relatability: 8,
+        },
+      ]),
+    });
+
+    await analyzeClips("Test Song", lyrics);
+
+    const prompt = mockGenerate.mock.calls[0][0].prompt as string;
+    // Dynamic data should be in the prompt
+    expect(prompt).toContain("Test Song");
+    expect(prompt).toContain("[0.0s] hello");
+    // Static system instructions should NOT be in the prompt
+    expect(prompt).not.toContain("PRIORITIZE moments");
+    expect(prompt).not.toContain("AVOID selecting");
+  });
+
   it("returns fallback when agent.generate throws", async () => {
     mockGenerate.mockRejectedValue(new Error("Model unavailable"));
 
