@@ -1,4 +1,4 @@
-import { generateText } from "ai";
+import { ToolLoopAgent, stepCountIs } from "ai";
 import { logStep } from "../sandboxes/logStep";
 import type { SongLyrics } from "./transcribeSong";
 import { parseSongClips } from "./parseSongClips";
@@ -13,8 +13,8 @@ export interface SongClip {
 }
 
 /**
- * Analyzes a song's lyrics using AI SDK + Google Gemini to find the best
- * clip moments for social content (TikTok/Reels).
+ * Analyzes a song's lyrics using a ToolLoopAgent + Google Gemini to find
+ * the best clip moments for social content (TikTok/Reels).
  *
  * @param songTitle - Display title for the LLM prompt
  * @param lyrics - Timestamped lyrics from transcription
@@ -69,12 +69,28 @@ IMPORTANT: Return the moments ranked by quality — best moment FIRST.`;
 
   logStep("Analyzing clips", true, { songTitle });
 
-  const result = await generateText({
-    model: "google/gemini-2.5-flash",
-    prompt,
-  });
+  const fallbackClip: SongClip = {
+    startSeconds: 0,
+    lyrics: lyrics.segments.slice(0, 10).map(s => s.text).join(" "),
+    reason: "fallback — model error",
+    mood: "unknown",
+    hasLyrics: true,
+  };
 
-  const responseText = result.text.trim();
+  let responseText: string;
+  try {
+    const agent = new ToolLoopAgent({
+      model: "google/gemini-2.5-flash",
+      stopWhen: stepCountIs(1),
+    });
+    const result = await agent.generate({ prompt });
+    responseText = result.text.trim();
+  } catch (error) {
+    logStep("Clip analysis model error, using fallback", true, {
+      error: String(error),
+    });
+    return [fallbackClip];
+  }
 
   // Extract JSON array from response
   const jsonMatch = responseText.match(/\[[\s\S]*\]/);
@@ -82,30 +98,15 @@ IMPORTANT: Return the moments ranked by quality — best moment FIRST.`;
     logStep("Could not parse clip analysis, using fallback", true, {
       responseText: responseText.slice(0, 200),
     });
-    return [
-      {
-        startSeconds: 0,
-        lyrics: lyrics.segments.slice(0, 10).map(s => s.text).join(" "),
-        reason: "fallback — start of song",
-        mood: "unknown",
-        hasLyrics: true,
-      },
-    ];
+    return [{ ...fallbackClip, reason: "fallback — start of song" }];
   }
 
   const clips = parseSongClips(jsonMatch[0]);
   if (clips.length === 0) {
     logStep("Failed to parse clip JSON, using fallback");
-    return [
-      {
-        startSeconds: 0,
-        lyrics: lyrics.segments.slice(0, 10).map(s => s.text).join(" "),
-        reason: "fallback — JSON parse failed",
-        mood: "unknown",
-        hasLyrics: true,
-      },
-    ];
+    return [{ ...fallbackClip, reason: "fallback — JSON parse failed" }];
   }
+
   logStep("Clip analysis complete", true, {
     songTitle,
     clipCount: clips.length,
