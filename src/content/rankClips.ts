@@ -4,8 +4,9 @@ import type { SongLyrics } from "./transcribeSong";
 /**
  * Ranks clips by word density and relatability.
  *
- * Word density = number of lyric segments that fall within the clip window,
- * divided by the clip duration. Higher density means more words per second.
+ * Word density = number of actual words in lyric segments that overlap the
+ * clip window, divided by the clip duration. Higher density means more words
+ * per second.
  *
  * Relatability is an optional 1-10 score from the LLM. When word densities
  * are similar, relatability breaks the tie.
@@ -26,11 +27,13 @@ export function rankClips(
 
   const scored = clips.map(clip => {
     const clipEnd = clip.startSeconds + clipDuration;
-    const wordsInWindow = lyrics.segments.filter(
-      s => s.start < clipEnd && s.end > clip.startSeconds,
-    ).length;
+    const wordsInWindow = lyrics.segments.reduce((count, segment) => {
+      if (segment.start >= clipEnd || segment.end <= clip.startSeconds) return count;
+      const wordCount = segment.text.trim().split(/\s+/).filter(Boolean).length;
+      return count + wordCount;
+    }, 0);
     const wordDensity = wordsInWindow / clipDuration;
-    const relatability = (clip as SongClip & { relatability?: number }).relatability ?? 5;
+    const relatability = clip.relatability ?? 5;
 
     return { clip, wordDensity, relatability };
   });

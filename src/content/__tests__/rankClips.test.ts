@@ -85,6 +85,27 @@ describe("rankClips", () => {
     expect(ranked[0].startSeconds).toBe(5);
   });
 
+  it("counts actual words in multi-word segments, not just segment count", () => {
+    // Two clips with the same number of overlapping segments (2 each),
+    // but clipB has multi-word segments (8 words total) vs clipA (2 words).
+    // Word density should favor clipB.
+    const lyrics = makeLyrics([
+      { start: 0, end: 2, text: "oh" },
+      { start: 3, end: 5, text: "yeah" },
+      { start: 30, end: 33, text: "I never thought that" },
+      { start: 33, end: 36, text: "we would end up here" },
+    ]);
+
+    const clips: SongClip[] = [
+      { startSeconds: 0, lyrics: "oh yeah", reason: "intro", mood: "chill", hasLyrics: true, relatability: 5 },
+      { startSeconds: 30, lyrics: "I never thought that we would end up here", reason: "hook", mood: "emotional", hasLyrics: true, relatability: 5 },
+    ];
+
+    const ranked = rankClips(clips, lyrics, 15);
+    // Both clips overlap 2 segments, but clipB has 9 words vs clipA's 2
+    expect(ranked[0].startSeconds).toBe(30);
+  });
+
   it("handles clips with no words in window gracefully", () => {
     const lyrics = makeLyrics([
       { start: 50, end: 51, text: "far away" },

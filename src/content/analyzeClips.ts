@@ -1,5 +1,7 @@
-import { logger } from "@trigger.dev/sdk/v3";
+import { generateText } from "ai";
+import { logStep } from "../sandboxes/logStep";
 import type { SongLyrics } from "./transcribeSong";
+import { parseSongClips } from "./parseSongClips";
 
 export interface SongClip {
   startSeconds: number;
@@ -11,7 +13,7 @@ export interface SongClip {
 }
 
 /**
- * Analyzes a song's lyrics using the Recoup Chat API to find the best
+ * Analyzes a song's lyrics using AI SDK + Google Gemini to find the best
  * clip moments for social content (TikTok/Reels).
  *
  * @param songTitle - Display title for the LLM prompt
@@ -22,11 +24,6 @@ export async function analyzeClips(
   songTitle: string,
   lyrics: SongLyrics,
 ): Promise<SongClip[]> {
-  const recoupApiKey = process.env.RECOUP_API_KEY;
-  if (!recoupApiKey) {
-    throw new Error("RECOUP_API_KEY is required for clip analysis");
-  }
-
   const timestampedLyrics = lyrics.segments
     .map(s => `[${s.start.toFixed(1)}s] ${s.text}`)
     .join("\n");
@@ -70,48 +67,19 @@ relatability is a 1-10 score: 10 = universally relatable lyrics everyone connect
 IMPORTANT: startSeconds must align with actual word timestamps from the lyrics above. Don't invent timestamps.
 IMPORTANT: Return the moments ranked by quality — best moment FIRST.`;
 
-  logger.log("Analyzing clips", { songTitle });
+  logStep("Analyzing clips", true, { songTitle });
 
-  const recoupApiUrl = process.env.RECOUP_API_URL ?? "https://recoup-api.vercel.app";
-  const response = await fetch(`${recoupApiUrl}/api/chat/generate`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": recoupApiKey,
-    },
-    body: JSON.stringify({
-      prompt,
-      model: "google/gemini-2.5-flash",
-      excludeTools: ["create_task"],
-    }),
+  const result = await generateText({
+    model: "google/gemini-2.5-flash",
+    prompt,
   });
 
-  if (!response.ok) {
-    throw new Error(`Recoup Chat API error: ${response.status}`);
-  }
-
-  const json = (await response.json()) as {
-    text?: string | Array<{ type: string; text?: string }>;
-  };
-
-  // Parse the polymorphic text field
-  let responseText: string;
-  if (typeof json.text === "string") {
-    responseText = json.text.trim();
-  } else if (Array.isArray(json.text)) {
-    responseText = json.text
-      .filter(p => p.type === "text" && p.text)
-      .map(p => p.text!)
-      .join("")
-      .trim();
-  } else {
-    responseText = "";
-  }
+  const responseText = result.text.trim();
 
   // Extract JSON array from response
   const jsonMatch = responseText.match(/\[[\s\S]*\]/);
   if (!jsonMatch) {
-    logger.log("Could not parse clip analysis, using fallback", {
+    logStep("Could not parse clip analysis, using fallback", true, {
       responseText: responseText.slice(0, 200),
     });
     return [
@@ -125,11 +93,9 @@ IMPORTANT: Return the moments ranked by quality — best moment FIRST.`;
     ];
   }
 
-  let clips: SongClip[];
-  try {
-    clips = JSON.parse(jsonMatch[0]) as SongClip[];
-  } catch {
-    logger.log("Failed to parse clip JSON, using fallback");
+  const clips = parseSongClips(jsonMatch[0]);
+  if (clips.length === 0) {
+    logStep("Failed to parse clip JSON, using fallback");
     return [
       {
         startSeconds: 0,
@@ -140,7 +106,7 @@ IMPORTANT: Return the moments ranked by quality — best moment FIRST.`;
       },
     ];
   }
-  logger.log("Clip analysis complete", {
+  logStep("Clip analysis complete", true, {
     songTitle,
     clipCount: clips.length,
   });
