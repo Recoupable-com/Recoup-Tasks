@@ -1,8 +1,5 @@
 import { z } from "zod";
 
-export const TEXT_LENGTHS = ["short", "medium", "long"] as const;
-export type TextLength = (typeof TEXT_LENGTHS)[number];
-
 export const createImagePayloadSchema = z.object({
   accountId: z.string().min(1),
   template: z.string().min(1),
