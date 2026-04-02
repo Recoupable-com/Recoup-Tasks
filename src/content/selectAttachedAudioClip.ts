@@ -1,8 +1,9 @@
 import { logStep } from "../sandboxes/logStep";
 import { transcribeSong } from "./transcribeSong";
-import { analyzeClips, type SongClip } from "./analyzeClips";
+import { analyzeClips } from "./analyzeClips";
 import { DEFAULT_PIPELINE_CONFIG } from "./defaultPipelineConfig";
 import type { SelectedAudioClip } from "./selectAudioClip";
+import { rankClips } from "./rankClips";
 
 /**
  * Selects an audio clip from a user-attached audio file URL.
@@ -53,13 +54,9 @@ export async function selectAttachedAudioClip({
     });
   }
 
-  let selectedClip: SongClip;
-  if (lipsync) {
-    const lyricsClips = clips.filter(c => c.hasLyrics !== false);
-    selectedClip = lyricsClips.length > 0 ? lyricsClips[0] : clips[0];
-  } else {
-    selectedClip = clips[0];
-  }
+  // Rank clips by word density + relatability instead of always taking the first
+  const rankedClips = rankClips(clips, lyrics, clipDuration, lipsync);
+  const selectedClip = rankedClips[0];
 
   // Get lyrics for the clip window
   const clipEnd = selectedClip.startSeconds + clipDuration;
