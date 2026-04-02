@@ -29,23 +29,23 @@ describe("analyzeClips", () => {
     ],
   };
 
+  const validClips = [
+    {
+      startSeconds: 0,
+      lyrics: "hello world",
+      reason: "catchy",
+      mood: "happy",
+      hasLyrics: true,
+      relatability: 8,
+    },
+  ];
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it("calls agent.generate with a prompt containing the song title", async () => {
-    mockGenerate.mockResolvedValue({
-      text: JSON.stringify([
-        {
-          startSeconds: 0,
-          lyrics: "hello world",
-          reason: "catchy",
-          mood: "happy",
-          hasLyrics: true,
-          relatability: 8,
-        },
-      ]),
-    });
+    mockGenerate.mockResolvedValue({ output: validClips });
 
     await analyzeClips("Test Song", lyrics);
 
@@ -57,18 +57,7 @@ describe("analyzeClips", () => {
   });
 
   it("includes timestamped lyrics in the prompt", async () => {
-    mockGenerate.mockResolvedValue({
-      text: JSON.stringify([
-        {
-          startSeconds: 0,
-          lyrics: "hello world",
-          reason: "catchy",
-          mood: "happy",
-          hasLyrics: true,
-          relatability: 8,
-        },
-      ]),
-    });
+    mockGenerate.mockResolvedValue({ output: validClips });
 
     await analyzeClips("Test Song", lyrics);
 
@@ -77,19 +66,18 @@ describe("analyzeClips", () => {
     expect(prompt).toContain("[1.0s] world");
   });
 
-  it("returns validated clips from agent response", async () => {
-    mockGenerate.mockResolvedValue({
-      text: JSON.stringify([
-        {
-          startSeconds: 10,
-          lyrics: "hello world",
-          reason: "hook",
-          mood: "emotional",
-          hasLyrics: true,
-          relatability: 9,
-        },
-      ]),
-    });
+  it("returns clips from structured output", async () => {
+    const clips = [
+      {
+        startSeconds: 10,
+        lyrics: "hello world",
+        reason: "hook",
+        mood: "emotional",
+        hasLyrics: true,
+        relatability: 9,
+      },
+    ];
+    mockGenerate.mockResolvedValue({ output: clips });
 
     const result = await analyzeClips("Test Song", lyrics);
 
@@ -99,26 +87,13 @@ describe("analyzeClips", () => {
   });
 
   it("passes only dynamic song data as the prompt, not system instructions", async () => {
-    mockGenerate.mockResolvedValue({
-      text: JSON.stringify([
-        {
-          startSeconds: 0,
-          lyrics: "hello world",
-          reason: "catchy",
-          mood: "happy",
-          hasLyrics: true,
-          relatability: 8,
-        },
-      ]),
-    });
+    mockGenerate.mockResolvedValue({ output: validClips });
 
     await analyzeClips("Test Song", lyrics);
 
     const prompt = mockGenerate.mock.calls[0][0].prompt as string;
-    // Dynamic data should be in the prompt
     expect(prompt).toContain("Test Song");
     expect(prompt).toContain("[0.0s] hello");
-    // Static system instructions should NOT be in the prompt
     expect(prompt).not.toContain("PRIORITIZE moments");
     expect(prompt).not.toContain("AVOID selecting");
   });
@@ -132,10 +107,8 @@ describe("analyzeClips", () => {
     expect(result[0].reason).toContain("fallback");
   });
 
-  it("returns fallback when response has no JSON array", async () => {
-    mockGenerate.mockResolvedValue({
-      text: "I cannot analyze this song.",
-    });
+  it("returns fallback when output is null", async () => {
+    mockGenerate.mockResolvedValue({ output: null });
 
     const result = await analyzeClips("Test Song", lyrics);
 

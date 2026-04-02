@@ -10,6 +10,7 @@ vi.mock("ai", () => {
   return {
     ToolLoopAgent: MockToolLoopAgent,
     stepCountIs: vi.fn((n: number) => `step-count-${n}`),
+    Output: { object: vi.fn((opts: unknown) => ({ type: "object", opts })) },
   };
 });
 
@@ -26,6 +27,12 @@ describe("createClipAnalysisAgent", () => {
     const agent = createClipAnalysisAgent();
     const config = (agent as unknown as { config: Record<string, unknown> }).config;
     expect(config.stopWhen).toBe("step-count-1");
+  });
+
+  it("defines an output schema for structured SongClip[] responses", () => {
+    const agent = createClipAnalysisAgent();
+    const config = (agent as unknown as { config: Record<string, unknown> }).config;
+    expect(config.output).toBeDefined();
   });
 
   it("includes a static system prompt as instructions", () => {

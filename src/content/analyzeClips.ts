@@ -1,7 +1,6 @@
 import { logStep } from "../sandboxes/logStep";
 import { createClipAnalysisAgent } from "../agents/createClipAnalysisAgent";
 import type { SongLyrics } from "./transcribeSong";
-import { parseSongClips } from "./parseSongClips";
 
 export interface SongClip {
   startSeconds: number;
@@ -43,37 +42,25 @@ ${timestampedLyrics}`;
     hasLyrics: true,
   };
 
-  let responseText: string;
   try {
     const agent = createClipAnalysisAgent();
-    const result = await agent.generate({ prompt });
-    responseText = result.text.trim();
+    const { output } = await agent.generate({ prompt });
+
+    if (!output || output.length === 0) {
+      logStep("Clip analysis returned empty output, using fallback");
+      return [fallbackClip];
+    }
+
+    logStep("Clip analysis complete", true, {
+      songTitle,
+      clipCount: output.length,
+    });
+
+    return output;
   } catch (error) {
     logStep("Clip analysis model error, using fallback", true, {
       error: String(error),
     });
     return [fallbackClip];
   }
-
-  // Extract JSON array from response
-  const jsonMatch = responseText.match(/\[[\s\S]*\]/);
-  if (!jsonMatch) {
-    logStep("Could not parse clip analysis, using fallback", true, {
-      responseText: responseText.slice(0, 200),
-    });
-    return [{ ...fallbackClip, reason: "fallback — start of song" }];
-  }
-
-  const clips = parseSongClips(jsonMatch[0]);
-  if (clips.length === 0) {
-    logStep("Failed to parse clip JSON, using fallback");
-    return [{ ...fallbackClip, reason: "fallback — JSON parse failed" }];
-  }
-
-  logStep("Clip analysis complete", true, {
-    songTitle,
-    clipCount: clips.length,
-  });
-
-  return clips;
 }
