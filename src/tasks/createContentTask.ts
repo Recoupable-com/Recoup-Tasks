@@ -43,7 +43,7 @@ import { resolveImageInstruction } from "../content/resolveImageInstruction";
 export const createContentTask = schemaTask({
   id: "create-content",
   schema: createContentPayloadSchema,
-  maxDuration: 60 * 10,
+  maxDuration: 60 * 30,
   machine: "medium-1x",
   retry: {
     maxAttempts: 0,
