@@ -1,5 +1,5 @@
-import { ToolLoopAgent, stepCountIs } from "ai";
 import { logStep } from "../sandboxes/logStep";
+import { createClipAnalysisAgent } from "../agents/createClipAnalysisAgent";
 import type { SongLyrics } from "./transcribeSong";
 import { parseSongClips } from "./parseSongClips";
 
@@ -79,10 +79,7 @@ IMPORTANT: Return the moments ranked by quality — best moment FIRST.`;
 
   let responseText: string;
   try {
-    const agent = new ToolLoopAgent({
-      model: "google/gemini-2.5-flash",
-      stopWhen: stepCountIs(1),
-    });
+    const agent = createClipAnalysisAgent();
     const result = await agent.generate({ prompt });
     responseText = result.text.trim();
   } catch (error) {

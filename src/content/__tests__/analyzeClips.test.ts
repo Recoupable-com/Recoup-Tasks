@@ -5,26 +5,16 @@ vi.mock("../../sandboxes/logStep", () => ({
   logStep: vi.fn(),
 }));
 
-// Mock ai module — mockGenerate must be declared with vi.hoisted so it's
-// available inside the hoisted vi.mock factory
+// mockGenerate must be declared with vi.hoisted so it's available in the
+// hoisted vi.mock factory
 const { mockGenerate } = vi.hoisted(() => {
   const mockGenerate = vi.fn();
   return { mockGenerate };
 });
 
-vi.mock("ai", () => {
-  class MockToolLoopAgent {
-    config: Record<string, unknown>;
-    constructor(config: Record<string, unknown>) {
-      this.config = config;
-    }
-    generate = mockGenerate;
-  }
-  return {
-    ToolLoopAgent: MockToolLoopAgent,
-    stepCountIs: vi.fn().mockReturnValue("step-count-1"),
-  };
-});
+vi.mock("../../agents/createClipAnalysisAgent", () => ({
+  createClipAnalysisAgent: () => ({ generate: mockGenerate }),
+}));
 
 import { analyzeClips } from "../analyzeClips";
 import type { SongLyrics } from "../transcribeSong";
@@ -43,28 +33,7 @@ describe("analyzeClips", () => {
     vi.clearAllMocks();
   });
 
-  it("creates a ToolLoopAgent with the correct model", async () => {
-    mockGenerate.mockResolvedValue({
-      text: JSON.stringify([
-        {
-          startSeconds: 0,
-          lyrics: "hello world",
-          reason: "catchy",
-          mood: "happy",
-          hasLyrics: true,
-          relatability: 8,
-        },
-      ]),
-    });
-
-    await analyzeClips("Test Song", lyrics);
-
-    expect(mockGenerate).toHaveBeenCalled();
-    // Verify the agent was constructed — mockGenerate being called means
-    // ToolLoopAgent was instantiated and agent.generate was invoked
-  });
-
-  it("calls agent.generate with a prompt", async () => {
+  it("calls agent.generate with a prompt containing the song title", async () => {
     mockGenerate.mockResolvedValue({
       text: JSON.stringify([
         {
@@ -85,6 +54,27 @@ describe("analyzeClips", () => {
         prompt: expect.stringContaining("Test Song"),
       }),
     );
+  });
+
+  it("includes timestamped lyrics in the prompt", async () => {
+    mockGenerate.mockResolvedValue({
+      text: JSON.stringify([
+        {
+          startSeconds: 0,
+          lyrics: "hello world",
+          reason: "catchy",
+          mood: "happy",
+          hasLyrics: true,
+          relatability: 8,
+        },
+      ]),
+    });
+
+    await analyzeClips("Test Song", lyrics);
+
+    const prompt = mockGenerate.mock.calls[0][0].prompt as string;
+    expect(prompt).toContain("[0.0s] hello");
+    expect(prompt).toContain("[1.0s] world");
   });
 
   it("returns validated clips from agent response", async () => {
