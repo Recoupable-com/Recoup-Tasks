@@ -33,7 +33,11 @@ export async function installSkill(
   });
 
   if (install.exitCode !== 0) {
-    throw new Error(`Failed to install skill ${skill} via skills.sh`);
+    logger.warn("Skill install failed, continuing without it", {
+      skill,
+      stderr: installStderr,
+    });
+    return;
   }
 
   // Copy from skills.sh location to OpenClaw workspace skills directory
@@ -48,11 +52,11 @@ export async function installSkill(
   const copyStderr = (await copy.stderr()) || "";
 
   if (copy.exitCode !== 0) {
-    logger.error("Failed to copy skill to OpenClaw workspace", {
+    logger.warn("Failed to copy skill to OpenClaw workspace, continuing without it", {
       skill,
       stderr: copyStderr,
     });
-    throw new Error(`Failed to copy skill ${skillName} to OpenClaw workspace`);
+    return;
   }
 
   logger.log("Skill installed to OpenClaw workspace", { skillName });
