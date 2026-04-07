@@ -33,4 +33,23 @@ describe("loadTemplate artist-release-editorial", () => {
     expect(sg.customInstruction).toBeTruthy();
     expect(typeof sg.customInstruction).toBe("string");
   });
+
+  it("customInstruction generates only the artist portrait with no composited elements", async () => {
+    const template = await loadTemplate("artist-release-editorial");
+    const sg = template.styleGuide as Record<string, unknown>;
+    const instruction = sg.customInstruction as string;
+
+    expect(instruction.toLowerCase()).not.toContain("playlist cover");
+    expect(instruction.toLowerCase()).not.toContain("streaming");
+    expect(instruction.toLowerCase()).not.toContain("logo");
+    expect(instruction.toLowerCase()).not.toContain("composite");
+  });
+
+  it("imagePrompt describes only the editorial portrait with no composited elements", async () => {
+    const template = await loadTemplate("artist-release-editorial");
+
+    expect(template.imagePrompt.toLowerCase()).not.toContain("playlist");
+    expect(template.imagePrompt.toLowerCase()).not.toContain("logo");
+    expect(template.imagePrompt.toLowerCase()).not.toContain("composite");
+  });
 });

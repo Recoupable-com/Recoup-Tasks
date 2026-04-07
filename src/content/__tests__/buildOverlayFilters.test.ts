@@ -10,30 +10,27 @@ describe("buildOverlayFilters", () => {
     expect(result.filterChain).toBe("");
   });
 
-  it("builds a single overlay in bottom-right corner", () => {
+  it("builds a single overlay in the top-left corner", () => {
     const result = buildOverlayFilters(["/tmp/cover.png"]);
 
     expect(result.inputs).toEqual(["-i", "/tmp/cover.png"]);
     expect(result.filterChain).toContain("overlay=");
     expect(result.filterChain).toContain("scale=");
+    // Top-left: x should be small (edge padding), y should be small
+    expect(result.filterChain).toMatch(/overlay=30:30/);
   });
 
-  it("builds multiple overlays for multiple images", () => {
+  it("stacks multiple overlays vertically from top-left", () => {
     const result = buildOverlayFilters(["/tmp/cover1.png", "/tmp/cover2.png"]);
 
     expect(result.inputs).toEqual([
       "-i", "/tmp/cover1.png",
       "-i", "/tmp/cover2.png",
     ]);
-    // Should have overlay filter for each image
     const overlayCount = (result.filterChain.match(/overlay=/g) || []).length;
     expect(overlayCount).toBe(2);
-  });
-
-  it("positions overlays without overlapping each other", () => {
-    const result = buildOverlayFilters(["/tmp/a.png", "/tmp/b.png"]);
-
-    // Both overlays should have distinct position expressions
-    expect(result.filterChain).toBeTruthy();
+    // First at y=30, second at y=30+150+20=200
+    expect(result.filterChain).toMatch(/overlay=30:30/);
+    expect(result.filterChain).toMatch(/overlay=30:200/);
   });
 });

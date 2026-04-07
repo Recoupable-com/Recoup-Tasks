@@ -21,8 +21,8 @@ export interface OverlayFiltersResult {
 /**
  * Builds ffmpeg input args and filter chain to overlay images onto a video.
  *
- * Images are scaled to a fixed size and stacked vertically in the bottom-right
- * corner of the frame, above the caption area.
+ * Images are scaled to a fixed size and stacked vertically from the top-left
+ * corner of the frame.
  *
  * @param overlayImagePaths - Local file paths of images to overlay
  * @returns ffmpeg inputs and filter chain string
@@ -46,13 +46,11 @@ export function buildOverlayFilters(overlayImagePaths: string[]): OverlayFilters
     filters.push(`[ovr_in_${i}]scale=${OVERLAY_SIZE}:${OVERLAY_SIZE}[ovr_${i}]`);
   }
 
-  // Chain overlays onto the video — stacked vertically from bottom-right
-  // First overlay goes onto [video], producing [tmp0]. Second onto [tmp0], producing [tmp1], etc.
+  // Chain overlays onto the video — stacked vertically from top-left
   let prevLabel = "video_base";
   for (let i = 0; i < overlayImagePaths.length; i++) {
-    const x = FRAME_WIDTH - OVERLAY_SIZE - EDGE_PADDING;
-    const yFromBottom = EDGE_PADDING + i * (OVERLAY_SIZE + OVERLAY_GAP);
-    const y = FRAME_HEIGHT - OVERLAY_SIZE - 160 - yFromBottom; // 160 = above caption area
+    const x = EDGE_PADDING;
+    const y = EDGE_PADDING + i * (OVERLAY_SIZE + OVERLAY_GAP);
     const outLabel = i < overlayImagePaths.length - 1 ? `ovr_out_${i}` : "ovr_final";
     filters.push(`[${prevLabel}][ovr_${i}]overlay=${x}:${y}[${outLabel}]`);
     prevLabel = outLabel;

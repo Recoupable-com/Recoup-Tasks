@@ -330,12 +330,11 @@ function buildFfmpegArgs({
     filterParts.push(`[0:v]${cropFilter},${scaleFilter}[video_base]`);
     filterParts.push(...overlayScaleFilters);
 
-    // Chain overlays
+    // Chain overlays — stacked vertically from top-left
     let prevLabel = "video_base";
     for (let i = 0; i < overlayImagePaths.length; i++) {
-      const x = FRAME_WIDTH - 150 - 30; // OVERLAY_SIZE - EDGE_PADDING
-      const yFromBottom = 30 + i * (150 + 20); // EDGE_PADDING + i * (OVERLAY_SIZE + GAP)
-      const y = FRAME_HEIGHT - 150 - 160 - yFromBottom;
+      const x = 30; // EDGE_PADDING
+      const y = 30 + i * (150 + 20); // EDGE_PADDING + i * (OVERLAY_SIZE + GAP)
       const outLabel = i < overlayImagePaths.length - 1 ? `ovr_out_${i}` : "ovr_final";
       filterParts.push(`[${prevLabel}][ovr_${i}]overlay=${x}:${y}[${outLabel}]`);
       prevLabel = outLabel;
