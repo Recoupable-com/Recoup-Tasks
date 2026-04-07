@@ -1,8 +1,6 @@
-import { fal } from "@fal-ai/client";
-import { logStep } from "../sandboxes/logStep";
 import { detectFace } from "./detectFace";
 import { fetchImageFromUrl } from "./fetchImageFromUrl";
-import { fetchGithubFile } from "./fetchGithubFile";
+import { fetchGitHubFaceGuide } from "./fetchGitHubFaceGuide";
 
 export interface ResolveFaceGuideResult {
   faceGuideUrl: string | null;
@@ -52,21 +50,7 @@ export async function resolveFaceGuide({
 
   // Fall back to GitHub face-guide if needed
   if (usesFaceGuide && !faceGuideUrl) {
-    logStep("Fetching face-guide from GitHub");
-    const buffer = await fetchGithubFile(
-      githubRepo,
-      `artists/${artistSlug}/context/images/face-guide.png`,
-    );
-    if (!buffer) {
-      throw new Error(`face-guide.png not found for artist ${artistSlug}`);
-    }
-
-    logStep("Uploading face-guide to fal.ai storage", true, {
-      sizeBytes: buffer.byteLength,
-    });
-    const file = new File([buffer], "face-guide.png", { type: "image/png" });
-    faceGuideUrl = await fal.storage.upload(file);
-    logStep("Face-guide uploaded", false, { faceGuideUrl });
+    faceGuideUrl = await fetchGitHubFaceGuide(githubRepo, artistSlug);
   }
 
   return { faceGuideUrl, additionalImageUrls };

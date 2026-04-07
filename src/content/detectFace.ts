@@ -1,4 +1,4 @@
-import { logger } from "@trigger.dev/sdk/v3";
+import { logStep } from "../sandboxes/logStep";
 import { falSubscribe } from "./falSubscribe";
 
 const DETECTION_MODEL = "fal-ai/florence-2-large/object-detection";
@@ -25,10 +25,10 @@ export async function detectFace(imageUrl: string): Promise<boolean> {
     const hasFace = labels.some((label) =>
       FACE_LABELS.some((faceLabel) => label.toLowerCase().includes(faceLabel)),
     );
-    logger.log("Face detection result", { imageUrl: imageUrl.slice(0, 80), hasFace, labels });
+    logStep("Face detection result", false, { imageUrl: imageUrl.slice(0, 80), hasFace, labels });
     return hasFace;
   } catch {
-    logger.log("Face detection failed, assuming no face", {
+    logStep("Face detection failed, assuming no face", false, {
       imageUrl: imageUrl.slice(0, 80),
     });
     return false;

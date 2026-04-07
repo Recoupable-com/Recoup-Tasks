@@ -1,6 +1,5 @@
 import fs from "node:fs/promises";
 import { fal } from "@fal-ai/client";
-import { logger } from "@trigger.dev/sdk/v3";
 import { logStep } from "../sandboxes/logStep";
 import { DEFAULT_PIPELINE_CONFIG } from "./defaultPipelineConfig";
 import { falSubscribe } from "./falSubscribe";
@@ -39,7 +38,7 @@ export async function generateContentImage({
   if (faceGuideUrl) imageUrls.push(faceGuideUrl);
 
   if (referenceImagePath) {
-    logger.log("Uploading reference image to fal storage", {
+    logStep("Uploading reference image to fal storage", false, {
       path: referenceImagePath,
     });
     const refBuffer = await fs.readFile(referenceImagePath);
@@ -50,7 +49,7 @@ export async function generateContentImage({
 
   if (additionalImageUrls?.length) {
     const deduped = additionalImageUrls.filter((url) => !imageUrls.includes(url));
-    logger.log("Adding additional image URLs", {
+    logStep("Adding additional image URLs", false, {
       count: deduped.length,
       urls: deduped.map((u) => u.slice(0, 80)),
     });
@@ -84,7 +83,7 @@ export async function generateContentImage({
     );
   }
 
-  logger.log("Image generated", { imageUrl: imageUrl.slice(0, 80) });
+  logStep("Image generated", false, { imageUrl: imageUrl.slice(0, 80) });
   return imageUrl;
 }
 
