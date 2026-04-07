@@ -2,8 +2,8 @@
   "name": "artist-release-editorial",
   "description": "Editorial promo featuring artist press photo with playlist covers and DSP branding — the kind of polished-but-organic visual an artist's team drops alongside a new release",
   "usesFaceGuide": true,
-  "customInstruction": "Generate an editorial-style press photo of the artist. The image should look like a professional press photo taken for a magazine feature or playlist editorial — polished lighting but still feeling authentic and personal. Do NOT composite playlist covers or logos into the AI-generated image. Those elements will be overlaid separately in post-production.",
-  "imagePrompt": "A professional editorial press photo of an artist. Clean, intentional lighting — soft key light with subtle rim light separation. The artist is posed naturally, looking directly at camera or slightly off-axis. The background is a solid or subtly textured surface (concrete wall, draped fabric, muted gradient) that does not distract from the subject. The mood is confident and polished but not sterile. Shot on a DSLR or medium format camera, shallow depth of field, cinematic color grade leaning warm or desaturated depending on the artist's aesthetic.",
+  "customInstruction": "Generate an editorial-style composite image that combines a professional press photo of the artist with playlist covers and streaming platform logos into a single unified image. Use the provided playlist covers and logo attachments as source material — match the layout and composition style shown in the reference images. The final image should look like a polished editorial promo card an artist's team would post alongside a new release.",
+  "imagePrompt": "An editorial composite image featuring an artist press photo combined with playlist cover art and streaming platform logos. The artist is the focal point — a professional editorial portrait with polished lighting, natural pose, and cinematic color grade. Playlist cover art tiles and streaming logos (Spotify, Apple Music, etc.) are composited into the layout around the artist, matching the reference style. The composition is clean and intentional — everything feels like one cohesive design, not a collage. Background is a solid or subtly textured surface that ties the elements together.",
 
   "camera": {
     "type": "DSLR or medium format, editorial portrait lens (85mm-135mm equivalent)",
@@ -15,8 +15,8 @@
   "environment": {
     "feel": "editorial — intentional, curated but not over-produced",
     "lighting": "soft key light from the side, subtle fill, rim light for separation. Warm or cool depending on mood. Not flat studio lighting — has dimension and direction.",
-    "backgrounds": "solid or subtly textured — concrete, fabric drape, muted color wash, out-of-focus urban environment. Clean enough to overlay text and graphics.",
-    "avoid": "busy backgrounds, visible branding, cluttered sets, green screen look, over-saturated colors, heavy HDR"
+    "backgrounds": "solid or subtly textured — concrete, fabric drape, muted color wash, out-of-focus urban environment. Clean enough to support composited playlist covers and logos.",
+    "avoid": "busy backgrounds, cluttered sets, green screen look, over-saturated colors, heavy HDR, disjointed collage look"
   },
 
   "subject": {
