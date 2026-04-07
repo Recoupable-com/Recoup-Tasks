@@ -49,6 +49,10 @@ export async function generateContentImage({
   }
 
   if (additionalImageUrls?.length) {
+    logger.log("Adding additional image URLs", {
+      count: additionalImageUrls.length,
+      urls: additionalImageUrls.map((u) => u.slice(0, 80)),
+    });
     imageUrls.push(...additionalImageUrls);
   }
 
@@ -58,6 +62,7 @@ export async function generateContentImage({
     imageCount: imageUrls.length,
     hasFaceGuide: Boolean(faceGuideUrl),
     hasReferenceImage: Boolean(referenceImagePath),
+    hasAdditionalImages: Boolean(additionalImageUrls?.length),
   });
 
   const result = await falSubscribe(config.imageModel, {
