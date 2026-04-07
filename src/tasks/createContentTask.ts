@@ -69,8 +69,8 @@ export const createContentTask = schemaTask({
     logStep("Loading template");
     const template = await loadTemplate(payload.template);
 
-    // --- Step 2: Fetch face-guide (only if template uses it) ---
-    const faceGuideUrl = await resolveFaceGuide({
+    // --- Step 2: Resolve face-guide and classify attached images ---
+    const { faceGuideUrl, additionalImageUrls } = await resolveFaceGuide({
       usesFaceGuide: template.usesFaceGuide,
       images: payload.images,
       githubRepo: payload.githubRepo,
@@ -100,7 +100,7 @@ export const createContentTask = schemaTask({
       faceGuideUrl: faceGuideUrl ?? undefined,
       referenceImagePath,
       prompt: fullPrompt,
-      additionalImageUrls: payload.images,
+      additionalImageUrls,
     });
 
     // --- Step 6: Upscale image (optional) ---
