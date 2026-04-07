@@ -7,6 +7,7 @@ import { promisify } from "node:util";
 import { logStep } from "../sandboxes/logStep";
 import { fal } from "@fal-ai/client";
 import { buildOverlayFilters } from "./buildOverlayFilters";
+import { escapeDrawtext } from "./escapeDrawtext";
 
 const execFileAsync = promisify(execFile);
 
@@ -279,13 +280,7 @@ function buildFfmpegArgs({
   }
 
   const captionFilters = lines.map((line, i) => {
-    const escaped = line
-      .replace(/\\/g, "\\\\\\\\")
-      .replace(/'/g, "\u2019")
-      .replace(/:/g, "\\\\:")
-      .replace(/%/g, "%%%%")
-      .replace(/\n/g, " ")
-      .replace(/\r/g, "");
+    const escaped = escapeDrawtext(line);
 
     const yPos = blockStartY + (i * lineHeight);
 
