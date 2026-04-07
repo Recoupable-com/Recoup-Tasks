@@ -86,6 +86,21 @@ describe("generateContentImage", () => {
     expect(callArgs.image_urls).toEqual(["https://example.com/cover.png"]);
   });
 
+  it("deduplicates additionalImageUrls that match faceGuideUrl", async () => {
+    await generateContentImage({
+      faceGuideUrl: "https://fal.ai/face.png",
+      referenceImagePath: null,
+      prompt: "test prompt",
+      additionalImageUrls: ["https://fal.ai/face.png", "https://example.com/cover.png"],
+    });
+
+    const callArgs = mockFalSubscribe.mock.calls[0][1] as Record<string, unknown>;
+    expect(callArgs.image_urls).toEqual([
+      "https://fal.ai/face.png",
+      "https://example.com/cover.png",
+    ]);
+  });
+
   it("ignores empty additionalImageUrls array", async () => {
     await generateContentImage({
       faceGuideUrl: "https://fal.ai/face.png",

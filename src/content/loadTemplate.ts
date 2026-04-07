@@ -1,8 +1,15 @@
 import path from "node:path";
 import fs from "node:fs/promises";
+import { z } from "zod";
 import { logStep } from "../sandboxes/logStep";
 import { resolveTemplatesDir } from "./resolveTemplatesDir";
 import { loadJsonFile } from "./loadJsonFile";
+
+const styleGuideSchema = z.object({
+  imagePrompt: z.string().default(""),
+  usesFaceGuide: z.boolean().default(true),
+  usesImageOverlay: z.boolean().default(false),
+}).passthrough();
 
 /**
  * Template data loaded from the bundled templates directory.
@@ -81,11 +88,12 @@ export async function loadTemplate(templateName: string): Promise<TemplateData> 
     logStep("loadTemplate: no reference images directory", false, { imagesDir });
   }
 
-  // Read template-level fields from the style guide
-  const sg = styleGuide as Record<string, unknown> | null;
-  const imagePrompt = (sg?.imagePrompt as string) ?? "";
-  const usesFaceGuide = (sg?.usesFaceGuide as boolean) ?? true;
-  const usesImageOverlay = (sg?.usesImageOverlay as boolean) ?? false;
+  // Read and validate template-level fields from the style guide
+  const parsed = styleGuideSchema.safeParse(styleGuide ?? {});
+  const sg = parsed.success ? parsed.data : { imagePrompt: "", usesFaceGuide: true, usesImageOverlay: false };
+  const imagePrompt = sg.imagePrompt;
+  const usesFaceGuide = sg.usesFaceGuide;
+  const usesImageOverlay = sg.usesImageOverlay;
 
   logStep("loadTemplate: result summary", false, {
     template: templateName,

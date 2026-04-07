@@ -225,13 +225,9 @@ export async function renderFinalVideo(
       sizeBytes,
     };
   } finally {
-    // Clean up temp files
-    await Promise.all([
-      unlink(videoPath).catch(() => undefined),
-      unlink(audioPath).catch(() => undefined),
-      unlink(captionPath).catch(() => undefined),
-      unlink(outputPath).catch(() => undefined),
-    ]);
+    // Clean up temp files (including overlay images)
+    const cleanupPaths = [videoPath, audioPath, captionPath, outputPath, ...overlayPaths];
+    await Promise.all(cleanupPaths.map((p) => unlink(p).catch(() => undefined)));
   }
 }
 

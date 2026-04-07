@@ -11,6 +11,9 @@ const EDGE_PADDING = 30;
 /** Gap between stacked overlays */
 const OVERLAY_GAP = 20;
 
+/** Maximum number of overlays that fit on-frame */
+const MAX_OVERLAYS = 6;
+
 export interface OverlayFiltersResult {
   /** ffmpeg input args (e.g. ["-i", "/tmp/cover1.png", "-i", "/tmp/cover2.png"]) */
   inputs: string[];
@@ -28,10 +31,10 @@ export interface OverlayFiltersResult {
  * @returns ffmpeg inputs and filter chain string
  */
 export function buildOverlayFilters(overlayImagePaths: string[]): OverlayFiltersResult {
-  if (overlayImagePaths.length === 0) {
+  const cappedPaths = overlayImagePaths.slice(0, MAX_OVERLAYS);
+  if (cappedPaths.length === 0) {
     return { inputs: [], filterChain: "" };
   }
-
   const inputs: string[] = [];
   const filters: string[] = [];
 
@@ -39,8 +42,8 @@ export function buildOverlayFilters(overlayImagePaths: string[]): OverlayFilters
   // Overlay inputs start after existing inputs — the caller must provide the correct offset.
   // We use placeholder indices [OVR0], [OVR1], etc. that the caller maps to actual input indices.
 
-  for (let i = 0; i < overlayImagePaths.length; i++) {
-    inputs.push("-i", overlayImagePaths[i]);
+  for (let i = 0; i < cappedPaths.length; i++) {
+    inputs.push("-i", cappedPaths[i]);
 
     // Scale overlay image to fixed size
     filters.push(`[ovr_in_${i}]scale=${OVERLAY_SIZE}:${OVERLAY_SIZE}[ovr_${i}]`);
@@ -48,10 +51,10 @@ export function buildOverlayFilters(overlayImagePaths: string[]): OverlayFilters
 
   // Chain overlays onto the video — stacked vertically from top-left
   let prevLabel = "video_base";
-  for (let i = 0; i < overlayImagePaths.length; i++) {
+  for (let i = 0; i < cappedPaths.length; i++) {
     const x = EDGE_PADDING;
     const y = EDGE_PADDING + i * (OVERLAY_SIZE + OVERLAY_GAP);
-    const outLabel = i < overlayImagePaths.length - 1 ? `ovr_out_${i}` : "ovr_final";
+    const outLabel = i < cappedPaths.length - 1 ? `ovr_out_${i}` : "ovr_final";
     filters.push(`[${prevLabel}][ovr_${i}]overlay=${x}:${y}[${outLabel}]`);
     prevLabel = outLabel;
   }

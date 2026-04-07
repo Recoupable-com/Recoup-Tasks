@@ -49,11 +49,12 @@ export async function generateContentImage({
   }
 
   if (additionalImageUrls?.length) {
+    const deduped = additionalImageUrls.filter((url) => !imageUrls.includes(url));
     logger.log("Adding additional image URLs", {
-      count: additionalImageUrls.length,
-      urls: additionalImageUrls.map((u) => u.slice(0, 80)),
+      count: deduped.length,
+      urls: deduped.map((u) => u.slice(0, 80)),
     });
-    imageUrls.push(...additionalImageUrls);
+    imageUrls.push(...deduped);
   }
 
   logStep("Generating image", false, {

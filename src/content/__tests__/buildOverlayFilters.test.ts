@@ -33,4 +33,12 @@ describe("buildOverlayFilters", () => {
     expect(result.filterChain).toMatch(/overlay=30:30/);
     expect(result.filterChain).toMatch(/overlay=30:200/);
   });
+
+  it("caps overlays at MAX_OVERLAYS to prevent off-frame rendering", () => {
+    const paths = Array.from({ length: 10 }, (_, i) => `/tmp/cover${i}.png`);
+    const result = buildOverlayFilters(paths);
+
+    const overlayCount = (result.filterChain.match(/overlay=/g) || []).length;
+    expect(overlayCount).toBeLessThanOrEqual(6);
+  });
 });
