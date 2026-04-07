@@ -100,6 +100,7 @@ export const createContentTask = schemaTask({
       faceGuideUrl: faceGuideUrl ?? undefined,
       referenceImagePath,
       prompt: fullPrompt,
+      additionalImageUrls: payload.images,
     });
 
     // --- Step 6: Upscale image (optional) ---

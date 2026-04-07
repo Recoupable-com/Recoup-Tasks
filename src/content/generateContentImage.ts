@@ -23,11 +23,14 @@ export async function generateContentImage({
   faceGuideUrl,
   referenceImagePath,
   prompt,
+  additionalImageUrls,
 }: {
   /** Guide image URL — omit for templates that don't use an input image. */
   faceGuideUrl?: string;
   referenceImagePath: string | null;
   prompt: string;
+  /** Extra image URLs (e.g. album covers, playlist covers) to pass to the model. */
+  additionalImageUrls?: string[];
 }): Promise<string> {
   const config = DEFAULT_PIPELINE_CONFIG;
 
@@ -43,6 +46,10 @@ export async function generateContentImage({
     const refFile = new File([refBuffer], "reference.png", { type: "image/png" });
     const refUrl = await fal.storage.upload(refFile);
     imageUrls.push(refUrl);
+  }
+
+  if (additionalImageUrls?.length) {
+    imageUrls.push(...additionalImageUrls);
   }
 
   logStep("Generating image", false, {
