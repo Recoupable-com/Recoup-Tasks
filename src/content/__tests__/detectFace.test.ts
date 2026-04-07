@@ -16,19 +16,48 @@ describe("detectFace", () => {
     vi.clearAllMocks();
   });
 
-  it("returns true when faces are detected", async () => {
+  it("returns true when a person label is detected", async () => {
     mockFalSubscribe.mockResolvedValue({
-      data: { faces: [{ bbox: [0, 0, 100, 100] }] },
+      data: {
+        results: {
+          bboxes: [[10, 20, 100, 200]],
+          labels: ["person"],
+        },
+      },
     });
 
     const result = await detectFace("https://example.com/headshot.png");
 
     expect(result).toBe(true);
+    expect(mockFalSubscribe).toHaveBeenCalledWith(
+      "fal-ai/florence-2-large/object-detection",
+      { image_url: "https://example.com/headshot.png" },
+    );
   });
 
-  it("returns false when no faces are detected", async () => {
+  it("returns true when a face label is detected among other objects", async () => {
     mockFalSubscribe.mockResolvedValue({
-      data: { faces: [] },
+      data: {
+        results: {
+          bboxes: [[0, 0, 50, 50], [10, 20, 100, 200]],
+          labels: ["chair", "human face"],
+        },
+      },
+    });
+
+    const result = await detectFace("https://example.com/photo.png");
+
+    expect(result).toBe(true);
+  });
+
+  it("returns false when no person or face labels are detected", async () => {
+    mockFalSubscribe.mockResolvedValue({
+      data: {
+        results: {
+          bboxes: [[0, 0, 300, 300]],
+          labels: ["album cover"],
+        },
+      },
     });
 
     const result = await detectFace("https://example.com/album-cover.png");
@@ -36,7 +65,22 @@ describe("detectFace", () => {
     expect(result).toBe(false);
   });
 
-  it("returns false when face detection fails", async () => {
+  it("returns false when results are empty", async () => {
+    mockFalSubscribe.mockResolvedValue({
+      data: {
+        results: {
+          bboxes: [],
+          labels: [],
+        },
+      },
+    });
+
+    const result = await detectFace("https://example.com/blank.png");
+
+    expect(result).toBe(false);
+  });
+
+  it("returns false when detection fails", async () => {
     mockFalSubscribe.mockRejectedValue(new Error("Detection failed"));
 
     const result = await detectFace("https://example.com/broken.png");

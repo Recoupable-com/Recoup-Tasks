@@ -13,6 +13,8 @@ export interface TemplateData {
   imagePrompt: string;
   /** Whether this template uses the artist's face-guide for identity. Defaults to true. */
   usesFaceGuide: boolean;
+  /** Whether attached images (playlist covers, logos) should be overlaid on the final video. Defaults to false. */
+  usesImageOverlay: boolean;
   styleGuide: Record<string, unknown> | null;
   captionGuide: Record<string, unknown> | null;
   captionExamples: string[];
@@ -83,6 +85,7 @@ export async function loadTemplate(templateName: string): Promise<TemplateData> 
   const sg = styleGuide as Record<string, unknown> | null;
   const imagePrompt = (sg?.imagePrompt as string) ?? "";
   const usesFaceGuide = (sg?.usesFaceGuide as boolean) ?? true;
+  const usesImageOverlay = (sg?.usesImageOverlay as boolean) ?? false;
 
   logStep("loadTemplate: result summary", false, {
     template: templateName,
@@ -94,12 +97,14 @@ export async function loadTemplate(templateName: string): Promise<TemplateData> 
     referenceImagesCount: referenceImagePaths.length,
     imagePromptLength: imagePrompt.length,
     usesFaceGuide,
+    usesImageOverlay,
   });
 
   return {
     name: templateName,
     imagePrompt,
     usesFaceGuide,
+    usesImageOverlay,
     styleGuide,
     captionGuide,
     captionExamples,

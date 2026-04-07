@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { promisify } from "node:util";
 import { logStep } from "../sandboxes/logStep";
 import { fal } from "@fal-ai/client";
+import { buildOverlayFilters } from "./buildOverlayFilters";
 
 const execFileAsync = promisify(execFile);
 
@@ -122,6 +123,8 @@ export interface RenderFinalVideoInput {
   captionText: string;
   /** Whether the video already has audio baked in (lipsync mode) */
   hasAudio: boolean;
+  /** Optional image URLs to overlay on the video (playlist covers, logos) */
+  overlayImageUrls?: string[];
 }
 
 export interface RenderFinalVideoOutput {
@@ -165,6 +168,20 @@ export async function renderFinalVideo(
     // Write the song mp3 to disk
     await writeFile(audioPath, input.songBuffer);
 
+    // Download overlay images to temp files (if any)
+    const overlayPaths: string[] = [];
+    if (input.overlayImageUrls?.length) {
+      logStep("Downloading overlay images", true, { count: input.overlayImageUrls.length });
+      for (let i = 0; i < input.overlayImageUrls.length; i++) {
+        const resp = await fetch(input.overlayImageUrls[i]);
+        if (!resp.ok) continue;
+        const buf = Buffer.from(await resp.arrayBuffer());
+        const overlayPath = join(tempDir, `overlay-${i}.png`);
+        await writeFile(overlayPath, buf);
+        overlayPaths.push(overlayPath);
+      }
+    }
+
     // Calculate adaptive caption layout (auto-shrinks font for long text)
     const cleanCaption = stripEmoji(input.captionText);
     const captionLayout = calculateCaptionLayout(cleanCaption);
@@ -178,12 +195,14 @@ export async function renderFinalVideo(
       audioStartSeconds: input.audioStartSeconds,
       audioDurationSeconds: input.audioDurationSeconds,
       hasAudio: input.hasAudio,
+      overlayImagePaths: overlayPaths,
     });
 
     logStep("Running ffmpeg render", true, {
       argCount: ffmpegArgs.length,
       hasAudio: input.hasAudio,
       captionLength: input.captionText.length,
+      overlayCount: overlayPaths.length,
     });
 
     await execFileAsync("ffmpeg", ffmpegArgs);
@@ -231,6 +250,7 @@ function buildFfmpegArgs({
   audioStartSeconds,
   audioDurationSeconds,
   hasAudio,
+  overlayImagePaths,
 }: {
   videoPath: string;
   audioPath: string;
@@ -239,37 +259,29 @@ function buildFfmpegArgs({
   audioStartSeconds: number;
   audioDurationSeconds: number;
   hasAudio: boolean;
+  overlayImagePaths: string[];
 }): string[] {
   const { lines, fontSize, lineHeight, position } = captionLayout;
 
-  // Video filter: crop 16:9 → 9:16 (center crop) + scale to 720x1280 + caption lines
-  // Each line is a separate drawtext filter, centered horizontally, stacked from bottom
   const cropFilter = "crop=ih*9/16:ih";
   const scaleFilter = "scale=720:1280";
 
   const totalTextHeight = lines.length * lineHeight;
   const borderWidth = Math.max(2, Math.round(fontSize / 14));
 
-  // Calculate the Y start based on position strategy
-  // "bottom" → text block sits near the bottom
-  // "center" → text block is vertically centered
-  // "top"    → text block starts near the top
   let blockStartY: number;
   if (position === "bottom") {
     blockStartY = FRAME_HEIGHT - BOTTOM_MARGIN - totalTextHeight;
   } else if (position === "center") {
     blockStartY = Math.round((FRAME_HEIGHT - totalTextHeight) / 2);
   } else {
-    // "top" — start from upper area with some top margin
     blockStartY = 180;
   }
 
-  // Build a drawtext filter for each line, centered horizontally
   const captionFilters = lines.map((line, i) => {
-    // Escape ffmpeg drawtext special characters
     const escaped = line
       .replace(/\\/g, "\\\\\\\\")
-      .replace(/'/g, "\u2019") // replace apostrophe with curly quote
+      .replace(/'/g, "\u2019")
       .replace(/:/g, "\\\\:")
       .replace(/%/g, "%%%%")
       .replace(/\n/g, " ")
@@ -288,39 +300,105 @@ function buildFfmpegArgs({
     ].join(":");
   });
 
-  const videoFilter = [cropFilter, scaleFilter, ...captionFilters].join(",");
+  const hasOverlays = overlayImagePaths.length > 0;
+  const overlay = hasOverlays ? buildOverlayFilters(overlayImagePaths) : null;
 
   const args = ["-y"];
 
-  if (hasAudio) {
-    // Lipsync mode: video already has audio, just crop + caption
+  if (hasOverlays && overlay) {
+    // Use filter_complex for multi-input overlay pipeline
+    // Input indices: 0=video, then overlay images, then audio (if not lipsync)
+    const audioInputIndex = hasAudio ? -1 : 1 + overlayImagePaths.length;
+
+    // Inputs
+    args.push("-i", videoPath);
+    args.push(...overlay.inputs);
+    if (!hasAudio) {
+      args.push("-ss", String(audioStartSeconds), "-t", String(audioDurationSeconds));
+      args.push("-i", audioPath);
+    }
+
+    // Build filter_complex:
+    // 1. Crop + scale video → [video_base]
+    // 2. Scale each overlay → [ovr_N]
+    // 3. Chain overlays → [ovr_final]
+    // 4. Apply captions → [out]
+    const filterParts: string[] = [];
+
+    // Map overlay inputs to their labels
+    const overlayScaleFilters = overlayImagePaths.map((_, i) => {
+      const inputIdx = 1 + i; // 0 is video
+      return `[${inputIdx}:v]scale=150:150[ovr_${i}]`;
+    });
+
+    // Crop + scale video
+    filterParts.push(`[0:v]${cropFilter},${scaleFilter}[video_base]`);
+    filterParts.push(...overlayScaleFilters);
+
+    // Chain overlays
+    let prevLabel = "video_base";
+    for (let i = 0; i < overlayImagePaths.length; i++) {
+      const x = FRAME_WIDTH - 150 - 30; // OVERLAY_SIZE - EDGE_PADDING
+      const yFromBottom = 30 + i * (150 + 20); // EDGE_PADDING + i * (OVERLAY_SIZE + GAP)
+      const y = FRAME_HEIGHT - 150 - 160 - yFromBottom;
+      const outLabel = i < overlayImagePaths.length - 1 ? `ovr_out_${i}` : "ovr_final";
+      filterParts.push(`[${prevLabel}][ovr_${i}]overlay=${x}:${y}[${outLabel}]`);
+      prevLabel = outLabel;
+    }
+
+    // Apply captions on top of overlay result
+    const captionChain = captionFilters.join(",");
+    filterParts.push(`[ovr_final]${captionChain}[out]`);
+
+    args.push("-filter_complex", filterParts.join(";"));
+    args.push("-map", "[out]");
+
+    if (hasAudio) {
+      args.push("-c:a", "aac");
+    } else {
+      args.push("-map", `${audioInputIndex}:a:0`);
+      args.push("-c:a", "aac");
+    }
+
     args.push(
-      "-i", videoPath,
-      "-vf", videoFilter,
       "-c:v", "libx264",
-      "-c:a", "aac",
       "-pix_fmt", "yuv420p",
       "-movflags", "+faststart",
       "-shortest",
       outputPath,
     );
   } else {
-    // Normal mode: crop video + overlay song audio clip
-    args.push(
-      "-i", videoPath,
-      "-ss", String(audioStartSeconds),
-      "-t", String(audioDurationSeconds),
-      "-i", audioPath,
-      "-vf", videoFilter,
-      "-c:v", "libx264",
-      "-c:a", "aac",
-      "-map", "0:v:0",
-      "-map", "1:a:0",
-      "-pix_fmt", "yuv420p",
-      "-movflags", "+faststart",
-      "-shortest",
-      outputPath,
-    );
+    // No overlays — use simple -vf filter (existing behavior)
+    const videoFilter = [cropFilter, scaleFilter, ...captionFilters].join(",");
+
+    if (hasAudio) {
+      args.push(
+        "-i", videoPath,
+        "-vf", videoFilter,
+        "-c:v", "libx264",
+        "-c:a", "aac",
+        "-pix_fmt", "yuv420p",
+        "-movflags", "+faststart",
+        "-shortest",
+        outputPath,
+      );
+    } else {
+      args.push(
+        "-i", videoPath,
+        "-ss", String(audioStartSeconds),
+        "-t", String(audioDurationSeconds),
+        "-i", audioPath,
+        "-vf", videoFilter,
+        "-c:v", "libx264",
+        "-c:a", "aac",
+        "-map", "0:v:0",
+        "-map", "1:a:0",
+        "-pix_fmt", "yuv420p",
+        "-movflags", "+faststart",
+        "-shortest",
+        outputPath,
+      );
+    }
   }
 
   return args;

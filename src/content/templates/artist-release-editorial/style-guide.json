@@ -2,6 +2,7 @@
   "name": "artist-release-editorial",
   "description": "Editorial promo featuring artist press photo with playlist covers and DSP branding — the kind of polished-but-organic visual an artist's team drops alongside a new release",
   "usesFaceGuide": true,
+  "usesImageOverlay": true,
   "customInstruction": "Generate an editorial-style composite image that combines a professional press photo of the artist with playlist covers and streaming platform logos into a single unified image. Use the provided playlist covers and logo attachments as source material — match the layout and composition style shown in the reference images. The final image should look like a polished editorial promo card an artist's team would post alongside a new release.",
   "imagePrompt": "An editorial composite image featuring an artist press photo combined with playlist cover art and streaming platform logos. The artist is the focal point — a professional editorial portrait with polished lighting, natural pose, and cinematic color grade. Playlist cover art tiles and streaming logos (Spotify, Apple Music, etc.) are composited into the layout around the artist, matching the reference style. The composition is clean and intentional — everything feels like one cohesive design, not a collage. Background is a solid or subtly textured surface that ties the elements together.",
 

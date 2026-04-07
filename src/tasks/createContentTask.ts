@@ -159,6 +159,7 @@ export const createContentTask = schemaTask({
       audioDurationSeconds: audioClip.durationSeconds,
       captionText,
       hasAudio: payload.lipsync,
+      overlayImageUrls: template.usesImageOverlay ? additionalImageUrls : undefined,
     });
 
     // --- Return result ---

@@ -20,6 +20,12 @@ describe("loadTemplate artist-release-editorial", () => {
     expect(template.captionExamples.length).toBeGreaterThan(0);
   });
 
+  it("has usesImageOverlay set to true", async () => {
+    const template = await loadTemplate("artist-release-editorial");
+
+    expect(template.usesImageOverlay).toBe(true);
+  });
+
   it("has a customInstruction in the style guide", async () => {
     const template = await loadTemplate("artist-release-editorial");
     const sg = template.styleGuide as Record<string, unknown>;
