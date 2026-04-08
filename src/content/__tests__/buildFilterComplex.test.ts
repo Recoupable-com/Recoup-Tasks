@@ -34,4 +34,13 @@ describe("buildFilterComplex", () => {
     const overlayCount = (result.match(/overlay=/g) || []).length;
     expect(overlayCount).toBe(3);
   });
+
+  it("emits [out] label when captionFilters is empty", () => {
+    const result = buildFilterComplex({
+      overlayCount: 1,
+      captionFilters: [],
+    });
+
+    expect(result).toContain("[out]");
+  });
 });

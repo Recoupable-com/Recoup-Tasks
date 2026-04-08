@@ -20,12 +20,19 @@ export async function downloadOverlayImages(
   const paths: string[] = [];
 
   for (let i = 0; i < urls.length; i++) {
-    const resp = await fetch(urls[i]);
-    if (!resp.ok) continue;
-    const buf = Buffer.from(await resp.arrayBuffer());
-    const overlayPath = join(tempDir, `overlay-${i}.png`);
-    await writeFile(overlayPath, buf);
-    paths.push(overlayPath);
+    try {
+      const resp = await fetch(urls[i]);
+      if (!resp.ok) continue;
+      const buf = Buffer.from(await resp.arrayBuffer());
+      const overlayPath = join(tempDir, `overlay-${i}.png`);
+      await writeFile(overlayPath, buf);
+      paths.push(overlayPath);
+    } catch {
+      logStep("Overlay download failed, skipping", false, {
+        url: urls[i].slice(0, 80),
+        index: i,
+      });
+    }
   }
 
   return paths;

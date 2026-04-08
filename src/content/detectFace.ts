@@ -22,14 +22,18 @@ export async function detectFace(imageUrl: string): Promise<boolean> {
     const results = data.results as { labels?: string[] } | undefined;
     const labels = results?.labels ?? [];
 
-    const hasFace = labels.some((label) =>
-      FACE_LABELS.some((faceLabel) => label.toLowerCase().includes(faceLabel)),
-    );
+    const hasFace = labels.some((label) => {
+      const lower = label.toLowerCase();
+      return FACE_LABELS.some(
+        (faceLabel) => lower === faceLabel || lower.split(" ").includes(faceLabel),
+      );
+    });
     logStep("Face detection result", false, { imageUrl: imageUrl.slice(0, 80), hasFace, labels });
     return hasFace;
-  } catch {
+  } catch (err) {
     logStep("Face detection failed, assuming no face", false, {
       imageUrl: imageUrl.slice(0, 80),
+      error: err instanceof Error ? err.message : String(err),
     });
     return false;
   }

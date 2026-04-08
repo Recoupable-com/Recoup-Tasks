@@ -87,4 +87,32 @@ describe("detectFace", () => {
 
     expect(result).toBe(false);
   });
+
+  it("does not false-positive on labels containing face words as substrings", async () => {
+    mockFalSubscribe.mockResolvedValue({
+      data: {
+        results: {
+          bboxes: [[0, 0, 200, 200]],
+          labels: ["ottoman", "mannequin", "womanizer"],
+        },
+      },
+    });
+
+    const result = await detectFace("https://example.com/furniture.png");
+
+    expect(result).toBe(false);
+  });
+
+  it("logs the error when detection fails", async () => {
+    const { logStep } = await import("../../sandboxes/logStep");
+    mockFalSubscribe.mockRejectedValue(new Error("Rate limit exceeded"));
+
+    await detectFace("https://example.com/broken.png");
+
+    expect(logStep).toHaveBeenCalledWith(
+      "Face detection failed, assuming no face",
+      false,
+      expect.objectContaining({ error: "Rate limit exceeded" }),
+    );
+  });
 });

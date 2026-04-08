@@ -44,9 +44,11 @@ export function buildFilterComplex({
     prevLabel = outLabel;
   }
 
-  // Apply captions on overlay result
+  // Apply captions on overlay result (or alias to [out] if no captions)
   if (captionFilters.length > 0) {
     parts.push(`[ovr_final]${captionFilters.join(",")}[out]`);
+  } else {
+    parts.push("[ovr_final]copy[out]");
   }
 
   return parts.join(";");

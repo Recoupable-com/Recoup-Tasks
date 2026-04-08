@@ -157,6 +157,8 @@ export async function renderFinalVideo(
   const captionPath = join(tempDir, "caption.txt");
   const outputPath = join(tempDir, "final.mp4");
 
+  let overlayPaths: string[] = [];
+
   try {
     // Download the AI-generated video
     logStep("Downloading video for final render");
@@ -171,7 +173,7 @@ export async function renderFinalVideo(
     await writeFile(audioPath, input.songBuffer);
 
     // Download overlay images to temp files (if any)
-    const overlayPaths = await downloadOverlayImages(
+    overlayPaths = await downloadOverlayImages(
       input.overlayImageUrls ?? [],
       tempDir,
     );
@@ -310,6 +312,7 @@ function buildFfmpegArgs({
     args.push("-map", "[out]");
 
     if (hasAudio) {
+      args.push("-map", "0:a");
       args.push("-c:a", "aac");
     } else {
       args.push("-map", `${audioInputIndex}:a:0`);

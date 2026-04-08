@@ -48,7 +48,8 @@ export async function generateContentImage({
   }
 
   if (additionalImageUrls?.length) {
-    const deduped = additionalImageUrls.filter((url) => !imageUrls.includes(url));
+    const unique = [...new Set(additionalImageUrls)];
+    const deduped = unique.filter((url) => !imageUrls.includes(url));
     logStep("Adding additional image URLs", false, {
       count: deduped.length,
       urls: deduped.map((u) => u.slice(0, 80)),
