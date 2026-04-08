@@ -4,108 +4,71 @@ vi.mock("../../sandboxes/logStep", () => ({
   logStep: vi.fn(),
 }));
 
-const mockFalSubscribe = vi.fn();
-vi.mock("../falSubscribe", () => ({
-  falSubscribe: (...args: unknown[]) => mockFalSubscribe(...args),
-}));
+const mockFetch = vi.fn();
+vi.stubGlobal("fetch", mockFetch);
 
 import { detectFace } from "../detectFace";
+
+function mockChatResponse(text: string) {
+  return {
+    ok: true,
+    json: () => Promise.resolve({ text }),
+  };
+}
 
 describe("detectFace", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    process.env.RECOUP_API_KEY = "test-key";
   });
 
-  it("returns true when a person label is detected", async () => {
-    mockFalSubscribe.mockResolvedValue({
-      data: {
-        results: {
-          bboxes: [[10, 20, 100, 200]],
-          labels: ["person"],
-        },
-      },
-    });
+  it("returns true when the model says the image contains a face", async () => {
+    mockFetch.mockResolvedValue(mockChatResponse("true"));
 
     const result = await detectFace("https://example.com/headshot.png");
 
     expect(result).toBe(true);
-    expect(mockFalSubscribe).toHaveBeenCalledWith(
-      "fal-ai/florence-2-large/object-detection",
-      { image_url: "https://example.com/headshot.png" },
-    );
   });
 
-  it("returns true when a face label is detected among other objects", async () => {
-    mockFalSubscribe.mockResolvedValue({
-      data: {
-        results: {
-          bboxes: [[0, 0, 50, 50], [10, 20, 100, 200]],
-          labels: ["chair", "human face"],
-        },
-      },
-    });
-
-    const result = await detectFace("https://example.com/photo.png");
-
-    expect(result).toBe(true);
-  });
-
-  it("returns false when no person or face labels are detected", async () => {
-    mockFalSubscribe.mockResolvedValue({
-      data: {
-        results: {
-          bboxes: [[0, 0, 300, 300]],
-          labels: ["album cover"],
-        },
-      },
-    });
+  it("returns false when the model says no face is present", async () => {
+    mockFetch.mockResolvedValue(mockChatResponse("false"));
 
     const result = await detectFace("https://example.com/album-cover.png");
 
     expect(result).toBe(false);
   });
 
-  it("returns false when results are empty", async () => {
-    mockFalSubscribe.mockResolvedValue({
-      data: {
-        results: {
-          bboxes: [],
-          labels: [],
-        },
-      },
-    });
+  it("sends the image URL in the prompt to the chat API", async () => {
+    mockFetch.mockResolvedValue(mockChatResponse("true"));
 
-    const result = await detectFace("https://example.com/blank.png");
+    await detectFace("https://example.com/photo.png");
 
-    expect(result).toBe(false);
+    expect(mockFetch).toHaveBeenCalledOnce();
+    const [url, options] = mockFetch.mock.calls[0];
+    expect(url).toContain("/api/chat/generate");
+    const body = JSON.parse(options.body);
+    expect(body.prompt).toContain("https://example.com/photo.png");
   });
 
-  it("returns false when detection fails", async () => {
-    mockFalSubscribe.mockRejectedValue(new Error("Detection failed"));
+  it("returns false when API call fails", async () => {
+    mockFetch.mockRejectedValue(new Error("Network error"));
 
     const result = await detectFace("https://example.com/broken.png");
 
     expect(result).toBe(false);
   });
 
-  it("does not false-positive on labels containing face words as substrings", async () => {
-    mockFalSubscribe.mockResolvedValue({
-      data: {
-        results: {
-          bboxes: [[0, 0, 200, 200]],
-          labels: ["ottoman", "mannequin", "womanizer"],
-        },
-      },
-    });
+  it("returns false when API returns non-ok response", async () => {
+    mockFetch.mockResolvedValue({ ok: false, status: 500 });
 
-    const result = await detectFace("https://example.com/furniture.png");
+    const result = await detectFace("https://example.com/broken.png");
 
     expect(result).toBe(false);
   });
 
   it("logs the error when detection fails", async () => {
     const { logStep } = await import("../../sandboxes/logStep");
-    mockFalSubscribe.mockRejectedValue(new Error("Rate limit exceeded"));
+    mockFetch.mockRejectedValue(new Error("Rate limit exceeded"));
 
     await detectFace("https://example.com/broken.png");
 
@@ -114,5 +77,13 @@ describe("detectFace", () => {
       false,
       expect.objectContaining({ error: "Rate limit exceeded" }),
     );
+  });
+
+  it("handles whitespace and casing in model response", async () => {
+    mockFetch.mockResolvedValue(mockChatResponse("  True  "));
+
+    const result = await detectFace("https://example.com/headshot.png");
+
+    expect(result).toBe(true);
   });
 });

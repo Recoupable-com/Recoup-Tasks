@@ -1,34 +1,49 @@
 import { logStep } from "../sandboxes/logStep";
-import { falSubscribe } from "./falSubscribe";
 
-const DETECTION_MODEL = "fal-ai/florence-2-large/object-detection";
+const PROMPT_PREFIX = `Look at the image at this URL and determine if it contains a human face or person portrait (headshot, selfie, press photo, etc).
 
-/** Labels that indicate a human face or person is present in the image. */
-const FACE_LABELS = ["person", "face", "human face", "man", "woman", "boy", "girl"];
+Respond with ONLY "true" or "false". Nothing else.
+
+Image URL: `;
 
 /**
- * Detects whether an image contains a human face using Florence-2 object detection.
+ * Detects whether an image contains a human face using a vision-capable text model.
  *
  * @param imageUrl - URL of the image to analyze
- * @returns true if at least one face/person is detected, false otherwise
+ * @returns true if the image contains a face/portrait, false otherwise
  */
 export async function detectFace(imageUrl: string): Promise<boolean> {
   try {
-    const result = await falSubscribe(DETECTION_MODEL, {
-      image_url: imageUrl,
+    const recoupApiKey = process.env.RECOUP_API_KEY;
+    if (!recoupApiKey) {
+      logStep("Face detection skipped — RECOUP_API_KEY not set", false);
+      return false;
+    }
+
+    const recoupApiUrl = process.env.RECOUP_API_URL ?? "https://recoup-api.vercel.app";
+    const response = await fetch(`${recoupApiUrl}/api/chat/generate`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": recoupApiKey,
+      },
+      body: JSON.stringify({
+        prompt: `${PROMPT_PREFIX}${imageUrl}`,
+        model: "google/gemini-2.5-flash",
+        excludeTools: ["create_task"],
+      }),
     });
 
-    const data = result.data as Record<string, unknown>;
-    const results = data.results as { labels?: string[] } | undefined;
-    const labels = results?.labels ?? [];
+    if (!response.ok) {
+      logStep("Face detection API returned error", false, { status: response.status });
+      return false;
+    }
 
-    const hasFace = labels.some((label) => {
-      const lower = label.toLowerCase();
-      return FACE_LABELS.some(
-        (faceLabel) => lower === faceLabel || lower.split(" ").includes(faceLabel),
-      );
-    });
-    logStep("Face detection result", false, { imageUrl: imageUrl.slice(0, 80), hasFace, labels });
+    const json = (await response.json()) as { text?: string };
+    const answer = (json.text ?? "").trim().toLowerCase();
+    const hasFace = answer === "true";
+
+    logStep("Face detection result", false, { imageUrl: imageUrl.slice(0, 80), hasFace, answer });
     return hasFace;
   } catch (err) {
     logStep("Face detection failed, assuming no face", false, {
