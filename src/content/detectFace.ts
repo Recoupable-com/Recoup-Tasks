@@ -2,7 +2,7 @@ import { logStep } from "../sandboxes/logStep";
 import { createFaceDetectionAgent } from "../agents/createFaceDetectionAgent";
 
 const FACE_GUIDE_EXAMPLE_URL =
-  "https://raw.githubusercontent.com/recoupable/tasks/main/src/content/references/face-guide-example.png";
+  "https://dxfamqbi5zyezrs5.public.blob.vercel-storage.com/content-attachments/image/1775671967694-face-guide-example.png";
 
 /**
  * Detects whether an image is a face guide (headshot/portrait on a plain background)
