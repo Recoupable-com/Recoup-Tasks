@@ -4,10 +4,6 @@ vi.mock("../../sandboxes/logStep", () => ({
   logStep: vi.fn(),
 }));
 
-vi.mock("node:fs", () => ({
-  readFileSync: vi.fn().mockReturnValue(Buffer.from("fake-face-guide-png")),
-}));
-
 const mockGenerate = vi.fn();
 vi.mock("../../agents/createFaceDetectionAgent", () => ({
   createFaceDetectionAgent: () => ({
@@ -46,10 +42,11 @@ describe("detectFace", () => {
     const callArgs = mockGenerate.mock.calls[0][0];
     const messages = callArgs.messages;
 
-    // First message: example face guide image + question
+    // First message: example face guide image URL + question
     expect(messages[0].role).toBe("user");
     const exampleImagePart = messages[0].content.find((p: { type: string }) => p.type === "image");
     expect(exampleImagePart).toBeDefined();
+    expect(exampleImagePart.image).toContain("face-guide-example.png");
 
     // Second message: assistant answer for the example
     expect(messages[1].role).toBe("assistant");

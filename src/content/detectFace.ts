@@ -1,10 +1,8 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { logStep } from "../sandboxes/logStep";
 import { createFaceDetectionAgent } from "../agents/createFaceDetectionAgent";
 
-const FACE_GUIDE_EXAMPLE_PATH = join(__dirname, "references", "face-guide-example.png");
-const faceGuideExampleBuffer = readFileSync(FACE_GUIDE_EXAMPLE_PATH);
+const FACE_GUIDE_EXAMPLE_URL =
+  "https://raw.githubusercontent.com/recoupable/tasks/main/src/content/references/face-guide-example.png";
 
 /**
  * Detects whether an image is a face guide (headshot/portrait on a plain background)
@@ -24,7 +22,7 @@ export async function detectFace(imageUrl: string): Promise<boolean> {
         {
           role: "user",
           content: [
-            { type: "image", image: faceGuideExampleBuffer },
+            { type: "image", image: FACE_GUIDE_EXAMPLE_URL },
             { type: "text", text: "This is an example of a face guide — a headshot or portrait on a plain/white background used for face-swapping. Is this a face guide?" },
           ],
         },
