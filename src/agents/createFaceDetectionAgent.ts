@@ -27,7 +27,7 @@ Return hasFace: false for everything else.`;
  */
 export function createFaceDetectionAgent() {
   return new ToolLoopAgent({
-    model: "google/gemini-2.5-flash",
+    model: "google/gemini-3.1-flash-lite-preview",
     instructions,
     output: Output.object({ schema: faceDetectionSchema }),
     stopWhen: stepCountIs(1),
