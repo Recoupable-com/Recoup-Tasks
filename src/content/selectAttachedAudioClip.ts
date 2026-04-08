@@ -31,9 +31,9 @@ export async function selectAttachedAudioClip({
   const arrayBuffer = await response.arrayBuffer();
   const songBuffer = Buffer.from(arrayBuffer);
 
-  // Derive filename from URL
+  // Derive filename from URL (decode %20, replace spaces for fal.ai compat)
   const urlPath = new URL(audioUrl).pathname;
-  const songFilename = urlPath.split("/").pop() ?? "attached-audio.mp3";
+  const songFilename = decodeURIComponent(urlPath.split("/").pop() ?? "attached-audio.mp3").replace(/\s+/g, "-");
   const songTitle = songFilename.replace(/\.(mp3|wav|m4a|ogg|aac)$/i, "");
 
   logStep("Attached audio downloaded", { songTitle, sizeBytes: songBuffer.byteLength });
