@@ -34,6 +34,16 @@ describe("loadTemplate artist-release-editorial", () => {
     expect(typeof sg.customInstruction).toBe("string");
   });
 
+  it("customInstruction includes face-swap language referencing the headshot", async () => {
+    const template = await loadTemplate("artist-release-editorial");
+    const sg = template.styleGuide as Record<string, unknown>;
+    const instruction = sg.customInstruction as string;
+    const lower = instruction.toLowerCase();
+
+    expect(lower).toContain("headshot");
+    expect(lower).toContain("face");
+  });
+
   it("customInstruction generates only the artist portrait with no composited elements", async () => {
     const template = await loadTemplate("artist-release-editorial");
     const sg = template.styleGuide as Record<string, unknown>;

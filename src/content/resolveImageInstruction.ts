@@ -8,11 +8,6 @@ import type { TemplateData } from "./loadTemplate";
  */
 export function resolveImageInstruction(template: TemplateData): string {
   const custom = template.styleGuide?.customInstruction;
-  if (typeof custom === "string" && custom.trim().length > 0) {
-    if (template.usesFaceGuide) {
-      return `${FACE_SWAP_INSTRUCTION} ${custom.trim()}`;
-    }
-    return custom.trim();
-  }
+  if (typeof custom === "string" && custom.trim().length > 0) return custom.trim();
   return template.usesFaceGuide ? FACE_SWAP_INSTRUCTION : NO_FACE_INSTRUCTION;
 }
