@@ -1,34 +1,47 @@
 import { logStep } from "../sandboxes/logStep";
-import { falSubscribe } from "./falSubscribe";
+import { createFaceDetectionAgent } from "../agents/createFaceDetectionAgent";
 
-const DETECTION_MODEL = "fal-ai/florence-2-large/object-detection";
-
-/** Labels that indicate a human face or person is present in the image. */
-const FACE_LABELS = ["person", "face", "human face", "man", "woman", "boy", "girl"];
+const FACE_GUIDE_EXAMPLE_URL =
+  "https://dxfamqbi5zyezrs5.public.blob.vercel-storage.com/content-attachments/image/1775671967694-face-guide-example.png";
 
 /**
- * Detects whether an image contains a human face using Florence-2 object detection.
+ * Detects whether an image is a face guide (headshot/portrait on a plain background)
+ * rather than a playlist cover, album art, or other image that may incidentally contain a face.
+ *
+ * Uses a few-shot approach: shows the model an example face guide first, then asks
+ * it to classify the target image.
  *
  * @param imageUrl - URL of the image to analyze
- * @returns true if at least one face/person is detected, false otherwise
+ * @returns true if the image is a face guide, false otherwise
  */
 export async function detectFace(imageUrl: string): Promise<boolean> {
   try {
-    const result = await falSubscribe(DETECTION_MODEL, {
-      image_url: imageUrl,
+    const agent = createFaceDetectionAgent();
+    const { output } = await agent.generate({
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "image", image: FACE_GUIDE_EXAMPLE_URL },
+            { type: "text", text: "This is an example of a face guide — a headshot or portrait on a plain/white background used for face-swapping. Is this a face guide?" },
+          ],
+        },
+        {
+          role: "assistant",
+          content: [{ type: "text", text: '{"hasFace":true}' }],
+        },
+        {
+          role: "user",
+          content: [
+            { type: "image", image: imageUrl },
+            { type: "text", text: "Is this image a face guide like the example above? A face guide is a headshot or portrait on a plain background. Playlist covers, album art, promotional graphics, and other images that happen to show a face are NOT face guides." },
+          ],
+        },
+      ],
     });
 
-    const data = result.data as Record<string, unknown>;
-    const results = data.results as { labels?: string[] } | undefined;
-    const labels = results?.labels ?? [];
-
-    const hasFace = labels.some((label) => {
-      const lower = label.toLowerCase();
-      return FACE_LABELS.some(
-        (faceLabel) => lower === faceLabel || lower.split(" ").includes(faceLabel),
-      );
-    });
-    logStep("Face detection result", false, { imageUrl: imageUrl.slice(0, 80), hasFace, labels });
+    const hasFace = output?.hasFace ?? false;
+    logStep("Face detection result", false, { imageUrl: imageUrl.slice(0, 80), hasFace });
     return hasFace;
   } catch (err) {
     logStep("Face detection failed, assuming no face", false, {

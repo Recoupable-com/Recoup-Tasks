@@ -4,9 +4,11 @@ vi.mock("../../sandboxes/logStep", () => ({
   logStep: vi.fn(),
 }));
 
-const mockFalSubscribe = vi.fn();
-vi.mock("../falSubscribe", () => ({
-  falSubscribe: (...args: unknown[]) => mockFalSubscribe(...args),
+const mockGenerate = vi.fn();
+vi.mock("../../agents/createFaceDetectionAgent", () => ({
+  createFaceDetectionAgent: () => ({
+    generate: mockGenerate,
+  }),
 }));
 
 import { detectFace } from "../detectFace";
@@ -16,96 +18,56 @@ describe("detectFace", () => {
     vi.clearAllMocks();
   });
 
-  it("returns true when a person label is detected", async () => {
-    mockFalSubscribe.mockResolvedValue({
-      data: {
-        results: {
-          bboxes: [[10, 20, 100, 200]],
-          labels: ["person"],
-        },
-      },
-    });
+  it("returns true when the agent detects a face guide", async () => {
+    mockGenerate.mockResolvedValue({ output: { hasFace: true } });
 
     const result = await detectFace("https://example.com/headshot.png");
 
     expect(result).toBe(true);
-    expect(mockFalSubscribe).toHaveBeenCalledWith(
-      "fal-ai/florence-2-large/object-detection",
-      { image_url: "https://example.com/headshot.png" },
-    );
   });
 
-  it("returns true when a face label is detected among other objects", async () => {
-    mockFalSubscribe.mockResolvedValue({
-      data: {
-        results: {
-          bboxes: [[0, 0, 50, 50], [10, 20, 100, 200]],
-          labels: ["chair", "human face"],
-        },
-      },
-    });
-
-    const result = await detectFace("https://example.com/photo.png");
-
-    expect(result).toBe(true);
-  });
-
-  it("returns false when no person or face labels are detected", async () => {
-    mockFalSubscribe.mockResolvedValue({
-      data: {
-        results: {
-          bboxes: [[0, 0, 300, 300]],
-          labels: ["album cover"],
-        },
-      },
-    });
+  it("returns false when the agent detects no face guide", async () => {
+    mockGenerate.mockResolvedValue({ output: { hasFace: false } });
 
     const result = await detectFace("https://example.com/album-cover.png");
 
     expect(result).toBe(false);
   });
 
-  it("returns false when results are empty", async () => {
-    mockFalSubscribe.mockResolvedValue({
-      data: {
-        results: {
-          bboxes: [],
-          labels: [],
-        },
-      },
-    });
+  it("sends a few-shot example with the face guide reference image", async () => {
+    mockGenerate.mockResolvedValue({ output: { hasFace: true } });
 
-    const result = await detectFace("https://example.com/blank.png");
+    await detectFace("https://example.com/photo.png");
 
-    expect(result).toBe(false);
+    const callArgs = mockGenerate.mock.calls[0][0];
+    const messages = callArgs.messages;
+
+    // First message: example face guide image URL + question
+    expect(messages[0].role).toBe("user");
+    const exampleImagePart = messages[0].content.find((p: { type: string }) => p.type === "image");
+    expect(exampleImagePart).toBeDefined();
+    expect(exampleImagePart.image).toContain("face-guide-example.png");
+
+    // Second message: assistant answer for the example
+    expect(messages[1].role).toBe("assistant");
+
+    // Third message: actual image to classify
+    expect(messages[2].role).toBe("user");
+    const targetImagePart = messages[2].content.find((p: { type: string }) => p.type === "image");
+    expect(targetImagePart.image).toBe("https://example.com/photo.png");
   });
 
-  it("returns false when detection fails", async () => {
-    mockFalSubscribe.mockRejectedValue(new Error("Detection failed"));
+  it("returns false when the agent throws", async () => {
+    mockGenerate.mockRejectedValue(new Error("Model error"));
 
     const result = await detectFace("https://example.com/broken.png");
 
     expect(result).toBe(false);
   });
 
-  it("does not false-positive on labels containing face words as substrings", async () => {
-    mockFalSubscribe.mockResolvedValue({
-      data: {
-        results: {
-          bboxes: [[0, 0, 200, 200]],
-          labels: ["ottoman", "mannequin", "womanizer"],
-        },
-      },
-    });
-
-    const result = await detectFace("https://example.com/furniture.png");
-
-    expect(result).toBe(false);
-  });
-
   it("logs the error when detection fails", async () => {
     const { logStep } = await import("../../sandboxes/logStep");
-    mockFalSubscribe.mockRejectedValue(new Error("Rate limit exceeded"));
+    mockGenerate.mockRejectedValue(new Error("Rate limit exceeded"));
 
     await detectFace("https://example.com/broken.png");
 
@@ -114,5 +76,13 @@ describe("detectFace", () => {
       false,
       expect.objectContaining({ error: "Rate limit exceeded" }),
     );
+  });
+
+  it("returns false when output is null", async () => {
+    mockGenerate.mockResolvedValue({ output: null });
+
+    const result = await detectFace("https://example.com/broken.png");
+
+    expect(result).toBe(false);
   });
 });
