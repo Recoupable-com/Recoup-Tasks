@@ -5,15 +5,22 @@ const faceDetectionSchema = z.object({
   hasFace: z.boolean(),
 });
 
-const instructions = `You analyze images to determine if they contain a human face or portrait.
+const instructions = `You classify images as face guides or not.
 
-Given an image URL, determine if the image is a headshot, selfie, press photo, or portrait of a person.
+A face guide is a headshot or portrait photo on a plain or white background, used for face-swapping in AI image generation. It shows a person's face clearly as the primary subject.
 
-Return hasFace: true if the image contains a clear human face as the primary subject.
-Return hasFace: false if the image is an album cover, playlist cover, logo, graphic, landscape, or any non-portrait image.`;
+These are NOT face guides:
+- Playlist covers or album art (even if they show a person)
+- Promotional graphics with text overlays
+- Concert photos or action shots
+- Logos or branded images
+- Any image where the face is not the sole focus on a clean background
+
+Return hasFace: true ONLY for face guide images (headshots on plain backgrounds).
+Return hasFace: false for everything else.`;
 
 /**
- * Creates a ToolLoopAgent configured for face detection in images.
+ * Creates a ToolLoopAgent configured for face guide detection in images.
  * Uses Output.object with a Zod schema for structured boolean response.
  *
  * @returns A configured ToolLoopAgent using Google Gemini via AI Gateway.

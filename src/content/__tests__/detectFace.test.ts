@@ -4,6 +4,10 @@ vi.mock("../../sandboxes/logStep", () => ({
   logStep: vi.fn(),
 }));
 
+vi.mock("node:fs", () => ({
+  readFileSync: vi.fn().mockReturnValue(Buffer.from("fake-face-guide-png")),
+}));
+
 const mockGenerate = vi.fn();
 vi.mock("../../agents/createFaceDetectionAgent", () => ({
   createFaceDetectionAgent: () => ({
@@ -18,7 +22,7 @@ describe("detectFace", () => {
     vi.clearAllMocks();
   });
 
-  it("returns true when the agent detects a face", async () => {
+  it("returns true when the agent detects a face guide", async () => {
     mockGenerate.mockResolvedValue({ output: { hasFace: true } });
 
     const result = await detectFace("https://example.com/headshot.png");
@@ -26,7 +30,7 @@ describe("detectFace", () => {
     expect(result).toBe(true);
   });
 
-  it("returns false when the agent detects no face", async () => {
+  it("returns false when the agent detects no face guide", async () => {
     mockGenerate.mockResolvedValue({ output: { hasFace: false } });
 
     const result = await detectFace("https://example.com/album-cover.png");
@@ -34,17 +38,26 @@ describe("detectFace", () => {
     expect(result).toBe(false);
   });
 
-  it("passes the image as a multimodal message content part", async () => {
+  it("sends a few-shot example with the face guide reference image", async () => {
     mockGenerate.mockResolvedValue({ output: { hasFace: true } });
 
     await detectFace("https://example.com/photo.png");
 
     const callArgs = mockGenerate.mock.calls[0][0];
-    const userMessage = callArgs.messages[0];
-    expect(userMessage.role).toBe("user");
-    const imagePart = userMessage.content.find((p: { type: string }) => p.type === "image");
-    expect(imagePart).toBeDefined();
-    expect(imagePart.image).toBe("https://example.com/photo.png");
+    const messages = callArgs.messages;
+
+    // First message: example face guide image + question
+    expect(messages[0].role).toBe("user");
+    const exampleImagePart = messages[0].content.find((p: { type: string }) => p.type === "image");
+    expect(exampleImagePart).toBeDefined();
+
+    // Second message: assistant answer for the example
+    expect(messages[1].role).toBe("assistant");
+
+    // Third message: actual image to classify
+    expect(messages[2].role).toBe("user");
+    const targetImagePart = messages[2].content.find((p: { type: string }) => p.type === "image");
+    expect(targetImagePart.image).toBe("https://example.com/photo.png");
   });
 
   it("returns false when the agent throws", async () => {
