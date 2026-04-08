@@ -32,6 +32,17 @@ vi.mock("../../content/fetchGithubFile", () => ({
   fetchGithubFile: vi.fn().mockResolvedValue(Buffer.from("fake-png")),
 }));
 
+vi.mock("../../content/downloadImageBuffer", () => ({
+  downloadImageBuffer: vi.fn().mockResolvedValue({
+    buffer: Buffer.from("fake-image"),
+    contentType: "image/png",
+  }),
+}));
+
+vi.mock("../../content/detectFace", () => ({
+  detectFace: vi.fn().mockResolvedValue(false),
+}));
+
 vi.mock("../../content/generateContentImage", () => ({
   generateContentImage: vi.fn().mockResolvedValue("https://fal.ai/image.png"),
 }));
@@ -136,6 +147,32 @@ describe("createContentTask", () => {
     vi.mocked(fetchGithubFile).mockResolvedValueOnce(null);
 
     await expect(mockRun(VALID_PAYLOAD)).rejects.toThrow("face-guide.png not found");
+  });
+
+  it("does not pass additionalImageUrls to generateContentImage when usesImageOverlay is true", async () => {
+    const { loadTemplate } = await import("../../content/loadTemplate");
+    vi.mocked(loadTemplate).mockResolvedValueOnce({
+      name: "artist-release-editorial",
+      imagePrompt: "editorial scene",
+      usesFaceGuide: true,
+      usesImageOverlay: true,
+      styleGuide: { customInstruction: "Generate editorial photo." },
+      captionGuide: null,
+      captionExamples: [],
+      videoMoods: [],
+      videoMovements: [],
+      referenceImagePaths: [],
+    });
+
+    await mockRun({
+      ...VALID_PAYLOAD,
+      template: "artist-release-editorial",
+      images: ["https://example.com/cover1.png", "https://example.com/cover2.png"],
+    });
+
+    const { generateContentImage } = await import("../../content/generateContentImage");
+    const callArgs = vi.mocked(generateContentImage).mock.calls[0][0];
+    expect(callArgs.additionalImageUrls).toBeUndefined();
   });
 
   it("throws when FAL_KEY is missing", async () => {
