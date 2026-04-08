@@ -11,9 +11,14 @@ export async function detectFace(imageUrl: string): Promise<boolean> {
   try {
     const agent = createFaceDetectionAgent();
     const { output } = await agent.generate({
-      prompt: [
-        { type: "image", image: new URL(imageUrl) },
-        { type: "text", text: "Does this image contain a human face as the primary subject?" },
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "image", image: imageUrl },
+            { type: "text", text: "Does this image contain a human face as the primary subject?" },
+          ],
+        },
       ],
     });
 
