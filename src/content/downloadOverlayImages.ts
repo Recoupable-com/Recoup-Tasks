@@ -1,6 +1,7 @@
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { logStep } from "../sandboxes/logStep";
+import { downloadImageBuffer } from "./downloadImageBuffer";
 
 /**
  * Downloads overlay image URLs to local temp files.
@@ -21,11 +22,9 @@ export async function downloadOverlayImages(
 
   for (let i = 0; i < urls.length; i++) {
     try {
-      const resp = await fetch(urls[i]);
-      if (!resp.ok) continue;
-      const buf = Buffer.from(await resp.arrayBuffer());
+      const { buffer } = await downloadImageBuffer(urls[i]);
       const overlayPath = join(tempDir, `overlay-${i}.png`);
-      await writeFile(overlayPath, buf);
+      await writeFile(overlayPath, buffer);
       paths.push(overlayPath);
     } catch {
       logStep("Overlay download failed, skipping", false, {

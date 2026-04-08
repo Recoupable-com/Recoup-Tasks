@@ -1,5 +1,4 @@
-import { detectFace } from "./detectFace";
-import { fetchImageFromUrl } from "./fetchImageFromUrl";
+import { classifyImages } from "./classifyImages";
 import { fetchGitHubFaceGuide } from "./fetchGitHubFaceGuide";
 
 export interface ResolveFaceGuideResult {
@@ -28,29 +27,14 @@ export async function resolveFaceGuide({
   githubRepo: string;
   artistSlug: string;
 }): Promise<ResolveFaceGuideResult> {
-  let faceGuideUrl: string | null = null;
-  const additionalImageUrls: string[] = [];
-
-  // Upload and classify each provided image
-  if (images?.length) {
-    for (const imageUrl of images) {
-      const uploadedUrl = await fetchImageFromUrl(imageUrl);
-
-      if (usesFaceGuide && !faceGuideUrl) {
-        const hasFace = await detectFace(uploadedUrl);
-        if (hasFace) {
-          faceGuideUrl = uploadedUrl;
-          continue;
-        }
-      }
-
-      additionalImageUrls.push(uploadedUrl);
-    }
-  }
+  const { faceGuideUrl, additionalImageUrls } = images?.length
+    ? await classifyImages({ images, usesFaceGuide })
+    : { faceGuideUrl: null, additionalImageUrls: [] };
 
   // Fall back to GitHub face-guide if needed
   if (usesFaceGuide && !faceGuideUrl) {
-    faceGuideUrl = await fetchGitHubFaceGuide(githubRepo, artistSlug);
+    const fallbackUrl = await fetchGitHubFaceGuide(githubRepo, artistSlug);
+    return { faceGuideUrl: fallbackUrl, additionalImageUrls };
   }
 
   return { faceGuideUrl, additionalImageUrls };
