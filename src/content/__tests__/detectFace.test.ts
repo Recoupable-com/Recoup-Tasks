@@ -4,62 +4,50 @@ vi.mock("../../sandboxes/logStep", () => ({
   logStep: vi.fn(),
 }));
 
-const mockFetch = vi.fn();
-vi.stubGlobal("fetch", mockFetch);
+const mockGenerate = vi.fn();
+vi.mock("../../agents/createFaceDetectionAgent", () => ({
+  createFaceDetectionAgent: () => ({
+    generate: mockGenerate,
+  }),
+}));
 
 import { detectFace } from "../detectFace";
-
-function mockChatResponse(text: string) {
-  return {
-    ok: true,
-    json: () => Promise.resolve({ text }),
-  };
-}
 
 describe("detectFace", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.RECOUP_API_KEY = "test-key";
   });
 
-  it("returns true when the model says the image contains a face", async () => {
-    mockFetch.mockResolvedValue(mockChatResponse("true"));
+  it("returns true when the agent detects a face", async () => {
+    mockGenerate.mockResolvedValue({ output: { hasFace: true } });
 
     const result = await detectFace("https://example.com/headshot.png");
 
     expect(result).toBe(true);
   });
 
-  it("returns false when the model says no face is present", async () => {
-    mockFetch.mockResolvedValue(mockChatResponse("false"));
+  it("returns false when the agent detects no face", async () => {
+    mockGenerate.mockResolvedValue({ output: { hasFace: false } });
 
     const result = await detectFace("https://example.com/album-cover.png");
 
     expect(result).toBe(false);
   });
 
-  it("sends the image URL in the prompt to the chat API", async () => {
-    mockFetch.mockResolvedValue(mockChatResponse("true"));
+  it("passes the image URL in the prompt", async () => {
+    mockGenerate.mockResolvedValue({ output: { hasFace: true } });
 
     await detectFace("https://example.com/photo.png");
 
-    expect(mockFetch).toHaveBeenCalledOnce();
-    const [url, options] = mockFetch.mock.calls[0];
-    expect(url).toContain("/api/chat/generate");
-    const body = JSON.parse(options.body);
-    expect(body.prompt).toContain("https://example.com/photo.png");
+    expect(mockGenerate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: expect.stringContaining("https://example.com/photo.png"),
+      }),
+    );
   });
 
-  it("returns false when API call fails", async () => {
-    mockFetch.mockRejectedValue(new Error("Network error"));
-
-    const result = await detectFace("https://example.com/broken.png");
-
-    expect(result).toBe(false);
-  });
-
-  it("returns false when API returns non-ok response", async () => {
-    mockFetch.mockResolvedValue({ ok: false, status: 500 });
+  it("returns false when the agent throws", async () => {
+    mockGenerate.mockRejectedValue(new Error("Model error"));
 
     const result = await detectFace("https://example.com/broken.png");
 
@@ -68,7 +56,7 @@ describe("detectFace", () => {
 
   it("logs the error when detection fails", async () => {
     const { logStep } = await import("../../sandboxes/logStep");
-    mockFetch.mockRejectedValue(new Error("Rate limit exceeded"));
+    mockGenerate.mockRejectedValue(new Error("Rate limit exceeded"));
 
     await detectFace("https://example.com/broken.png");
 
@@ -79,11 +67,11 @@ describe("detectFace", () => {
     );
   });
 
-  it("handles whitespace and casing in model response", async () => {
-    mockFetch.mockResolvedValue(mockChatResponse("  True  "));
+  it("returns false when output is null", async () => {
+    mockGenerate.mockResolvedValue({ output: null });
 
-    const result = await detectFace("https://example.com/headshot.png");
+    const result = await detectFace("https://example.com/broken.png");
 
-    expect(result).toBe(true);
+    expect(result).toBe(false);
   });
 });

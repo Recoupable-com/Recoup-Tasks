@@ -1,10 +1,5 @@
 import { logStep } from "../sandboxes/logStep";
-
-const PROMPT_PREFIX = `Look at the image at this URL and determine if it contains a human face or person portrait (headshot, selfie, press photo, etc).
-
-Respond with ONLY "true" or "false". Nothing else.
-
-Image URL: `;
+import { createFaceDetectionAgent } from "../agents/createFaceDetectionAgent";
 
 /**
  * Detects whether an image contains a human face using a vision-capable text model.
@@ -14,36 +9,13 @@ Image URL: `;
  */
 export async function detectFace(imageUrl: string): Promise<boolean> {
   try {
-    const recoupApiKey = process.env.RECOUP_API_KEY;
-    if (!recoupApiKey) {
-      logStep("Face detection skipped — RECOUP_API_KEY not set", false);
-      return false;
-    }
-
-    const recoupApiUrl = process.env.RECOUP_API_URL ?? "https://recoup-api.vercel.app";
-    const response = await fetch(`${recoupApiUrl}/api/chat/generate`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": recoupApiKey,
-      },
-      body: JSON.stringify({
-        prompt: `${PROMPT_PREFIX}${imageUrl}`,
-        model: "google/gemini-2.5-flash",
-        excludeTools: ["create_task"],
-      }),
+    const agent = createFaceDetectionAgent();
+    const { output } = await agent.generate({
+      prompt: `Analyze this image: ${imageUrl}`,
     });
 
-    if (!response.ok) {
-      logStep("Face detection API returned error", false, { status: response.status });
-      return false;
-    }
-
-    const json = (await response.json()) as { text?: string };
-    const answer = (json.text ?? "").trim().toLowerCase();
-    const hasFace = answer === "true";
-
-    logStep("Face detection result", false, { imageUrl: imageUrl.slice(0, 80), hasFace, answer });
+    const hasFace = output?.hasFace ?? false;
+    logStep("Face detection result", false, { imageUrl: imageUrl.slice(0, 80), hasFace });
     return hasFace;
   } catch (err) {
     logStep("Face detection failed, assuming no face", false, {
