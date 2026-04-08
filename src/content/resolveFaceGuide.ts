@@ -1,14 +1,20 @@
-import { fal } from "@fal-ai/client";
-import { logStep } from "../sandboxes/logStep";
-import { fetchImageFromUrl } from "./fetchImageFromUrl";
-import { fetchGithubFile } from "./fetchGithubFile";
+import { classifyImages } from "./classifyImages";
+import { fetchGitHubFaceGuide } from "./fetchGitHubFaceGuide";
+
+export interface ResolveFaceGuideResult {
+  faceGuideUrl: string | null;
+  additionalImageUrls: string[];
+}
 
 /**
- * Resolves the face guide URL for the content pipeline.
- * Uses the first image from the images array if provided,
- * otherwise fetches face-guide.png from the artist's GitHub repo.
+ * Resolves the face guide URL and additional image URLs for the content pipeline.
  *
- * @returns fal.ai storage URL, or null if template doesn't use face guide
+ * Analyzes each image in the images array to detect faces:
+ * - The first face image becomes the face guide
+ * - Non-face images (album covers, playlist covers, etc.) become additional image URLs
+ * - If no face is found in images and usesFaceGuide is true, fetches face-guide.png from GitHub
+ *
+ * @returns faceGuideUrl (or null) and additionalImageUrls for the model
  */
 export async function resolveFaceGuide({
   usesFaceGuide,
@@ -20,29 +26,16 @@ export async function resolveFaceGuide({
   images: string[] | undefined;
   githubRepo: string;
   artistSlug: string;
-}): Promise<string | null> {
-  // Always pass attached images through (e.g. album cover art — no face-swap needed).
-  const imageUrl = images?.[0];
-  if (imageUrl) {
-    return fetchImageFromUrl(imageUrl);
+}): Promise<ResolveFaceGuideResult> {
+  const { faceGuideUrl, additionalImageUrls } = images?.length
+    ? await classifyImages({ images, usesFaceGuide })
+    : { faceGuideUrl: null, additionalImageUrls: [] };
+
+  // Fall back to GitHub face-guide if needed
+  if (usesFaceGuide && !faceGuideUrl) {
+    const fallbackUrl = await fetchGitHubFaceGuide(githubRepo, artistSlug);
+    return { faceGuideUrl: fallbackUrl, additionalImageUrls };
   }
 
-  if (!usesFaceGuide) return null;
-
-  logStep("Fetching face-guide from GitHub");
-  const buffer = await fetchGithubFile(
-    githubRepo,
-    `artists/${artistSlug}/context/images/face-guide.png`,
-  );
-  if (!buffer) {
-    throw new Error(`face-guide.png not found for artist ${artistSlug}`);
-  }
-
-  logStep("Uploading face-guide to fal.ai storage", true, {
-    sizeBytes: buffer.byteLength,
-  });
-  const file = new File([buffer], "face-guide.png", { type: "image/png" });
-  const falUrl = await fal.storage.upload(file);
-  logStep("Face-guide uploaded", false, { faceGuideUrl: falUrl });
-  return falUrl;
+  return { faceGuideUrl, additionalImageUrls };
 }

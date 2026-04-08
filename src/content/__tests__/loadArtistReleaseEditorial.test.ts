@@ -1,0 +1,55 @@
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("../../sandboxes/logStep", () => ({
+  logStep: vi.fn(),
+}));
+
+import { loadTemplate } from "../loadTemplate";
+
+describe("loadTemplate artist-release-editorial", () => {
+  it("loads the artist-release-editorial template", async () => {
+    const template = await loadTemplate("artist-release-editorial");
+
+    expect(template.name).toBe("artist-release-editorial");
+    expect(template.imagePrompt).toBeTruthy();
+    expect(template.usesFaceGuide).toBe(true);
+    expect(template.styleGuide).not.toBeNull();
+    expect(template.captionGuide).not.toBeNull();
+    expect(template.videoMoods.length).toBeGreaterThan(0);
+    expect(template.videoMovements.length).toBeGreaterThan(0);
+    expect(template.captionExamples.length).toBeGreaterThan(0);
+  });
+
+  it("has usesImageOverlay set to true", async () => {
+    const template = await loadTemplate("artist-release-editorial");
+
+    expect(template.usesImageOverlay).toBe(true);
+  });
+
+  it("has a customInstruction in the style guide", async () => {
+    const template = await loadTemplate("artist-release-editorial");
+    const sg = template.styleGuide as Record<string, unknown>;
+
+    expect(sg.customInstruction).toBeTruthy();
+    expect(typeof sg.customInstruction).toBe("string");
+  });
+
+  it("customInstruction generates only the artist portrait with no composited elements", async () => {
+    const template = await loadTemplate("artist-release-editorial");
+    const sg = template.styleGuide as Record<string, unknown>;
+    const instruction = sg.customInstruction as string;
+
+    expect(instruction.toLowerCase()).not.toContain("playlist cover");
+    expect(instruction.toLowerCase()).not.toContain("streaming");
+    expect(instruction.toLowerCase()).not.toContain("logo");
+    expect(instruction.toLowerCase()).not.toContain("composite");
+  });
+
+  it("imagePrompt describes only the editorial portrait with no composited elements", async () => {
+    const template = await loadTemplate("artist-release-editorial");
+
+    expect(template.imagePrompt.toLowerCase()).not.toContain("playlist");
+    expect(template.imagePrompt.toLowerCase()).not.toContain("logo");
+    expect(template.imagePrompt.toLowerCase()).not.toContain("composite");
+  });
+});

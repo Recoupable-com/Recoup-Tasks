@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { resolveFaceGuide } from "../resolveFaceGuide";
 
 vi.mock("../../sandboxes/logStep", () => ({
@@ -13,12 +13,17 @@ vi.mock("../fetchGithubFile", () => ({
   fetchGithubFile: vi.fn(),
 }));
 
+vi.mock("../detectFace", () => ({
+  detectFace: vi.fn(),
+}));
+
 vi.mock("@fal-ai/client", () => ({
   fal: { storage: { upload: vi.fn() } },
 }));
 
 const { fetchImageFromUrl } = await import("../fetchImageFromUrl");
 const { fetchGithubFile } = await import("../fetchGithubFile");
+const { detectFace } = await import("../detectFace");
 const { fal } = await import("@fal-ai/client");
 
 describe("resolveFaceGuide", () => {
@@ -26,7 +31,7 @@ describe("resolveFaceGuide", () => {
     vi.clearAllMocks();
   });
 
-  it("returns null when usesFaceGuide is false and no images provided", async () => {
+  it("returns null faceGuideUrl and empty additionalImageUrls when no images and usesFaceGuide is false", async () => {
     const result = await resolveFaceGuide({
       usesFaceGuide: false,
       images: undefined,
@@ -34,41 +39,73 @@ describe("resolveFaceGuide", () => {
       artistSlug: "artist",
     });
 
-    expect(result).toBeNull();
-    expect(fetchImageFromUrl).not.toHaveBeenCalled();
+    expect(result).toEqual({ faceGuideUrl: null, additionalImageUrls: [] });
   });
 
-  it("passes attached images through even when usesFaceGuide is false", async () => {
-    vi.mocked(fetchImageFromUrl).mockResolvedValue("https://fal.ai/uploaded.png");
+  it("uses face image as faceGuideUrl and non-face images as additionalImageUrls", async () => {
+    vi.mocked(fetchImageFromUrl)
+      .mockResolvedValueOnce("https://fal.ai/face.png")
+      .mockResolvedValueOnce("https://fal.ai/cover.png");
+    vi.mocked(detectFace)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false);
 
     const result = await resolveFaceGuide({
-      usesFaceGuide: false,
+      usesFaceGuide: true,
+      images: [
+        "https://example.com/headshot.png",
+        "https://example.com/album-cover.png",
+      ],
+      githubRepo: "https://github.com/test/repo",
+      artistSlug: "artist",
+    });
+
+    expect(result).toEqual({
+      faceGuideUrl: "https://fal.ai/face.png",
+      additionalImageUrls: ["https://fal.ai/cover.png"],
+    });
+  });
+
+  it("falls back to GitHub face-guide when no images contain a face", async () => {
+    vi.mocked(fetchImageFromUrl).mockResolvedValue("https://fal.ai/cover.png");
+    vi.mocked(detectFace).mockResolvedValue(false);
+    vi.mocked(fetchGithubFile).mockResolvedValue(Buffer.from("face-data"));
+    vi.mocked(fal.storage.upload).mockResolvedValue("https://fal.ai/github-face.png");
+
+    const result = await resolveFaceGuide({
+      usesFaceGuide: true,
       images: ["https://example.com/album-cover.png"],
       githubRepo: "https://github.com/test/repo",
       artistSlug: "artist",
     });
 
-    expect(fetchImageFromUrl).toHaveBeenCalledWith("https://example.com/album-cover.png");
-    expect(result).toBe("https://fal.ai/uploaded.png");
+    expect(result).toEqual({
+      faceGuideUrl: "https://fal.ai/github-face.png",
+      additionalImageUrls: ["https://fal.ai/cover.png"],
+    });
   });
 
-  it("uses fetchImageFromUrl when images array has entries", async () => {
-    vi.mocked(fetchImageFromUrl).mockResolvedValue("https://fal.ai/uploaded.png");
+  it("puts all images in additionalImageUrls when usesFaceGuide is false", async () => {
+    vi.mocked(fetchImageFromUrl)
+      .mockResolvedValueOnce("https://fal.ai/img1.png")
+      .mockResolvedValueOnce("https://fal.ai/img2.png");
 
     const result = await resolveFaceGuide({
-      usesFaceGuide: true,
-      images: ["https://example.com/face.png"],
+      usesFaceGuide: false,
+      images: ["https://example.com/a.png", "https://example.com/b.png"],
       githubRepo: "https://github.com/test/repo",
       artistSlug: "artist",
     });
 
-    expect(fetchImageFromUrl).toHaveBeenCalledWith("https://example.com/face.png");
-    expect(result).toBe("https://fal.ai/uploaded.png");
+    expect(result).toEqual({
+      faceGuideUrl: null,
+      additionalImageUrls: ["https://fal.ai/img1.png", "https://fal.ai/img2.png"],
+    });
+    expect(detectFace).not.toHaveBeenCalled();
   });
 
-  it("fetches from GitHub when no images provided", async () => {
-    const buffer = Buffer.from("image-data");
-    vi.mocked(fetchGithubFile).mockResolvedValue(buffer);
+  it("fetches face-guide from GitHub when no images provided", async () => {
+    vi.mocked(fetchGithubFile).mockResolvedValue(Buffer.from("face-data"));
     vi.mocked(fal.storage.upload).mockResolvedValue("https://fal.ai/github.png");
 
     const result = await resolveFaceGuide({
@@ -78,14 +115,13 @@ describe("resolveFaceGuide", () => {
       artistSlug: "artist",
     });
 
-    expect(fetchGithubFile).toHaveBeenCalledWith(
-      "https://github.com/test/repo",
-      "artists/artist/context/images/face-guide.png",
-    );
-    expect(result).toBe("https://fal.ai/github.png");
+    expect(result).toEqual({
+      faceGuideUrl: "https://fal.ai/github.png",
+      additionalImageUrls: [],
+    });
   });
 
-  it("throws when GitHub face-guide is not found", async () => {
+  it("throws when usesFaceGuide is true and GitHub face-guide is not found", async () => {
     vi.mocked(fetchGithubFile).mockResolvedValue(null);
 
     await expect(
@@ -96,5 +132,29 @@ describe("resolveFaceGuide", () => {
         artistSlug: "artist",
       }),
     ).rejects.toThrow("face-guide.png not found");
+  });
+
+  it("uses first face image when multiple faces are provided", async () => {
+    vi.mocked(fetchImageFromUrl)
+      .mockResolvedValueOnce("https://fal.ai/face1.png")
+      .mockResolvedValueOnce("https://fal.ai/face2.png");
+    vi.mocked(detectFace)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(true);
+
+    const result = await resolveFaceGuide({
+      usesFaceGuide: true,
+      images: [
+        "https://example.com/headshot1.png",
+        "https://example.com/headshot2.png",
+      ],
+      githubRepo: "https://github.com/test/repo",
+      artistSlug: "artist",
+    });
+
+    expect(result).toEqual({
+      faceGuideUrl: "https://fal.ai/face1.png",
+      additionalImageUrls: ["https://fal.ai/face2.png"],
+    });
   });
 });

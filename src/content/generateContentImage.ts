@@ -1,6 +1,5 @@
 import fs from "node:fs/promises";
 import { fal } from "@fal-ai/client";
-import { logger } from "@trigger.dev/sdk/v3";
 import { logStep } from "../sandboxes/logStep";
 import { DEFAULT_PIPELINE_CONFIG } from "./defaultPipelineConfig";
 import { falSubscribe } from "./falSubscribe";
@@ -23,11 +22,14 @@ export async function generateContentImage({
   faceGuideUrl,
   referenceImagePath,
   prompt,
+  additionalImageUrls,
 }: {
   /** Guide image URL — omit for templates that don't use an input image. */
   faceGuideUrl?: string;
   referenceImagePath: string | null;
   prompt: string;
+  /** Extra image URLs (e.g. album covers, playlist covers) to pass to the model. */
+  additionalImageUrls?: string[];
 }): Promise<string> {
   const config = DEFAULT_PIPELINE_CONFIG;
 
@@ -36,7 +38,7 @@ export async function generateContentImage({
   if (faceGuideUrl) imageUrls.push(faceGuideUrl);
 
   if (referenceImagePath) {
-    logger.log("Uploading reference image to fal storage", {
+    logStep("Uploading reference image to fal storage", false, {
       path: referenceImagePath,
     });
     const refBuffer = await fs.readFile(referenceImagePath);
@@ -45,12 +47,23 @@ export async function generateContentImage({
     imageUrls.push(refUrl);
   }
 
+  if (additionalImageUrls?.length) {
+    const unique = [...new Set(additionalImageUrls)];
+    const deduped = unique.filter((url) => !imageUrls.includes(url));
+    logStep("Adding additional image URLs", false, {
+      count: deduped.length,
+      urls: deduped.map((u) => u.slice(0, 80)),
+    });
+    imageUrls.push(...deduped);
+  }
+
   logStep("Generating image", false, {
     model: config.imageModel,
     promptLength: prompt.length,
     imageCount: imageUrls.length,
     hasFaceGuide: Boolean(faceGuideUrl),
     hasReferenceImage: Boolean(referenceImagePath),
+    hasAdditionalImages: Boolean(additionalImageUrls?.length),
   });
 
   const result = await falSubscribe(config.imageModel, {
@@ -71,7 +84,7 @@ export async function generateContentImage({
     );
   }
 
-  logger.log("Image generated", { imageUrl: imageUrl.slice(0, 80) });
+  logStep("Image generated", false, { imageUrl: imageUrl.slice(0, 80) });
   return imageUrl;
 }
 
