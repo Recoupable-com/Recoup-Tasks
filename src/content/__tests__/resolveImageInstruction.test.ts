@@ -26,11 +26,13 @@ describe("resolveImageInstruction", () => {
     expect(result).toBe("Place the album art onto a vinyl sleeve.");
   });
 
-  it("uses customInstruction even when usesFaceGuide is true", () => {
+  it("prepends face-swap instruction to customInstruction when usesFaceGuide is true", () => {
     const result = resolveImageInstruction(
       makeTemplate({ usesFaceGuide: true, styleGuide: { customInstruction: "Custom instruction here." } }),
     );
-    expect(result).toBe("Custom instruction here.");
+    expect(result).toContain(FACE_SWAP_INSTRUCTION);
+    expect(result).toContain("Custom instruction here.");
+    expect(result.indexOf(FACE_SWAP_INSTRUCTION)).toBeLessThan(result.indexOf("Custom instruction here."));
   });
 
   it("falls back to FACE_SWAP_INSTRUCTION when usesFaceGuide is true and no customInstruction", () => {
