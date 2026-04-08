@@ -34,16 +34,15 @@ describe("detectFace", () => {
     expect(result).toBe(false);
   });
 
-  it("passes the image URL in the prompt", async () => {
+  it("passes the image as a multimodal content part", async () => {
     mockGenerate.mockResolvedValue({ output: { hasFace: true } });
 
     await detectFace("https://example.com/photo.png");
 
-    expect(mockGenerate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        prompt: expect.stringContaining("https://example.com/photo.png"),
-      }),
-    );
+    const callArgs = mockGenerate.mock.calls[0][0];
+    const imagePart = callArgs.prompt.find((p: { type: string }) => p.type === "image");
+    expect(imagePart).toBeDefined();
+    expect(imagePart.image.href).toBe("https://example.com/photo.png");
   });
 
   it("returns false when the agent throws", async () => {
