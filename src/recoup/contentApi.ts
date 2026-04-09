@@ -1,5 +1,12 @@
 import { callRecoupApi } from "./callRecoupApi";
 
+const API_TEMPLATE_IDS = [
+  "artist-caption-bedroom",
+  "artist-caption-outside",
+  "artist-caption-stage",
+  "album-record-store",
+];
+
 /**
  * Generate an image via POST /api/content/image.
  *
@@ -67,7 +74,7 @@ export async function generateCaption(params: {
   length?: string;
 }): Promise<string> {
   const body: Record<string, unknown> = { topic: params.topic };
-  if (params.template) body.template = params.template;
+  if (params.template && API_TEMPLATE_IDS.includes(params.template)) body.template = params.template;
   if (params.length) body.length = params.length;
 
   const data = await callRecoupApi("/api/content/caption", body);

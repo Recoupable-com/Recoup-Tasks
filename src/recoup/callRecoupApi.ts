@@ -1,3 +1,5 @@
+import { logStep } from "../sandboxes/logStep";
+
 /**
  * Call a Recoup API endpoint with authentication.
  *
@@ -26,6 +28,12 @@ export async function callRecoupApi(
   });
 
   const data = await response.json();
+
+  logStep(`${method} ${path}`, true, {
+    status: response.status,
+    response: data,
+  });
+
   if (!response.ok) {
     throw new Error(`API call failed: ${response.status} — ${data.error || "Unknown error"}`);
   }

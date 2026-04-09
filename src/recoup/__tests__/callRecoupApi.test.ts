@@ -3,6 +3,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
 
+vi.mock("../../sandboxes/logStep", () => ({
+  logStep: vi.fn(),
+}));
+
 describe("callRecoupApi", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -43,6 +47,24 @@ describe("callRecoupApi", () => {
     const { callRecoupApi } = await import("../callRecoupApi");
     await expect(callRecoupApi("/api/content/image", { prompt: "" }))
       .rejects.toThrow("API call failed");
+  });
+
+  it("logs the request and response", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ imageUrl: "https://example.com/img.png" }),
+    });
+
+    const { logStep } = await import("../../sandboxes/logStep");
+    const { callRecoupApi } = await import("../callRecoupApi");
+    await callRecoupApi("/api/content/image", { prompt: "sunset" });
+
+    expect(vi.mocked(logStep)).toHaveBeenCalledWith(
+      expect.stringContaining("/api/content/image"),
+      expect.any(Boolean),
+      expect.objectContaining({ status: 200 }),
+    );
   });
 
   it("supports PATCH method", async () => {

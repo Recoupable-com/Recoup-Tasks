@@ -128,4 +128,18 @@ describe("generateCaption", () => {
     });
     expect(text).toBe("midnight thoughts hit different");
   });
+
+  it("omits template if not in API's known list", async () => {
+    mockCallRecoupApi.mockResolvedValue({ content: "editorial caption" });
+
+    const { generateCaption } = await import("../contentApi");
+    await generateCaption({
+      topic: "album release",
+      template: "artist-release-editorial",
+      length: "short",
+    });
+
+    const callArgs = mockCallRecoupApi.mock.calls[0][1] as Record<string, unknown>;
+    expect(callArgs).not.toHaveProperty("template");
+  });
 });
