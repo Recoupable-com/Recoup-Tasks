@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+const cssColorRegex = /^[a-zA-Z]+$|^#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+
 export const editOperationSchema = z.union([
   z.object({
     type: z.literal("trim"),
@@ -25,24 +27,23 @@ export const editOperationSchema = z.union([
     type: z.literal("overlay_text"),
     content: z.string().optional(),
     font: z.string().optional(),
-    color: z.string().regex(/^[a-zA-Z]+$|^#[0-9a-fA-F]{3,8}$/, "color must be a CSS color name or hex value").optional().default("white"),
-    stroke_color: z.string().regex(/^[a-zA-Z]+$|^#[0-9a-fA-F]{3,8}$/, "stroke_color must be a CSS color name or hex value").optional().default("black"),
+    color: z.string().regex(cssColorRegex, "color must be a CSS color name or hex value").optional().default("white"),
+    stroke_color: z.string().regex(cssColorRegex, "stroke_color must be a CSS color name or hex value").optional().default("black"),
     max_font_size: z.number().positive().optional().default(42),
     position: z.enum(["top", "center", "bottom"]).optional().default("bottom"),
   }),
-  z.object({
-    type: z.literal("mux_audio"),
-    audio_url: z.string().url().optional(),
-    replace: z.boolean().optional().default(true),
-  }),
 ]);
 
-export const createRenderPayloadSchema = z.object({
+export const ffmpegEditPayloadSchema = z.object({
   accountId: z.string().min(1, "accountId is required"),
-  video_url: z.string().url().optional(),
-  audio_url: z.string().url().optional(),
+  video_url: z.string().url(),
   operations: z.array(editOperationSchema),
   output_format: z.enum(["mp4", "webm", "mov"]).default("mp4"),
 });
 
-export type CreateRenderPayload = z.infer<typeof createRenderPayloadSchema>;
+export type FfmpegEditPayload = z.infer<typeof ffmpegEditPayloadSchema>;
+
+/** @deprecated Use ffmpegEditPayloadSchema */
+export const createRenderPayloadSchema = ffmpegEditPayloadSchema;
+/** @deprecated Use FfmpegEditPayload */
+export type CreateRenderPayload = FfmpegEditPayload;

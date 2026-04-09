@@ -10,5 +10,5 @@ const execFileAsync = promisify(execFile);
  * @throws Error if ffmpeg exits with a non-zero code.
  */
 export async function runFfmpeg(args: string[]): Promise<void> {
-  await execFileAsync("ffmpeg", args);
+  await execFileAsync("ffmpeg", args, { maxBuffer: 10 * 1024 * 1024 });
 }

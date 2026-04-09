@@ -3,7 +3,7 @@ import { unlink, mkdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { schemaTask, tags } from "@trigger.dev/sdk/v3";
-import { createRenderPayloadSchema } from "../schemas/ffmpegEditSchema";
+import { ffmpegEditPayloadSchema } from "../schemas/ffmpegEditSchema";
 import { logStep } from "../sandboxes/logStep";
 import { downloadMediaToFile } from "../content/downloadMediaToFile";
 import { runFfmpeg } from "../content/runFfmpeg";
@@ -11,15 +11,15 @@ import { uploadToFalStorage } from "../content/uploadToFalStorage";
 import { buildRenderFfmpegArgs } from "../content/buildRenderFfmpegArgs";
 
 /**
- * Edit/render task — applies a sequence of edit operations to media.
+ * FFmpeg edit task — applies video edit operations via ffmpeg.
  *
- * Triggered by PATCH /api/content. Accepts video or audio input and
- * runs operations (trim, crop, resize, overlay_text, mux_audio) in
- * order using ffmpeg. Uploads the result to fal.ai storage.
+ * Triggered by PATCH /api/content. Accepts a video URL and runs
+ * operations (trim, crop, resize, overlay_text) in order using ffmpeg.
+ * Uploads the result to fal.ai storage.
  */
 export const ffmpegEditTask = schemaTask({
   id: "ffmpeg-edit",
-  schema: createRenderPayloadSchema,
+  schema: ffmpegEditPayloadSchema,
   maxDuration: 600,
   machine: "medium-1x",
   retry: {
@@ -40,14 +40,10 @@ export const ffmpegEditTask = schemaTask({
     const outputPath = join(tempDir, `output.${payload.output_format}`);
 
     try {
-      const audioOnly = !payload.video_url && !!payload.audio_url;
-      const inputUrl = payload.video_url ?? payload.audio_url;
-      if (!inputUrl) throw new Error("No input media URL provided");
+      logStep("Downloading input video");
+      await downloadMediaToFile(payload.video_url, inputPath);
 
-      logStep("Downloading input media");
-      await downloadMediaToFile(inputUrl, inputPath);
-
-      const ffmpegArgs = buildRenderFfmpegArgs(inputPath, outputPath, payload.operations, payload.audio_url, { audioOnly });
+      const ffmpegArgs = buildRenderFfmpegArgs(inputPath, outputPath, payload.operations);
 
       logStep("Running ffmpeg", true, { args: ffmpegArgs.join(" ") });
       await runFfmpeg(ffmpegArgs);

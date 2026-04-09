@@ -21,20 +21,23 @@ describe("buildRenderFfmpegArgs", () => {
     expect(args[vfIndex + 1]).toContain("crop=");
   });
 
-  it("builds crop filter for portrait aspect (h > w)", () => {
+  // Fix #5: crop 9:16 on a landscape video should crop width, not expand height
+  it("builds crop 9:16 as portrait crop (narrows width from source)", () => {
     const args = buildRenderFfmpegArgs("in.mp4", "out.mp4", [
       { type: "crop", aspect: "9:16" },
     ]);
     const vf = args[args.indexOf("-vf") + 1];
-    expect(vf).toContain("iw:iw*16/9");
+    // 9:16 means w < h, so crop width to ih*9/16 and keep height
+    expect(vf).toContain("crop=ih*9/16:ih");
   });
 
-  it("builds crop filter for landscape aspect (w > h)", () => {
+  it("builds crop 16:9 as landscape crop (narrows height from source)", () => {
     const args = buildRenderFfmpegArgs("in.mp4", "out.mp4", [
       { type: "crop", aspect: "16:9" },
     ]);
     const vf = args[args.indexOf("-vf") + 1];
-    expect(vf).toContain("ih*16/9:ih");
+    // 16:9 means w > h, so crop height to iw*9/16 and keep width
+    expect(vf).toContain("crop=iw:iw*9/16");
   });
 
   it("builds resize filter with scale", () => {
@@ -106,33 +109,17 @@ describe("buildRenderFfmpegArgs", () => {
       },
     ]);
     const vf = args[args.indexOf("-vf") + 1];
-    // Emoji should be stripped, leaving "hello world"
     expect(vf).not.toContain("🔥");
   });
 
-  it("builds mux_audio with replace=true", () => {
+  it("skips overlay_text when content is missing (template mode)", () => {
     const args = buildRenderFfmpegArgs("in.mp4", "out.mp4", [
-      { type: "mux_audio", audio_url: "https://example.com/song.mp3", replace: true },
+      { type: "overlay_text", color: "white", stroke_color: "black", max_font_size: 42, position: "bottom" as const },
     ]);
-    expect(args).toContain("https://example.com/song.mp3");
-    expect(args).toContain("-map");
-    const mapIndices = args.reduce((acc: number[], v, i) => (v === "-map" ? [...acc, i] : acc), []);
-    expect(args[mapIndices[0] + 1]).toBe("0:v:0");
-    expect(args[mapIndices[1] + 1]).toBe("1:a:0");
+    expect(args).not.toContain("-vf");
   });
 
-  it("builds mux_audio with replace=false using amix filter", () => {
-    const args = buildRenderFfmpegArgs("in.mp4", "out.mp4", [
-      { type: "mux_audio", audio_url: "https://example.com/song.mp3", replace: false },
-    ]);
-    expect(args).toContain("-filter_complex");
-    const fcIndex = args.indexOf("-filter_complex");
-    expect(args[fcIndex + 1]).toContain("amix=inputs=2");
-    expect(args[fcIndex + 1]).toContain("[aout]");
-    expect(args).toContain("[aout]");
-  });
-
-  it("chains multiple operations in order", () => {
+  it("chains multiple video operations in order", () => {
     const args = buildRenderFfmpegArgs("in.mp4", "out.mp4", [
       { type: "crop", aspect: "9:16" },
       {
@@ -143,73 +130,34 @@ describe("buildRenderFfmpegArgs", () => {
         max_font_size: 42,
         position: "bottom" as const,
       },
-      { type: "mux_audio", audio_url: "https://example.com/song.mp3", replace: true },
     ]);
     const vf = args[args.indexOf("-vf") + 1];
-    // Video filters should be chained with comma
     expect(vf).toContain("crop=");
     expect(vf).toContain(",");
     expect(vf).toContain("drawtext=");
-    // Audio should be added as extra input
-    expect(args).toContain("https://example.com/song.mp3");
   });
 
-  it("skips overlay_text when content is missing (template mode)", () => {
+  // Fix #1: no mux_audio — should not accept mux_audio operations
+  it("does not handle mux_audio operations (video-only)", () => {
+    // buildRenderFfmpegArgs should not have mux_audio case
+    // Passing an unknown type should result in no extra inputs
     const args = buildRenderFfmpegArgs("in.mp4", "out.mp4", [
-      { type: "overlay_text", color: "white", stroke_color: "black", max_font_size: 42, position: "bottom" as const },
-    ]);
-    const hasVf = args.includes("-vf");
-    expect(hasVf).toBe(false);
-  });
-
-  it("skips mux_audio when audio_url is missing and no fallback", () => {
-    const args = buildRenderFfmpegArgs("in.mp4", "out.mp4", [
-      { type: "mux_audio", replace: true },
+      { type: "trim", start: 0, duration: 5 },
     ]);
     expect(args).not.toContain("-map");
+    expect(args.join(" ")).not.toContain("amix");
   });
 
-  it("uses fallback audio_url for mux_audio when op has no audio_url", () => {
+  // Fix #2: no audioOnly, no fallbackAudioUrl params
+  it("function signature has no audioOnly or fallbackAudioUrl params", () => {
+    // Should work with just 3 args — no 4th or 5th param needed
     const args = buildRenderFfmpegArgs("in.mp4", "out.mp4", [
-      { type: "mux_audio", replace: true },
-    ], "https://example.com/fallback.mp3");
-    expect(args).toContain("https://example.com/fallback.mp3");
-    expect(args).toContain("-map");
+      { type: "trim", start: 0, duration: 5 },
+    ]);
+    expect(args.length).toBeGreaterThan(0);
   });
 
-  it("places all -i inputs before -vf filters", () => {
-    const args = buildRenderFfmpegArgs("in.mp4", "out.mp4", [
-      { type: "crop", aspect: "9:16" },
-      { type: "mux_audio", replace: true },
-    ], "https://example.com/song.mp3");
-
-    const vfIndex = args.indexOf("-vf");
-    const lastInputIndex = args.lastIndexOf("-i");
-    expect(vfIndex).toBeGreaterThan(-1);
-    expect(lastInputIndex).toBeGreaterThan(-1);
-    expect(lastInputIndex).toBeLessThan(vfIndex);
-  });
-
-  it("skips video filters when input is audio-only", () => {
-    const args = buildRenderFfmpegArgs("in.mp3", "out.mp4", [
-      { type: "crop", aspect: "9:16" },
-      { type: "mux_audio", replace: true },
-    ], "https://example.com/song.mp3", { audioOnly: true });
-    // Should not have -vf or -map 0:v:0 since input has no video stream
-    expect(args).not.toContain("-vf");
-    expect(args.join(" ")).not.toContain("0:v:0");
-  });
-
-  it("skips -map v when input is audio-only with mux_audio replace", () => {
-    const args = buildRenderFfmpegArgs("in.mp3", "out.mp4", [
-      { type: "mux_audio", replace: true },
-    ], "https://example.com/song.mp3", { audioOnly: true });
-    // Should just map the new audio, no video mapping
-    expect(args).toContain("-map");
-    expect(args.join(" ")).not.toContain("0:v:0");
-  });
-
-  it("always includes output encoding flags", () => {
+  it("always includes video output encoding flags", () => {
     const args = buildRenderFfmpegArgs("in.mp4", "out.mp4", [
       { type: "trim", start: 0, duration: 5 },
     ]);

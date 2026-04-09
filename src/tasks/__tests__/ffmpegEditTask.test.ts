@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createRenderPayloadSchema } from "../../schemas/ffmpegEditSchema";
+import { ffmpegEditPayloadSchema as createRenderPayloadSchema } from "../../schemas/ffmpegEditSchema";
 
 // Mock fal.ai server config
 vi.mock("../../content/falServer", () => ({
@@ -21,22 +21,19 @@ vi.mock("../../sandboxes/logStep", () => ({
 }));
 
 describe("createRenderPayloadSchema", () => {
+  it("requires video_url", () => {
+    const result = createRenderPayloadSchema.safeParse({
+      accountId: "acc-123",
+      operations: [{ type: "trim", start: 0, duration: 5 }],
+    });
+    expect(result.success).toBe(false);
+  });
+
   it("validates a payload with video_url and trim operation", () => {
     const result = createRenderPayloadSchema.safeParse({
       accountId: "acc-123",
       video_url: "https://example.com/video.mp4",
       operations: [{ type: "trim", start: 0, duration: 5 }],
-    });
-    expect(result.success).toBe(true);
-  });
-
-  it("validates a payload with audio_url and mux_audio operation", () => {
-    const result = createRenderPayloadSchema.safeParse({
-      accountId: "acc-123",
-      audio_url: "https://example.com/audio.mp3",
-      operations: [
-        { type: "mux_audio", audio_url: "https://example.com/track.mp3" },
-      ],
     });
     expect(result.success).toBe(true);
   });
@@ -68,23 +65,18 @@ describe("createRenderPayloadSchema", () => {
     }
   });
 
-  it("validates a payload with multiple operations in order", () => {
+  it("validates multiple video operations", () => {
     const result = createRenderPayloadSchema.safeParse({
       accountId: "acc-123",
       video_url: "https://example.com/video.mp4",
       operations: [
         { type: "crop", aspect: "9:16" },
         { type: "overlay_text", content: "caption text" },
-        {
-          type: "mux_audio",
-          audio_url: "https://example.com/song.mp3",
-          replace: true,
-        },
       ],
     });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.operations).toHaveLength(3);
+      expect(result.data.operations).toHaveLength(2);
     }
   });
 
@@ -108,13 +100,25 @@ describe("createRenderPayloadSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("accepts empty operations array", () => {
+  it("rejects mux_audio operation (removed)", () => {
     const result = createRenderPayloadSchema.safeParse({
       accountId: "acc-123",
       video_url: "https://example.com/video.mp4",
-      operations: [],
+      operations: [{ type: "mux_audio", audio_url: "https://example.com/a.mp3" }],
     });
-    expect(result.success).toBe(true);
+    expect(result.success).toBe(false);
+  });
+
+  it("does not accept audio_url param", () => {
+    const result = createRenderPayloadSchema.safeParse({
+      accountId: "acc-123",
+      video_url: "https://example.com/video.mp4",
+      audio_url: "https://example.com/audio.mp3",
+      operations: [{ type: "trim", start: 0, duration: 5 }],
+    });
+    if (result.success) {
+      expect(result.data).not.toHaveProperty("audio_url");
+    }
   });
 
   it("rejects crop with no dimensions or aspect", () => {
@@ -144,6 +148,25 @@ describe("createRenderPayloadSchema", () => {
     expect(result.success).toBe(false);
   });
 
+  // Fix #4: color regex should reject 5/7-digit hex
+  it("rejects invalid 5-digit hex color", () => {
+    const result = createRenderPayloadSchema.safeParse({
+      accountId: "acc-123",
+      video_url: "https://example.com/video.mp4",
+      operations: [{ type: "overlay_text", content: "test", color: "#12345" }],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts valid 6-digit hex color", () => {
+    const result = createRenderPayloadSchema.safeParse({
+      accountId: "acc-123",
+      video_url: "https://example.com/video.mp4",
+      operations: [{ type: "overlay_text", content: "test", color: "#FF5500" }],
+    });
+    expect(result.success).toBe(true);
+  });
+
   it("rejects invalid operation type", () => {
     const result = createRenderPayloadSchema.safeParse({
       accountId: "acc-123",
@@ -163,11 +186,6 @@ describe("ffmpegEditTask", () => {
   it("exports a task with id ffmpeg-edit", async () => {
     const { ffmpegEditTask } = await import("../ffmpegEditTask");
     expect(ffmpegEditTask.id).toBe("ffmpeg-edit");
-  });
-
-  it("uses the createRenderPayloadSchema", async () => {
-    const { ffmpegEditTask } = await import("../ffmpegEditTask");
-    expect(ffmpegEditTask.schema).toBe(createRenderPayloadSchema);
   });
 
   it("has medium-1x machine and 10 min max duration", async () => {
