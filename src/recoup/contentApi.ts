@@ -13,7 +13,10 @@ export async function generateImage(params: {
 }): Promise<string> {
   const body: Record<string, unknown> = { prompt: params.prompt };
   if (params.referenceImageUrl) body.reference_image_url = params.referenceImageUrl;
-  if (params.images) body.images = params.images;
+  if (params.images) {
+    const validUrls = params.images.filter(url => url.startsWith("http"));
+    if (validUrls.length > 0) body.images = validUrls;
+  }
 
   const data = await callRecoupApi("/api/content/image", body);
   return data.imageUrl as string;

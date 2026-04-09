@@ -25,6 +25,20 @@ describe("generateImage", () => {
     });
     expect(url).toBe("https://fal.media/img.png");
   });
+
+  it("filters out non-URL strings from images array", async () => {
+    mockCallRecoupApi.mockResolvedValue({ imageUrl: "https://fal.media/img.png", images: ["https://fal.media/img.png"] });
+
+    const { generateImage } = await import("../contentApi");
+    await generateImage({
+      prompt: "a portrait",
+      images: ["https://example.com/valid.png", "references/images/local-path.png"],
+    });
+
+    const callArgs = mockCallRecoupApi.mock.calls[0][1] as Record<string, unknown>;
+    const images = callArgs.images as string[];
+    expect(images).toEqual(["https://example.com/valid.png"]);
+  });
 });
 
 describe("upscaleMedia", () => {
