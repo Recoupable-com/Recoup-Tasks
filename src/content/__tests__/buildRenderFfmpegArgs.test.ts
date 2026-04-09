@@ -177,6 +177,19 @@ describe("buildRenderFfmpegArgs", () => {
     expect(args).toContain("-map");
   });
 
+  it("places all -i inputs before -vf filters", () => {
+    const args = buildRenderFfmpegArgs("in.mp4", "out.mp4", [
+      { type: "crop", aspect: "9:16" },
+      { type: "mux_audio", replace: true },
+    ], "https://example.com/song.mp3");
+
+    const vfIndex = args.indexOf("-vf");
+    const lastInputIndex = args.lastIndexOf("-i");
+    expect(vfIndex).toBeGreaterThan(-1);
+    expect(lastInputIndex).toBeGreaterThan(-1);
+    expect(lastInputIndex).toBeLessThan(vfIndex);
+  });
+
   it("always includes output encoding flags", () => {
     const args = buildRenderFfmpegArgs("in.mp4", "out.mp4", [
       { type: "trim", start: 0, duration: 5 },

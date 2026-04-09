@@ -90,11 +90,12 @@ export function buildRenderFfmpegArgs(
     }
   }
 
+  // All -i inputs must come before filters and mappings
+  args.push(...extraInputs);
+
   if (videoFilters.length > 0) {
     args.push("-vf", videoFilters.join(","));
   }
-
-  args.push(...extraInputs);
 
   if (audioMapping.length > 0) {
     args.push(...audioMapping);
