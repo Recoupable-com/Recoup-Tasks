@@ -24,6 +24,7 @@ export function buildRenderFfmpegArgs(
   inputPath: string,
   outputPath: string,
   operations: Operations,
+  fallbackAudioUrl?: string,
 ): string[] {
   const args = ["-y", "-i", inputPath];
   const videoFilters: string[] = [];
@@ -52,6 +53,7 @@ export function buildRenderFfmpegArgs(
         break;
 
       case "overlay_text": {
+        if (!op.content) break;
         const cleanText = stripEmoji(op.content);
         const escaped = escapeDrawtext(cleanText);
         const safeColor = op.color.replace(/:/g, "\\\\:");
@@ -76,12 +78,15 @@ export function buildRenderFfmpegArgs(
         break;
       }
 
-      case "mux_audio":
-        extraInputs.push("-i", op.audio_url);
+      case "mux_audio": {
+        const audioUrl = op.audio_url ?? fallbackAudioUrl;
+        if (!audioUrl) break;
+        extraInputs.push("-i", audioUrl);
         audioMapping = op.replace
           ? ["-map", "0:v:0", "-map", "1:a:0"]
           : ["-map", "0:v:0", "-filter_complex", "[0:a][1:a]amix=inputs=2[aout]", "-map", "[aout]"];
         break;
+      }
     }
   }
 

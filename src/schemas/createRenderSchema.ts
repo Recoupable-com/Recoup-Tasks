@@ -23,7 +23,7 @@ export const editOperationSchema = z.union([
   }),
   z.object({
     type: z.literal("overlay_text"),
-    content: z.string().min(1),
+    content: z.string().optional(),
     font: z.string().optional(),
     color: z.string().regex(/^[a-zA-Z]+$|^#[0-9a-fA-F]{3,8}$/, "color must be a CSS color name or hex value").optional().default("white"),
     stroke_color: z.string().regex(/^[a-zA-Z]+$|^#[0-9a-fA-F]{3,8}$/, "stroke_color must be a CSS color name or hex value").optional().default("black"),
@@ -32,7 +32,7 @@ export const editOperationSchema = z.union([
   }),
   z.object({
     type: z.literal("mux_audio"),
-    audio_url: z.string().url(),
+    audio_url: z.string().url().optional(),
     replace: z.boolean().optional().default(true),
   }),
 ]);

@@ -154,6 +154,29 @@ describe("buildRenderFfmpegArgs", () => {
     expect(args).toContain("https://example.com/song.mp3");
   });
 
+  it("skips overlay_text when content is missing (template mode)", () => {
+    const args = buildRenderFfmpegArgs("in.mp4", "out.mp4", [
+      { type: "overlay_text", color: "white", stroke_color: "black", max_font_size: 42, position: "bottom" as const },
+    ]);
+    const hasVf = args.includes("-vf");
+    expect(hasVf).toBe(false);
+  });
+
+  it("skips mux_audio when audio_url is missing and no fallback", () => {
+    const args = buildRenderFfmpegArgs("in.mp4", "out.mp4", [
+      { type: "mux_audio", replace: true },
+    ]);
+    expect(args).not.toContain("-map");
+  });
+
+  it("uses fallback audio_url for mux_audio when op has no audio_url", () => {
+    const args = buildRenderFfmpegArgs("in.mp4", "out.mp4", [
+      { type: "mux_audio", replace: true },
+    ], "https://example.com/fallback.mp3");
+    expect(args).toContain("https://example.com/fallback.mp3");
+    expect(args).toContain("-map");
+  });
+
   it("always includes output encoding flags", () => {
     const args = buildRenderFfmpegArgs("in.mp4", "out.mp4", [
       { type: "trim", start: 0, duration: 5 },

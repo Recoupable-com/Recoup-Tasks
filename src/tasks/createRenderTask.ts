@@ -46,7 +46,7 @@ export const createRenderTask = schemaTask({
       logStep("Downloading input media");
       await downloadMediaToFile(inputUrl, inputPath);
 
-      const ffmpegArgs = buildRenderFfmpegArgs(inputPath, outputPath, payload.operations);
+      const ffmpegArgs = buildRenderFfmpegArgs(inputPath, outputPath, payload.operations, payload.audio_url);
 
       logStep("Running ffmpeg", true, { args: ffmpegArgs.join(" ") });
       await runFfmpeg(ffmpegArgs);
