@@ -1,17 +1,15 @@
-import { execFile } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { readFile, writeFile, unlink, mkdir } from "node:fs/promises";
+import { writeFile, unlink, mkdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { promisify } from "node:util";
 import { logStep } from "../sandboxes/logStep";
-import { fal } from "@fal-ai/client";
 import { buildFfmpegArgs } from "./buildFfmpegArgs";
 import { calculateCaptionLayout } from "./calculateCaptionLayout";
 import { stripEmoji } from "./stripEmoji";
 import { downloadOverlayImages } from "./downloadOverlayImages";
-
-const execFileAsync = promisify(execFile);
+import { downloadMediaToFile } from "./downloadMediaToFile";
+import { runFfmpeg } from "./runFfmpeg";
+import { uploadToFalStorage } from "./uploadToFalStorage";
 
 export interface RenderFinalVideoInput {
   videoUrl: string;
@@ -46,11 +44,7 @@ export async function renderFinalVideo(
 
   try {
     logStep("Downloading video for final render");
-    const videoResponse = await fetch(input.videoUrl);
-    if (!videoResponse.ok) {
-      throw new Error(`Failed to download video: ${videoResponse.status}`);
-    }
-    await writeFile(videoPath, Buffer.from(await videoResponse.arrayBuffer()));
+    await downloadMediaToFile(input.videoUrl, videoPath);
     await writeFile(audioPath, input.songBuffer);
 
     overlayPaths = await downloadOverlayImages(input.overlayImageUrls ?? [], tempDir);
@@ -74,17 +68,13 @@ export async function renderFinalVideo(
       overlayCount: overlayPaths.length,
     });
 
-    await execFileAsync("ffmpeg", ffmpegArgs);
+    await runFfmpeg(ffmpegArgs);
 
-    const finalBuffer = await readFile(outputPath);
-    const sizeBytes = finalBuffer.length;
-    logStep("Final video rendered, uploading to fal.ai storage", true, { sizeBytes });
+    logStep("Final video rendered, uploading to fal.ai storage");
+    const result = await uploadToFalStorage(outputPath, "final-video.mp4", "video/mp4");
+    logStep("Final video uploaded to fal.ai storage", false, { videoUrl: result.url, sizeBytes: result.sizeBytes });
 
-    const videoFile = new File([finalBuffer], "final-video.mp4", { type: "video/mp4" });
-    const videoUrl = await fal.storage.upload(videoFile);
-    logStep("Final video uploaded to fal.ai storage", false, { videoUrl, sizeBytes });
-
-    return { videoUrl, mimeType: "video/mp4", sizeBytes };
+    return { videoUrl: result.url, mimeType: result.mimeType, sizeBytes: result.sizeBytes };
   } finally {
     const cleanupPaths = [videoPath, audioPath, outputPath, ...overlayPaths];
     await Promise.all(cleanupPaths.map((p) => unlink(p).catch(() => undefined)));

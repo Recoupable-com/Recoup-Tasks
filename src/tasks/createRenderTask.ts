@@ -1,18 +1,15 @@
-import { execFile } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { readFile, writeFile, unlink, mkdir } from "node:fs/promises";
+import { unlink, mkdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { promisify } from "node:util";
 import { fal } from "@fal-ai/client";
 import { schemaTask, tags } from "@trigger.dev/sdk/v3";
 import { createRenderPayloadSchema } from "../schemas/createRenderSchema";
 import { logStep } from "../sandboxes/logStep";
-import { escapeDrawtext } from "../content/escapeDrawtext";
-import { stripEmoji } from "../content/stripEmoji";
+import { downloadMediaToFile } from "../content/downloadMediaToFile";
+import { runFfmpeg } from "../content/runFfmpeg";
+import { uploadToFalStorage } from "../content/uploadToFalStorage";
 import { buildRenderFfmpegArgs } from "../content/buildRenderFfmpegArgs";
-
-const execFileAsync = promisify(execFile);
 
 /**
  * Edit/render task — applies a sequence of edit operations to media.
@@ -52,30 +49,23 @@ export const createRenderTask = schemaTask({
       if (!inputUrl) throw new Error("No input media URL provided");
 
       logStep("Downloading input media");
-      const response = await fetch(inputUrl);
-      if (!response.ok) throw new Error(`Failed to download input: ${response.status}`);
-      await writeFile(inputPath, Buffer.from(await response.arrayBuffer()));
+      await downloadMediaToFile(inputUrl, inputPath);
 
       const ffmpegArgs = buildRenderFfmpegArgs(inputPath, outputPath, payload.operations);
 
       logStep("Running ffmpeg", true, { args: ffmpegArgs.join(" ") });
-      await execFileAsync("ffmpeg", ffmpegArgs);
+      await runFfmpeg(ffmpegArgs);
 
-      const outputBuffer = await readFile(outputPath);
-      const mimeType = `video/${payload.output_format}`;
-      const outputFile = new File([outputBuffer], `rendered.${payload.output_format}`, { type: mimeType });
-      const resultUrl = await fal.storage.upload(outputFile);
+      logStep("Uploading rendered output");
+      const result = await uploadToFalStorage(outputPath, `rendered.${payload.output_format}`, `video/${payload.output_format}`);
 
-      logStep("Render complete", true, {
-        url: resultUrl,
-        sizeBytes: outputBuffer.length,
-      });
+      logStep("Render complete", true, { url: result.url, sizeBytes: result.sizeBytes });
 
       return {
         status: "completed",
-        url: resultUrl,
-        mimeType,
-        sizeBytes: outputBuffer.length,
+        url: result.url,
+        mimeType: result.mimeType,
+        sizeBytes: result.sizeBytes,
       };
     } finally {
       await Promise.all(
