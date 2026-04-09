@@ -2,7 +2,6 @@ import { randomUUID } from "node:crypto";
 import { unlink, mkdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { fal } from "@fal-ai/client";
 import { schemaTask, tags } from "@trigger.dev/sdk/v3";
 import { createRenderPayloadSchema } from "../schemas/createRenderSchema";
 import { logStep } from "../sandboxes/logStep";
@@ -33,10 +32,6 @@ export const createRenderTask = schemaTask({
       operationCount: payload.operations.length,
       outputFormat: payload.output_format,
     });
-
-    const falKey = process.env.FAL_KEY;
-    if (!falKey) throw new Error("FAL_KEY environment variable is required");
-    fal.config({ credentials: falKey });
 
     const tempDir = join(tmpdir(), `render-${randomUUID()}`);
     await mkdir(tempDir, { recursive: true });

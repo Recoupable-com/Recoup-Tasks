@@ -121,6 +121,17 @@ describe("buildRenderFfmpegArgs", () => {
     expect(args[mapIndices[1] + 1]).toBe("1:a:0");
   });
 
+  it("builds mux_audio with replace=false using amix filter", () => {
+    const args = buildRenderFfmpegArgs("in.mp4", "out.mp4", [
+      { type: "mux_audio", audio_url: "https://example.com/song.mp3", replace: false },
+    ]);
+    expect(args).toContain("-filter_complex");
+    const fcIndex = args.indexOf("-filter_complex");
+    expect(args[fcIndex + 1]).toContain("amix=inputs=2");
+    expect(args[fcIndex + 1]).toContain("[aout]");
+    expect(args).toContain("[aout]");
+  });
+
   it("chains multiple operations in order", () => {
     const args = buildRenderFfmpegArgs("in.mp4", "out.mp4", [
       { type: "crop", aspect: "9:16" },

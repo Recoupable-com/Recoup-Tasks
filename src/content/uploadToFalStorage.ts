@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { fal } from "@fal-ai/client";
+import fal from "./falServer";
 
 export interface UploadResult {
   url: string;

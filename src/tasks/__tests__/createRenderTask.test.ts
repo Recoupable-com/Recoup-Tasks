@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createRenderPayloadSchema } from "../../schemas/createRenderSchema";
 
-// Mock fal.ai
-vi.mock("@fal-ai/client", () => ({
-  fal: {
+// Mock fal.ai server config
+vi.mock("../../content/falServer", () => ({
+  default: {
     config: vi.fn(),
     storage: { upload: vi.fn() },
   },
@@ -108,14 +108,40 @@ describe("createRenderPayloadSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rejects empty operations array", () => {
+  it("accepts empty operations array", () => {
     const result = createRenderPayloadSchema.safeParse({
       accountId: "acc-123",
       video_url: "https://example.com/video.mp4",
       operations: [],
     });
-    // Empty array is valid per schema — API validates template OR operations
     expect(result.success).toBe(true);
+  });
+
+  it("rejects crop with no dimensions or aspect", () => {
+    const result = createRenderPayloadSchema.safeParse({
+      accountId: "acc-123",
+      video_url: "https://example.com/video.mp4",
+      operations: [{ type: "crop" }],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects resize with no dimensions", () => {
+    const result = createRenderPayloadSchema.safeParse({
+      accountId: "acc-123",
+      video_url: "https://example.com/video.mp4",
+      operations: [{ type: "resize" }],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects color values with special characters", () => {
+    const result = createRenderPayloadSchema.safeParse({
+      accountId: "acc-123",
+      video_url: "https://example.com/video.mp4",
+      operations: [{ type: "overlay_text", content: "test", color: "white:enable=0" }],
+    });
+    expect(result.success).toBe(false);
   });
 
   it("rejects invalid operation type", () => {

@@ -54,6 +54,8 @@ export function buildRenderFfmpegArgs(
       case "overlay_text": {
         const cleanText = stripEmoji(op.content);
         const escaped = escapeDrawtext(cleanText);
+        const safeColor = op.color.replace(/:/g, "\\\\:");
+        const safeStrokeColor = op.stroke_color.replace(/:/g, "\\\\:");
         const borderWidth = Math.max(2, Math.round(op.max_font_size / 14));
         const yExpr =
           op.position === "top" ? "y=180" :
@@ -64,9 +66,9 @@ export function buildRenderFfmpegArgs(
           [
             `drawtext=text='${escaped}'`,
             `fontsize=${op.max_font_size}`,
-            `fontcolor=${op.color}`,
+            `fontcolor=${safeColor}`,
             `borderw=${borderWidth}`,
-            `bordercolor=${op.stroke_color}`,
+            `bordercolor=${safeStrokeColor}`,
             "x=(w-tw)/2",
             yExpr,
           ].join(":"),
@@ -78,7 +80,7 @@ export function buildRenderFfmpegArgs(
         extraInputs.push("-i", op.audio_url);
         audioMapping = op.replace
           ? ["-map", "0:v:0", "-map", "1:a:0"]
-          : ["-map", "0:v:0", "-filter_complex", "amix=inputs=2", "-map", "0:a", "-map", "1:a"];
+          : ["-map", "0:v:0", "-filter_complex", "[0:a][1:a]amix=inputs=2[aout]", "-map", "[aout]"];
         break;
     }
   }
