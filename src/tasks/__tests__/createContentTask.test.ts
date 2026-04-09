@@ -43,24 +43,11 @@ vi.mock("../../content/detectFace", () => ({
   detectFace: vi.fn().mockResolvedValue(false),
 }));
 
-vi.mock("../../content/generateContentImage", () => ({
-  generateContentImage: vi.fn().mockResolvedValue("https://fal.ai/image.png"),
-}));
-
-vi.mock("../../content/generateContentVideo", () => ({
-  generateContentVideo: vi.fn().mockResolvedValue("https://fal.ai/video.mp4"),
-}));
-
-vi.mock("../../content/generateAudioVideo", () => ({
-  generateAudioVideo: vi.fn().mockResolvedValue("https://fal.ai/lipsync-video.mp4"),
-}));
-
-vi.mock("../../content/upscaleImage", () => ({
-  upscaleImage: vi.fn().mockImplementation((url: string) => Promise.resolve(`${url}?upscaled`)),
-}));
-
-vi.mock("../../content/upscaleVideo", () => ({
-  upscaleVideo: vi.fn().mockImplementation((url: string) => Promise.resolve(`${url}?upscaled`)),
+vi.mock("../../recoup/contentApi", () => ({
+  generateImage: vi.fn().mockResolvedValue("https://fal.ai/image.png"),
+  generateVideo: vi.fn().mockResolvedValue("https://fal.ai/video.mp4"),
+  upscaleMedia: vi.fn().mockImplementation((url: string) => Promise.resolve(`${url}?upscaled`)),
+  generateCaption: vi.fn().mockResolvedValue("this is the vibe 🎵"),
 }));
 
 vi.mock("../../content/selectAudioClip", () => ({
@@ -77,9 +64,6 @@ vi.mock("../../content/selectAudioClip", () => ({
   }),
 }));
 
-vi.mock("../../content/generateCaption", () => ({
-  generateCaption: vi.fn().mockResolvedValue("this is the vibe 🎵"),
-}));
 
 vi.mock("../../content/fetchArtistContext", () => ({
   fetchArtistContext: vi.fn().mockResolvedValue("Artist identity info"),
@@ -170,9 +154,12 @@ describe("createContentTask", () => {
       images: ["https://example.com/cover1.png", "https://example.com/cover2.png"],
     });
 
-    const { generateContentImage } = await import("../../content/generateContentImage");
-    const callArgs = vi.mocked(generateContentImage).mock.calls[0][0];
-    expect(callArgs.additionalImageUrls).toBeUndefined();
+    const { generateImage } = await import("../../recoup/contentApi");
+    const callArgs = vi.mocked(generateImage).mock.calls[0][0] as Record<string, unknown>;
+    // When usesImageOverlay=true, additional images should NOT be passed to generateImage
+    // (they're used later in renderFinalVideo as overlays instead)
+    expect(callArgs.images).not.toContain("https://example.com/cover1.png");
+    expect(callArgs.images).not.toContain("https://example.com/cover2.png");
   });
 
   it("throws when FAL_KEY is missing", async () => {
