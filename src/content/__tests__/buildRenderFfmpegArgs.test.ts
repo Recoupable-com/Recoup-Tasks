@@ -190,6 +190,25 @@ describe("buildRenderFfmpegArgs", () => {
     expect(lastInputIndex).toBeLessThan(vfIndex);
   });
 
+  it("skips video filters when input is audio-only", () => {
+    const args = buildRenderFfmpegArgs("in.mp3", "out.mp4", [
+      { type: "crop", aspect: "9:16" },
+      { type: "mux_audio", replace: true },
+    ], "https://example.com/song.mp3", { audioOnly: true });
+    // Should not have -vf or -map 0:v:0 since input has no video stream
+    expect(args).not.toContain("-vf");
+    expect(args.join(" ")).not.toContain("0:v:0");
+  });
+
+  it("skips -map v when input is audio-only with mux_audio replace", () => {
+    const args = buildRenderFfmpegArgs("in.mp3", "out.mp4", [
+      { type: "mux_audio", replace: true },
+    ], "https://example.com/song.mp3", { audioOnly: true });
+    // Should just map the new audio, no video mapping
+    expect(args).toContain("-map");
+    expect(args.join(" ")).not.toContain("0:v:0");
+  });
+
   it("always includes output encoding flags", () => {
     const args = buildRenderFfmpegArgs("in.mp4", "out.mp4", [
       { type: "trim", start: 0, duration: 5 },

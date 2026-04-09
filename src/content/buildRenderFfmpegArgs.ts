@@ -25,11 +25,13 @@ export function buildRenderFfmpegArgs(
   outputPath: string,
   operations: Operations,
   fallbackAudioUrl?: string,
+  options?: { audioOnly?: boolean },
 ): string[] {
   const args = ["-y", "-i", inputPath];
   const videoFilters: string[] = [];
   const extraInputs: string[] = [];
   let audioMapping: string[] = [];
+  const audioOnly = options?.audioOnly ?? false;
 
   for (const op of operations) {
     switch (op.type) {
@@ -38,6 +40,7 @@ export function buildRenderFfmpegArgs(
         break;
 
       case "crop":
+        if (audioOnly) break;
         if (op.aspect) {
           const [w, h] = op.aspect.split(":").map(Number);
           if (w && h) {
@@ -49,11 +52,12 @@ export function buildRenderFfmpegArgs(
         break;
 
       case "resize":
+        if (audioOnly) break;
         videoFilters.push(`scale=${op.width ?? -1}:${op.height ?? -1}`);
         break;
 
       case "overlay_text": {
-        if (!op.content) break;
+        if (audioOnly || !op.content) break;
         const cleanText = stripEmoji(op.content);
         const escaped = escapeDrawtext(cleanText);
         const safeColor = op.color.replace(/:/g, "\\\\:");
@@ -82,9 +86,15 @@ export function buildRenderFfmpegArgs(
         const audioUrl = op.audio_url ?? fallbackAudioUrl;
         if (!audioUrl) break;
         extraInputs.push("-i", audioUrl);
-        audioMapping = op.replace
-          ? ["-map", "0:v:0", "-map", "1:a:0"]
-          : ["-map", "0:v:0", "-filter_complex", "[0:a][1:a]amix=inputs=2[aout]", "-map", "[aout]"];
+        if (audioOnly) {
+          audioMapping = op.replace
+            ? ["-map", "1:a:0"]
+            : ["-filter_complex", "[0:a][1:a]amix=inputs=2[aout]", "-map", "[aout]"];
+        } else {
+          audioMapping = op.replace
+            ? ["-map", "0:v:0", "-map", "1:a:0"]
+            : ["-map", "0:v:0", "-filter_complex", "[0:a][1:a]amix=inputs=2[aout]", "-map", "[aout]"];
+        }
         break;
       }
     }
@@ -101,12 +111,19 @@ export function buildRenderFfmpegArgs(
     args.push(...audioMapping);
   }
 
+  if (audioOnly) {
+    args.push("-c:a", "aac");
+  } else {
+    args.push(
+      "-c:v", "libx264",
+      "-c:a", "aac",
+      "-pix_fmt", "yuv420p",
+      "-movflags", "+faststart",
+      "-shortest",
+    );
+  }
+
   args.push(
-    "-c:v", "libx264",
-    "-c:a", "aac",
-    "-pix_fmt", "yuv420p",
-    "-movflags", "+faststart",
-    "-shortest",
     outputPath,
   );
 

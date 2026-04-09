@@ -40,13 +40,14 @@ export const createRenderTask = schemaTask({
     const outputPath = join(tempDir, `output.${payload.output_format}`);
 
     try {
+      const audioOnly = !payload.video_url && !!payload.audio_url;
       const inputUrl = payload.video_url ?? payload.audio_url;
       if (!inputUrl) throw new Error("No input media URL provided");
 
       logStep("Downloading input media");
       await downloadMediaToFile(inputUrl, inputPath);
 
-      const ffmpegArgs = buildRenderFfmpegArgs(inputPath, outputPath, payload.operations, payload.audio_url);
+      const ffmpegArgs = buildRenderFfmpegArgs(inputPath, outputPath, payload.operations, payload.audio_url, { audioOnly });
 
       logStep("Running ffmpeg", true, { args: ffmpegArgs.join(" ") });
       await runFfmpeg(ffmpegArgs);
