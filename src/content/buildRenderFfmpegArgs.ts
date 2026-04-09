@@ -1,6 +1,6 @@
 import { escapeDrawtext } from "./escapeDrawtext";
 import { stripEmoji } from "./stripEmoji";
-import type { CreateRenderPayload } from "../schemas/createRenderSchema";
+import type { CreateRenderPayload } from "../schemas/ffmpegEditSchema";
 
 type Operations = CreateRenderPayload["operations"];
 

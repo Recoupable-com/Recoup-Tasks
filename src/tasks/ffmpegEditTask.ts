@@ -3,7 +3,7 @@ import { unlink, mkdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { schemaTask, tags } from "@trigger.dev/sdk/v3";
-import { createRenderPayloadSchema } from "../schemas/createRenderSchema";
+import { createRenderPayloadSchema } from "../schemas/ffmpegEditSchema";
 import { logStep } from "../sandboxes/logStep";
 import { downloadMediaToFile } from "../content/downloadMediaToFile";
 import { runFfmpeg } from "../content/runFfmpeg";
@@ -17,8 +17,8 @@ import { buildRenderFfmpegArgs } from "../content/buildRenderFfmpegArgs";
  * runs operations (trim, crop, resize, overlay_text, mux_audio) in
  * order using ffmpeg. Uploads the result to fal.ai storage.
  */
-export const createRenderTask = schemaTask({
-  id: "create-render",
+export const ffmpegEditTask = schemaTask({
+  id: "ffmpeg-edit",
   schema: createRenderPayloadSchema,
   maxDuration: 600,
   machine: "medium-1x",
@@ -27,7 +27,7 @@ export const createRenderTask = schemaTask({
   },
   run: async (payload) => {
     await tags.add(`account:${payload.accountId}`);
-    logStep("create-render task started", true, {
+    logStep("ffmpeg-edit task started", true, {
       accountId: payload.accountId,
       operationCount: payload.operations.length,
       outputFormat: payload.output_format,

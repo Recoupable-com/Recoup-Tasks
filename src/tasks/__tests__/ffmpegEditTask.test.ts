@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createRenderPayloadSchema } from "../../schemas/createRenderSchema";
+import { createRenderPayloadSchema } from "../../schemas/ffmpegEditSchema";
 
 // Mock fal.ai server config
 vi.mock("../../content/falServer", () => ({
@@ -154,25 +154,25 @@ describe("createRenderPayloadSchema", () => {
   });
 });
 
-describe("createRenderTask", () => {
+describe("ffmpegEditTask", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.FAL_KEY = "test-key";
   });
 
-  it("exports a task with id create-render", async () => {
-    const { createRenderTask } = await import("../createRenderTask");
-    expect(createRenderTask.id).toBe("create-render");
+  it("exports a task with id ffmpeg-edit", async () => {
+    const { ffmpegEditTask } = await import("../ffmpegEditTask");
+    expect(ffmpegEditTask.id).toBe("ffmpeg-edit");
   });
 
   it("uses the createRenderPayloadSchema", async () => {
-    const { createRenderTask } = await import("../createRenderTask");
-    expect(createRenderTask.schema).toBe(createRenderPayloadSchema);
+    const { ffmpegEditTask } = await import("../ffmpegEditTask");
+    expect(ffmpegEditTask.schema).toBe(createRenderPayloadSchema);
   });
 
   it("has medium-1x machine and 10 min max duration", async () => {
-    const { createRenderTask } = await import("../createRenderTask");
-    expect(createRenderTask.machine).toBe("medium-1x");
-    expect(createRenderTask.maxDuration).toBe(600);
+    const { ffmpegEditTask } = await import("../ffmpegEditTask");
+    expect(ffmpegEditTask.machine).toBe("medium-1x");
+    expect(ffmpegEditTask.maxDuration).toBe(600);
   });
 });
