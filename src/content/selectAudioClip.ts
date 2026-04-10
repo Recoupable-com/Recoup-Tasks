@@ -38,7 +38,7 @@ export interface SelectedAudioClip {
  *   1. List mp3 files from GitHub repo
  *   2. Pick a random song
  *   3. Download the mp3
- *   4. Transcribe with fal.ai Whisper
+ *   4. Upload to fal storage, transcribe via POST /api/content/transcribe
  *   5. Analyze clips with Recoup Chat API
  *   6. Pick the best clip
  *
