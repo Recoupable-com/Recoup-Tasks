@@ -49,6 +49,28 @@ describe("escapeDrawtext", () => {
     expect(result).toBe("youre my addiction");
   });
 
+  it("removes double quotes", () => {
+    const result = escapeDrawtext('"hello world"');
+    expect(result).not.toContain('"');
+    expect(result).toBe("hello world");
+  });
+
+  it("removes emoji", () => {
+    const result = escapeDrawtext("fire 🔥🎶 music");
+    expect(result).not.toContain("🔥");
+    expect(result).not.toContain("🎶");
+  });
+
+  it("handles the exact failing caption from production", () => {
+    const result = escapeDrawtext('Desire ignites: "Yo quiero un chin, tu eres mía." 🎶🔥 #Intensity #LaEquis');
+    expect(result).not.toContain('"');
+    expect(result).not.toContain("'");
+    expect(result).not.toContain("🎶");
+    expect(result).not.toContain("🔥");
+    expect(result).toContain("Desire ignites");
+    expect(result).toContain("Yo quiero");
+  });
+
   it("handles a real caption with apostrophes and special chars", () => {
     const result = escapeDrawtext("didn't think anyone would hear this: it's real");
     expect(result).not.toMatch(/['\u2018\u2019\u2032]/);
