@@ -143,6 +143,8 @@ export const createContentTask = schemaTask({
       `Song: "${audioClip.songTitle}"`,
       audioClip.clipLyrics ? `Lyrics: "${audioClip.clipLyrics}"` : null,
       audioClip.clipMood ? `Mood: ${audioClip.clipMood}` : null,
+      artistContext ? `Artist: ${artistContext}` : null,
+      audienceContext ? `Audience: ${audienceContext}` : null,
     ].filter(Boolean).join(". ");
 
     const captionText = await generateCaption({

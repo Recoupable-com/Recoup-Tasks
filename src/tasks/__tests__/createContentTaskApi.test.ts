@@ -129,15 +129,14 @@ describe("createContentTask (API integration)", () => {
     );
   });
 
-  it("calls generateCaption API instead of internal function", async () => {
+  it("calls generateCaption API with artist and audience context in topic", async () => {
     await mockRun(VALID_PAYLOAD);
     expect(mockGenerateCaption).toHaveBeenCalledTimes(1);
-    expect(mockGenerateCaption).toHaveBeenCalledWith(
-      expect.objectContaining({
-        topic: expect.any(String),
-        template: "artist-caption-bedroom",
-      }),
-    );
+    const callArgs = mockGenerateCaption.mock.calls[0][0] as Record<string, unknown>;
+    const topic = callArgs.topic as string;
+    expect(topic).toContain("Artist identity info");
+    expect(topic).toContain("Audience info");
+    expect(topic).toContain("Test Song");
   });
 
   it("calls upscaleMedia API for image when upscale=true", async () => {

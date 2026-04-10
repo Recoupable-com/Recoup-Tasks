@@ -27,7 +27,13 @@ export async function callRecoupApi(
     body: JSON.stringify(body),
   });
 
-  const data = await response.json();
+  let data: Record<string, unknown>;
+  try {
+    data = await response.json();
+  } catch {
+    const text = await response.text().catch(() => "No response body");
+    throw new Error(`API call failed: ${response.status} — ${text}`);
+  }
 
   logStep(`${method} ${path}`, true, {
     status: response.status,
@@ -35,7 +41,7 @@ export async function callRecoupApi(
   });
 
   if (!response.ok) {
-    throw new Error(`API call failed: ${response.status} — ${data.error || "Unknown error"}`);
+    throw new Error(`API call failed: ${response.status} — ${(data.error as string) || "Unknown error"}`);
   }
   return data;
 }

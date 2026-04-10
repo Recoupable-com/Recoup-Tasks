@@ -67,6 +67,19 @@ describe("callRecoupApi", () => {
     );
   });
 
+  it("handles non-JSON error responses (e.g. 502)", async () => {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 502,
+      json: async () => { throw new Error("not json"); },
+      text: async () => "Bad Gateway",
+    });
+
+    const { callRecoupApi } = await import("../callRecoupApi");
+    await expect(callRecoupApi("/api/content/image", { prompt: "" }))
+      .rejects.toThrow("502");
+  });
+
   it("supports PATCH method", async () => {
     mockFetch.mockResolvedValue({
       ok: true,
