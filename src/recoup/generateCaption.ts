@@ -1,11 +1,15 @@
 import { callRecoupApi } from "./callRecoupApi";
 
-const API_TEMPLATE_IDS = [
-  "artist-caption-bedroom",
-  "artist-caption-outside",
-  "artist-caption-stage",
-  "album-record-store",
-];
+/**
+ * Fetch the list of valid template IDs from the API.
+ *
+ * @returns Array of template ID strings.
+ */
+async function fetchTemplateIds(): Promise<string[]> {
+  const data = await callRecoupApi("/api/content/templates", {}, "GET");
+  const templates = data.templates as Array<{ id: string }>;
+  return templates.map(t => t.id);
+}
 
 /**
  * Generate a caption via POST /api/content/caption.
@@ -19,7 +23,12 @@ export async function generateCaption(params: {
   length?: string;
 }): Promise<string> {
   const body: Record<string, unknown> = { topic: params.topic };
-  if (params.template && API_TEMPLATE_IDS.includes(params.template)) body.template = params.template;
+
+  if (params.template) {
+    const validIds = await fetchTemplateIds();
+    if (validIds.includes(params.template)) body.template = params.template;
+  }
+
   if (params.length) body.length = params.length;
 
   const data = await callRecoupApi("/api/content/caption", body);

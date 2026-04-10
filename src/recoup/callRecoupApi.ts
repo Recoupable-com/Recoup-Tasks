@@ -12,7 +12,7 @@ import { logStep } from "../sandboxes/logStep";
 export async function callRecoupApi(
   path: string,
   body: Record<string, unknown>,
-  method: "POST" | "PATCH" = "POST",
+  method: "GET" | "POST" | "PATCH" = "POST",
 ): Promise<Record<string, unknown>> {
   const baseUrl = process.env.RECOUP_API_BASE_URL || "https://recoup-api.vercel.app";
   const apiKey = process.env.RECOUP_API_KEY;
@@ -24,7 +24,7 @@ export async function callRecoupApi(
       "x-api-key": apiKey,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(body),
+    ...(method !== "GET" ? { body: JSON.stringify(body) } : {}),
   });
 
   let data: Record<string, unknown>;

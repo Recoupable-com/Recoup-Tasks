@@ -112,7 +112,9 @@ describe("generateCaption", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("calls POST /api/content/caption with topic and template", async () => {
-    mockCallRecoupApi.mockResolvedValue({ content: "midnight thoughts hit different" });
+    mockCallRecoupApi
+      .mockResolvedValueOnce({ templates: [{ id: "artist-caption-bedroom" }] })
+      .mockResolvedValueOnce({ content: "midnight thoughts hit different" });
 
     const { generateCaption } = await import("../contentApi");
     const text = await generateCaption({
@@ -129,17 +131,39 @@ describe("generateCaption", () => {
     expect(text).toBe("midnight thoughts hit different");
   });
 
-  it("omits template if not in API's known list", async () => {
-    mockCallRecoupApi.mockResolvedValue({ content: "editorial caption" });
+  it("omits template if not in API's template list", async () => {
+    // First call: GET /api/content/templates returns the known list
+    mockCallRecoupApi
+      .mockResolvedValueOnce({ templates: [{ id: "artist-caption-bedroom" }, { id: "album-record-store" }] })
+      // Second call: POST /api/content/caption
+      .mockResolvedValueOnce({ content: "editorial caption" });
 
-    const { generateCaption } = await import("../contentApi");
+    const { generateCaption } = await import("../generateCaption");
     await generateCaption({
       topic: "album release",
       template: "artist-release-editorial",
       length: "short",
     });
 
-    const callArgs = mockCallRecoupApi.mock.calls[0][1] as Record<string, unknown>;
-    expect(callArgs).not.toHaveProperty("template");
+    // Should have called templates API first, then caption without template
+    expect(mockCallRecoupApi).toHaveBeenCalledTimes(2);
+    const captionArgs = mockCallRecoupApi.mock.calls[1][1] as Record<string, unknown>;
+    expect(captionArgs).not.toHaveProperty("template");
+  });
+
+  it("passes template when it exists in API's template list", async () => {
+    mockCallRecoupApi
+      .mockResolvedValueOnce({ templates: [{ id: "artist-caption-bedroom" }] })
+      .mockResolvedValueOnce({ content: "bedroom vibes" });
+
+    const { generateCaption } = await import("../generateCaption");
+    await generateCaption({
+      topic: "heartbreak",
+      template: "artist-caption-bedroom",
+      length: "short",
+    });
+
+    const captionArgs = mockCallRecoupApi.mock.calls[1][1] as Record<string, unknown>;
+    expect(captionArgs.template).toBe("artist-caption-bedroom");
   });
 });
