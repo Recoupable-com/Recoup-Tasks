@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { rankClips } from "../rankClips";
 import type { SongClip } from "../analyzeClips";
-import type { SongLyrics } from "../transcribeSong";
+import type { SongLyrics } from "../songLyricsTypes";
 
 describe("rankClips", () => {
   const makeLyrics = (segments: Array<{ start: number; end: number; text: string }>): SongLyrics => ({

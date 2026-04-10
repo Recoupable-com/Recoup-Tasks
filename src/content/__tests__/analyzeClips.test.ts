@@ -17,7 +17,7 @@ vi.mock("../../agents/createClipAnalysisAgent", () => ({
 }));
 
 import { analyzeClips } from "../analyzeClips";
-import type { SongLyrics } from "../transcribeSong";
+import type { SongLyrics } from "../songLyricsTypes";
 
 describe("analyzeClips", () => {
   const lyrics: SongLyrics = {

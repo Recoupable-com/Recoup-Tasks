@@ -1,5 +1,5 @@
 import type { SongClip } from "./analyzeClips";
-import type { SongLyrics } from "./transcribeSong";
+import type { SongLyrics } from "./songLyricsTypes";
 
 /**
  * Ranks clips by word density and relatability.

@@ -2,9 +2,10 @@ import { logger } from "@trigger.dev/sdk/v3";
 import { listArtistSongs, parseSongPath } from "./listArtistSongs";
 import { filterSongPaths } from "./filterSongPaths";
 import { fetchGithubFile } from "./fetchGithubFile";
-import { transcribeSong } from "./transcribeSong";
+import { fal } from "@fal-ai/client";
 import { analyzeClips } from "./analyzeClips";
-import type { SongLyrics } from "./transcribeSong";
+import { transcribeAudio } from "../recoup/transcribeAudio";
+import type { SongLyrics } from "./songLyricsTypes";
 import type { CreateContentPayload } from "../schemas/contentCreationSchema";
 import { DEFAULT_PIPELINE_CONFIG } from "./defaultPipelineConfig";
 import { rankClips } from "./rankClips";
@@ -74,8 +75,15 @@ export async function selectAudioClip(
     throw new Error(`Failed to download song: ${songPath}`);
   }
 
-  // Step 4: Transcribe
-  const lyrics = await transcribeSong(songBuffer, songFilename);
+  // Step 4: Upload to get a URL, then transcribe via API
+  const audioFile = new File([songBuffer], songFilename, { type: "audio/mpeg" });
+  const audioUrl = await fal.storage.upload(audioFile);
+  const transcription = await transcribeAudio(audioUrl);
+  const lyrics: SongLyrics = {
+    title: songTitle,
+    fullLyrics: transcription.fullLyrics,
+    segments: transcription.segments,
+  };
 
   // Step 5: Analyze clips
   const clips = await analyzeClips(songTitle, lyrics);
