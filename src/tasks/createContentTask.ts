@@ -3,14 +3,8 @@ import { schemaTask, tags } from "@trigger.dev/sdk/v3";
 import { createContentPayloadSchema } from "../schemas/contentCreationSchema";
 import { logStep } from "../sandboxes/logStep";
 import { fetchGithubFile } from "../content/fetchGithubFile";
-import { generateContentImage } from "../content/generateContentImage";
-import { generateContentVideo } from "../content/generateContentVideo";
-import { generateAudioVideo } from "../content/generateAudioVideo";
-import { upscaleImage } from "../content/upscaleImage";
-import { upscaleVideo } from "../content/upscaleVideo";
 import { resolveFaceGuide } from "../content/resolveFaceGuide";
 import { resolveAudioClip } from "../content/resolveAudioClip";
-import { generateCaption } from "../content/generateCaption";
 import { fetchArtistContext } from "../content/fetchArtistContext";
 import { fetchAudienceContext } from "../content/fetchAudienceContext";
 import { renderFinalVideo } from "../content/renderFinalVideo";
@@ -21,6 +15,12 @@ import {
   buildMotionPrompt,
 } from "../content/loadTemplate";
 import { resolveImageInstruction } from "../content/resolveImageInstruction";
+import {
+  generateImage,
+  upscaleMedia,
+  generateVideo,
+  generateCaption,
+} from "../recoup/contentApi";
 
 /**
  * Content-creation task — full pipeline that generates a social-ready video.
@@ -30,13 +30,12 @@ import { resolveImageInstruction } from "../content/resolveImageInstruction";
  *   2. Fetch face-guide from artist's GitHub repo
  *   3. Select audio clip (fetch songs, transcribe, analyze, pick best clip)
  *   4. Fetch artist + audience context for caption generation
- *   5. Generate image (fal.ai — face-guide + template prompt + style guide)
- *   6. Upscale image (fal.ai — 2x detail enhancement)
- *   7. Generate video (fal.ai — animate image, or audio-to-video for lipsync)
- *   8. Upscale video (fal.ai — 720p → 1080p)
- *   9. Generate caption (Recoup Chat API — TikTok-style text)
+ *   5. Generate image (via POST /api/content/image)
+ *   6. Upscale image (via POST /api/content/upscale)
+ *   7. Generate video (via POST /api/content/video)
+ *   8. Upscale video (via POST /api/content/upscale)
+ *   9. Generate caption (via POST /api/content/caption)
  *   10. Final render (ffmpeg — crop 16:9→9:16, overlay audio + caption)
- *   11. Return final video for API to persist
  *
  * No Supabase access — API handles all storage.
  */
@@ -89,65 +88,69 @@ export const createContentTask = schemaTask({
       payload.githubRepo, payload.artistSlug, fetchGithubFile,
     );
 
-    // --- Step 5: Generate image ---
-    logStep("Generating image");
+    // --- Step 5: Generate image (API) ---
+    logStep("Generating image via API");
     const referenceImagePath = pickRandomReferenceImage(template);
-    // Build prompt: custom/face-swap/no-face instruction + template scene + style guide
     const instruction = resolveImageInstruction(template);
     const basePrompt = `${instruction} ${template.imagePrompt}`;
     const fullPrompt = buildImagePrompt(basePrompt, template.styleGuide);
-    let imageUrl = await generateContentImage({
-      faceGuideUrl: faceGuideUrl ?? undefined,
-      referenceImagePath,
+
+    const imageRefs: string[] = [];
+    if (faceGuideUrl) imageRefs.push(faceGuideUrl);
+    if (referenceImagePath) imageRefs.push(referenceImagePath);
+    if (!template.usesImageOverlay && additionalImageUrls.length) {
+      imageRefs.push(...additionalImageUrls);
+    }
+
+    let imageUrl = await generateImage({
       prompt: fullPrompt,
-      additionalImageUrls: template.usesImageOverlay ? undefined : additionalImageUrls,
+      referenceImageUrl: faceGuideUrl ?? undefined,
+      images: imageRefs.length > 0 ? imageRefs : undefined,
     });
 
-    // --- Step 6: Upscale image (optional) ---
+    // --- Step 6: Upscale image (API, optional) ---
     if (payload.upscale) {
-      logStep("Upscaling image");
-      imageUrl = await upscaleImage(imageUrl);
+      logStep("Upscaling image via API");
+      imageUrl = await upscaleMedia(imageUrl, "image");
     }
 
-    // --- Step 7: Generate video ---
-    let videoUrl: string;
+    // --- Step 7: Generate video (API) ---
     const motionPrompt = buildMotionPrompt(template);
+    let audioUrl: string | undefined;
 
     if (payload.lipsync) {
-      // Lipsync path: audio baked into video
-      logStep("Generating audio-to-video (lipsync)");
-      videoUrl = await generateAudioVideo({
-        imageUrl,
-        songBuffer: audioClip.songBuffer,
-        audioStartSeconds: audioClip.startSeconds,
-        audioDurationSeconds: audioClip.durationSeconds,
-        motionPrompt,
-      });
-    } else {
-      // Normal path: image-to-video, audio added in post
-      logStep("Generating video");
-      videoUrl = await generateContentVideo({
-        imageUrl,
-        motionPrompt,
-      });
+      logStep("Uploading audio for lipsync");
+      const audioFile = new File([audioClip.songBuffer], "song.mp3", { type: "audio/mpeg" });
+      audioUrl = await fal.storage.upload(audioFile);
     }
 
-    // --- Step 8: Upscale video (optional) ---
+    logStep("Generating video via API");
+    let videoUrl = await generateVideo({
+      imageUrl,
+      prompt: motionPrompt,
+      audioUrl,
+    });
+
+    // --- Step 8: Upscale video (API, optional) ---
     if (payload.upscale) {
-      logStep("Upscaling video");
-      videoUrl = await upscaleVideo(videoUrl);
+      logStep("Upscaling video via API");
+      videoUrl = await upscaleMedia(videoUrl, "video");
     }
 
-    // --- Step 9: Generate caption ---
-    logStep("Generating caption");
+    // --- Step 9: Generate caption (API) ---
+    logStep("Generating caption via API");
+    const captionTopic = [
+      `Song: "${audioClip.songTitle}"`,
+      audioClip.clipLyrics ? `Lyrics: "${audioClip.clipLyrics}"` : null,
+      audioClip.clipMood ? `Mood: ${audioClip.clipMood}` : null,
+      artistContext ? `Artist: ${artistContext}` : null,
+      audienceContext ? `Audience: ${audienceContext}` : null,
+    ].filter(Boolean).join(". ");
+
     const captionText = await generateCaption({
-      template,
-      songTitle: audioClip.songTitle,
-      fullLyrics: audioClip.lyrics.fullLyrics,
-      clipLyrics: audioClip.clipLyrics,
-      artistContext,
-      audienceContext,
-      captionLength: payload.captionLength,
+      topic: captionTopic,
+      template: payload.template,
+      length: payload.captionLength,
     });
 
     // --- Step 10: Final render (ffmpeg) ---

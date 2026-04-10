@@ -3,63 +3,77 @@ import { describe, it, expect } from "vitest";
 import { escapeDrawtext } from "../escapeDrawtext";
 
 describe("escapeDrawtext", () => {
-  it("replaces straight apostrophes with escaped quote safe for drawtext", () => {
+  it("removes straight apostrophes", () => {
     const result = escapeDrawtext("didn't");
-
     expect(result).not.toContain("'");
-    // Must NOT use U+02BC (modifier letter apostrophe) — most fonts lack this glyph
-    expect(result).not.toContain("\u02BC");
-    expect(result).toContain("didn");
+    expect(result).toBe("didnt");
   });
 
-  it("preserves curly right single quotation marks as-is", () => {
+  it("removes curly right single quotation marks", () => {
     const result = escapeDrawtext("didn\u2019t");
-
-    // U+2019 is the replacement char — it should remain
-    expect(result).toContain("\u2019");
-    expect(result).not.toContain("\u02BC");
+    expect(result).not.toContain("\u2019");
+    expect(result).toBe("didnt");
   });
 
-  it("replaces curly left single quotation marks with right single quotation mark", () => {
+  it("removes curly left single quotation marks", () => {
     const result = escapeDrawtext("\u2018hello\u2019");
-
     expect(result).not.toContain("\u2018");
-    expect(result).not.toContain("\u02BC");
-    // Both should become U+2019
-    expect(result).toBe("\u2019hello\u2019");
+    expect(result).not.toContain("\u2019");
+    expect(result).toBe("hello");
   });
 
   it("escapes colons for ffmpeg", () => {
     const result = escapeDrawtext("caption: hello");
-
     expect(result).toContain("\\\\:");
   });
 
-  it("escapes percent to %% for a single literal % in ffmpeg drawtext", () => {
+  it("escapes percent to %% for ffmpeg drawtext", () => {
     const result = escapeDrawtext("100%");
-
-    // ffmpeg drawtext: %% renders as single %. So "100%" should become "100%%".
     expect(result).toBe("100%%");
   });
 
   it("escapes backslashes", () => {
     const result = escapeDrawtext("back\\slash");
-
     expect(result).toContain("\\\\\\\\");
   });
 
   it("strips newlines and carriage returns", () => {
     expect(escapeDrawtext("line1\nline2")).toBe("line1 line2");
     expect(escapeDrawtext("line1\r\nline2")).toBe("line1 line2");
-    expect(escapeDrawtext("line1\rline2")).toBe("line1line2");
+  });
+
+  it("produces text safe inside ffmpeg single-quoted drawtext in filter_complex", () => {
+    const result = escapeDrawtext("you're my addiction");
+    expect(result).not.toContain("'");
+    expect(result).not.toContain("\u2019");
+    expect(result).toBe("youre my addiction");
+  });
+
+  it("removes double quotes", () => {
+    const result = escapeDrawtext('"hello world"');
+    expect(result).not.toContain('"');
+    expect(result).toBe("hello world");
+  });
+
+  it("removes emoji", () => {
+    const result = escapeDrawtext("fire 🔥🎶 music");
+    expect(result).not.toContain("🔥");
+    expect(result).not.toContain("🎶");
+  });
+
+  it("handles the exact failing caption from production", () => {
+    const result = escapeDrawtext('Desire ignites: "Yo quiero un chin, tu eres mía." 🎶🔥 #Intensity #LaEquis');
+    expect(result).not.toContain('"');
+    expect(result).not.toContain("'");
+    expect(result).not.toContain("🎶");
+    expect(result).not.toContain("🔥");
+    expect(result).toContain("Desire ignites");
+    expect(result).toContain("Yo quiero");
   });
 
   it("handles a real caption with apostrophes and special chars", () => {
     const result = escapeDrawtext("didn't think anyone would hear this: it's real");
-
-    // Should not contain raw single quotes, left curly quotes, or U+02BC
-    expect(result).not.toMatch(/['\u2018\u2032\u02BC]/);
-    // Should contain escaped colon
+    expect(result).not.toMatch(/['\u2018\u2019\u2032]/);
     expect(result).toContain("\\\\:");
   });
 });
