@@ -1,6 +1,6 @@
 import { logStep } from "../sandboxes/logStep";
 import { createClipAnalysisAgent } from "../agents/createClipAnalysisAgent";
-import type { SongLyrics } from "./transcribeSong";
+import type { SongLyrics } from "./songLyricsTypes";
 
 export interface SongClip {
   startSeconds: number;

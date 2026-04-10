@@ -5,8 +5,8 @@ vi.mock("../../sandboxes/logStep", () => ({
   logStep: vi.fn(),
 }));
 
-vi.mock("../transcribeSong", () => ({
-  transcribeSong: vi.fn(),
+vi.mock("../../recoup/transcribeAudio", () => ({
+  transcribeAudio: vi.fn(),
 }));
 
 vi.mock("../analyzeClips", () => ({
@@ -17,7 +17,7 @@ vi.mock("../defaultPipelineConfig", () => ({
   DEFAULT_PIPELINE_CONFIG: { clipDuration: 15 },
 }));
 
-const { transcribeSong } = await import("../transcribeSong");
+const { transcribeAudio } = await import("../../recoup/transcribeAudio");
 const { analyzeClips } = await import("../analyzeClips");
 
 describe("selectAttachedAudioClip", () => {
@@ -37,10 +37,11 @@ describe("selectAttachedAudioClip", () => {
   });
 
   it("downloads audio from the provided URL", async () => {
-    vi.mocked(transcribeSong).mockResolvedValue({
-      title: "my-song",
+    vi.mocked(transcribeAudio).mockResolvedValue({
+      audioUrl: "https://blob.vercel-storage.com/song.mp3",
       fullLyrics: "hello world",
       segments: [{ start: 0, end: 5, text: "hello world" }],
+      segmentCount: 1,
     });
     vi.mocked(analyzeClips).mockResolvedValue([
       { startSeconds: 0, lyrics: "hello", reason: "good", mood: "happy", hasLyrics: true },
@@ -69,11 +70,11 @@ describe("selectAttachedAudioClip", () => {
   });
 
   it("derives filename from URL path", async () => {
-    vi.mocked(transcribeSong).mockResolvedValue({
-      title: "my-track",
+    vi.mocked(transcribeAudio).mockResolvedValue({
+      audioUrl: "https://blob.vercel-storage.com/content-attachments/audio/my-track.mp3",
       fullLyrics: "",
       segments: [],
-    });
+      segmentCount: 0,    });
     vi.mocked(analyzeClips).mockResolvedValue([]);
 
     const result = await selectAttachedAudioClip({
@@ -86,11 +87,11 @@ describe("selectAttachedAudioClip", () => {
   });
 
   it("transcribes the downloaded audio", async () => {
-    vi.mocked(transcribeSong).mockResolvedValue({
-      title: "song",
+    vi.mocked(transcribeAudio).mockResolvedValue({
+      audioUrl: "https://blob.vercel-storage.com/song.mp3",
       fullLyrics: "lyrics here",
       segments: [{ start: 0, end: 10, text: "lyrics here" }],
-    });
+      segmentCount: 1,    });
     vi.mocked(analyzeClips).mockResolvedValue([
       { startSeconds: 0, lyrics: "lyrics", reason: "best", mood: "chill", hasLyrics: true },
     ]);
@@ -100,16 +101,16 @@ describe("selectAttachedAudioClip", () => {
       lipsync: false,
     });
 
-    expect(transcribeSong).toHaveBeenCalledWith(expect.any(Buffer), "song.mp3");
+    expect(transcribeAudio).toHaveBeenCalledWith("https://blob.vercel-storage.com/song.mp3");
     expect(result.lyrics.fullLyrics).toBe("lyrics here");
   });
 
   it("prefers clips with lyrics when lipsync is true", async () => {
-    vi.mocked(transcribeSong).mockResolvedValue({
-      title: "song",
+    vi.mocked(transcribeAudio).mockResolvedValue({
+      audioUrl: "https://blob.vercel-storage.com/song.mp3",
       fullLyrics: "",
       segments: [],
-    });
+      segmentCount: 0,    });
     vi.mocked(analyzeClips).mockResolvedValue([
       { startSeconds: 0, lyrics: "", reason: "instrumental", mood: "chill", hasLyrics: false },
       { startSeconds: 30, lyrics: "words", reason: "vocal", mood: "happy", hasLyrics: true },
@@ -124,11 +125,11 @@ describe("selectAttachedAudioClip", () => {
   });
 
   it("returns SelectedAudioClip interface shape", async () => {
-    vi.mocked(transcribeSong).mockResolvedValue({
-      title: "song",
+    vi.mocked(transcribeAudio).mockResolvedValue({
+      audioUrl: "https://blob.vercel-storage.com/song.mp3",
       fullLyrics: "full lyrics",
       segments: [{ start: 0, end: 10, text: "clip text" }],
-    });
+      segmentCount: 1,    });
     vi.mocked(analyzeClips).mockResolvedValue([
       { startSeconds: 0, lyrics: "clip", reason: "best clip", mood: "energetic", hasLyrics: true },
     ]);
