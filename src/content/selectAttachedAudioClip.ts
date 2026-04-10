@@ -1,5 +1,5 @@
 import { logStep } from "../sandboxes/logStep";
-import { transcribeSong } from "./transcribeSong";
+import { transcribeAudio } from "../recoup/transcribeAudio";
 import { analyzeClips } from "./analyzeClips";
 import { DEFAULT_PIPELINE_CONFIG } from "./defaultPipelineConfig";
 import type { SelectedAudioClip } from "./selectAudioClip";
@@ -38,8 +38,13 @@ export async function selectAttachedAudioClip({
 
   logStep("Attached audio downloaded", { songTitle, sizeBytes: songBuffer.byteLength });
 
-  // Transcribe
-  const lyrics = await transcribeSong(songBuffer, songFilename);
+  // Transcribe via API (uses the original URL — no re-upload needed)
+  const transcription = await transcribeAudio(audioUrl);
+  const lyrics = {
+    title: songTitle,
+    fullLyrics: transcription.fullLyrics,
+    segments: transcription.segments,
+  };
 
   // Analyze clips
   const clips = await analyzeClips(songTitle, lyrics);
