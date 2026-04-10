@@ -8,8 +8,8 @@ vi.mock("../../recoup/transcribeAudio", () => ({
   transcribeAudio: (...args: unknown[]) => mockTranscribeAudio(...args),
 }));
 
-vi.mock("@fal-ai/client", () => ({
-  fal: {
+vi.mock("../falServer", () => ({
+  default: {
     storage: { upload: vi.fn().mockResolvedValue("https://fal.storage/uploaded-song.mp3") },
   },
 }));

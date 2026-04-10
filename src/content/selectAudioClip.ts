@@ -2,7 +2,7 @@ import { logger } from "@trigger.dev/sdk/v3";
 import { listArtistSongs, parseSongPath } from "./listArtistSongs";
 import { filterSongPaths } from "./filterSongPaths";
 import { fetchGithubFile } from "./fetchGithubFile";
-import { fal } from "@fal-ai/client";
+import fal from "./falServer";
 import { analyzeClips } from "./analyzeClips";
 import { transcribeAudio } from "../recoup/transcribeAudio";
 import type { SongLyrics } from "./songLyricsTypes";
