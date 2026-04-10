@@ -1,10 +1,9 @@
 /**
  * Escapes a text string for use in ffmpeg drawtext filters.
  *
- * Handles both -vf and filter_complex contexts by replacing all
- * quote-like characters with the right single quotation mark (U+2019),
- * which renders as an apostrophe in all standard fonts and is not
- * parsed as a delimiter by ffmpeg.
+ * Handles both -vf and filter_complex contexts by removing all
+ * quote-like characters entirely. This is safe because captions
+ * read naturally without apostrophes (e.g. "youre" instead of "you're").
  *
  * @param text - Raw caption text
  * @returns Escaped text safe for ffmpeg drawtext
@@ -14,7 +13,7 @@ export function escapeDrawtext(text: string): string {
     .replace(/\r/g, "")
     .replace(/\n/g, " ")
     .replace(/\\/g, "\\\\\\\\")
-    .replace(/['\u2018\u2032]/g, "\u2019")
+    .replace(/['\u2018\u2019\u2032]/g, "")
     .replace(/:/g, "\\\\:")
     .replace(/%/g, "%%");
 }
