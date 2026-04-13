@@ -105,6 +105,7 @@ const VALID_PAYLOAD = {
   artistSlug: "gatsby-grace",
   template: "artist-caption-bedroom",
   lipsync: false,
+  captionLength: "short" as const,
   githubRepo: "https://github.com/recoupable/test-repo",
 };
 
@@ -160,6 +161,14 @@ describe("createContentTask", () => {
     // (they're used later in renderFinalVideo as overlays instead)
     expect(callArgs.images).not.toContain("https://example.com/cover1.png");
     expect(callArgs.images).not.toContain("https://example.com/cover2.png");
+  });
+
+  it("skips caption generation when captionLength is none", async () => {
+    const result = await mockRun({ ...VALID_PAYLOAD, captionLength: "none" });
+
+    const { generateCaption } = await import("../../recoup/contentApi");
+    expect(vi.mocked(generateCaption)).not.toHaveBeenCalled();
+    expect(result.captionText).toBe("");
   });
 
   it("throws when FAL_KEY is missing", async () => {

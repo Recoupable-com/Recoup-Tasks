@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const CAPTION_LENGTHS = ["short", "medium", "long"] as const;
+export const CAPTION_LENGTHS = ["none", "short", "medium", "long"] as const;
 export type CaptionLength = (typeof CAPTION_LENGTHS)[number];
 
 export const createContentPayloadSchema = z.object({
@@ -8,8 +8,8 @@ export const createContentPayloadSchema = z.object({
   artistSlug: z.string().min(1, "artistSlug is required"),
   template: z.string().min(1, "template is required"),
   lipsync: z.boolean().default(false),
-  /** Controls caption text length: "short" (1-2 lines), "medium" (3-5 lines), "long" (paragraph). */
-  captionLength: z.enum(CAPTION_LENGTHS).default("short"),
+  /** Controls caption text length: "none" skips captions, "short" (1-2 lines), "medium" (3-5 lines), "long" (paragraph). */
+  captionLength: z.enum(CAPTION_LENGTHS).default("none"),
   /** Whether to upscale the image and video for higher quality. Adds ~2 min to pipeline. */
   upscale: z.boolean().default(false),
   /** GitHub repo URL so the task can fetch artist files (face-guide, songs). */

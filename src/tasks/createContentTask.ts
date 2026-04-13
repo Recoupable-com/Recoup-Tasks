@@ -115,21 +115,26 @@ export const createContentTask = schemaTask({
       videoUrl = await upscaleMedia(videoUrl, "video");
     }
 
-    // --- Step 9: Generate caption (API) ---
-    logStep("Generating caption via API");
-    const captionTopic = [
-      `Song: "${audioClip.songTitle}"`,
-      audioClip.clipLyrics ? `Lyrics: "${audioClip.clipLyrics}"` : null,
-      audioClip.clipMood ? `Mood: ${audioClip.clipMood}` : null,
-      artistContext ? `Artist: ${artistContext}` : null,
-      audienceContext ? `Audience: ${audienceContext}` : null,
-    ].filter(Boolean).join(". ");
+    // --- Step 9: Generate caption (API, skipped when "none") ---
+    let captionText = "";
+    if (payload.captionLength !== "none") {
+      logStep("Generating caption via API");
+      const captionTopic = [
+        `Song: "${audioClip.songTitle}"`,
+        audioClip.clipLyrics ? `Lyrics: "${audioClip.clipLyrics}"` : null,
+        audioClip.clipMood ? `Mood: ${audioClip.clipMood}` : null,
+        artistContext ? `Artist: ${artistContext}` : null,
+        audienceContext ? `Audience: ${audienceContext}` : null,
+      ].filter(Boolean).join(". ");
 
-    const captionText = await generateCaption({
-      topic: captionTopic,
-      template: payload.template,
-      length: payload.captionLength,
-    });
+      captionText = await generateCaption({
+        topic: captionTopic,
+        template: payload.template,
+        length: payload.captionLength,
+      });
+    } else {
+      logStep("Skipping caption generation (captionLength=none)");
+    }
 
     // --- Step 10: Final render (ffmpeg) ---
     logStep("Rendering final video (ffmpeg)");
