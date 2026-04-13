@@ -72,7 +72,7 @@ describe("detectFace", () => {
     await detectFace("https://example.com/broken.png");
 
     expect(logStep).toHaveBeenCalledWith(
-      "Face detection failed, assuming no face",
+      "Face detection failed, assuming false",
       false,
       expect.objectContaining({ error: "Rate limit exceeded" }),
     );

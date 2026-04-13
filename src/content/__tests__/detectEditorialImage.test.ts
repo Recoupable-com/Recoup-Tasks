@@ -71,7 +71,7 @@ describe("detectEditorialImage", () => {
     await detectEditorialImage("https://example.com/broken.png");
 
     expect(logStep).toHaveBeenCalledWith(
-      "Editorial detection failed, assuming not editorial",
+      "Editorial detection failed, assuming false",
       false,
       expect.objectContaining({ error: "Rate limit exceeded" }),
     );
