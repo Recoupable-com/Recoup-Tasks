@@ -35,7 +35,7 @@ export async function classifyImages({
     const uploadedUrl = await fetchImageFromUrl(imageUrl);
 
     if (usesFaceGuide && !faceGuideUrl) {
-      const hasFace = await detectFace(uploadedUrl);
+      const hasFace = await detectFace(imageUrl);
       if (hasFace) {
         faceGuideUrl = uploadedUrl;
         continue;
@@ -43,7 +43,7 @@ export async function classifyImages({
     }
 
     if (usesImageOverlay && !editorialImageUrl) {
-      const isEditorial = await detectEditorialImage(uploadedUrl);
+      const isEditorial = await detectEditorialImage(imageUrl);
       if (isEditorial) {
         editorialImageUrl = uploadedUrl;
         continue;

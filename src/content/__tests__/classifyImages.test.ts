@@ -125,6 +125,28 @@ describe("classifyImages", () => {
     });
   });
 
+  it("passes original input URL (not re-uploaded fal URL) to detection functions", async () => {
+    vi.mocked(fetchImageFromUrl)
+      .mockResolvedValueOnce("https://v3b.fal.media/files/uploaded1.png")
+      .mockResolvedValueOnce("https://v3b.fal.media/files/uploaded2.png");
+    vi.mocked(detectFace).mockResolvedValueOnce(false).mockResolvedValueOnce(false);
+    vi.mocked(detectEditorialImage).mockResolvedValueOnce(false).mockResolvedValueOnce(false);
+
+    await classifyImages({
+      images: [
+        "https://blob.vercel-storage.com/original1.png",
+        "https://blob.vercel-storage.com/original2.png",
+      ],
+      usesFaceGuide: true,
+      usesImageOverlay: true,
+    });
+
+    expect(detectFace).toHaveBeenCalledWith("https://blob.vercel-storage.com/original1.png");
+    expect(detectFace).toHaveBeenCalledWith("https://blob.vercel-storage.com/original2.png");
+    expect(detectEditorialImage).toHaveBeenCalledWith("https://blob.vercel-storage.com/original1.png");
+    expect(detectEditorialImage).toHaveBeenCalledWith("https://blob.vercel-storage.com/original2.png");
+  });
+
   it("handles empty images array", async () => {
     const result = await classifyImages({
       images: [],
