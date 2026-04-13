@@ -81,6 +81,35 @@ describe("createContentPayloadSchema", () => {
     expect(result.success).toBe(false);
   });
 
+  it("accepts captionLength of 'none'", () => {
+    const result = createContentPayloadSchema.safeParse({
+      accountId: "acc_123",
+      artistSlug: "gatsby-grace",
+      template: "artist-caption-bedroom",
+      githubRepo: "https://github.com/recoupable/test-repo",
+      captionLength: "none",
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.captionLength).toBe("none");
+    }
+  });
+
+  it("defaults captionLength to 'none' when omitted", () => {
+    const result = createContentPayloadSchema.safeParse({
+      accountId: "acc_123",
+      artistSlug: "gatsby-grace",
+      template: "artist-caption-bedroom",
+      githubRepo: "https://github.com/recoupable/test-repo",
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.captionLength).toBe("none");
+    }
+  });
+
   it("does not accept attachedAudioUrl (removed)", () => {
     const result = createContentPayloadSchema.safeParse({
       accountId: "acc_123",
