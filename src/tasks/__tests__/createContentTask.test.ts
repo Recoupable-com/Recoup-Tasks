@@ -39,8 +39,8 @@ vi.mock("../../content/downloadImageBuffer", () => ({
   }),
 }));
 
-vi.mock("../../content/detectFace", () => ({
-  detectFace: vi.fn().mockResolvedValue(false),
+vi.mock("../../content/classifyImage", () => ({
+  classifyImage: vi.fn().mockResolvedValue("additional"),
 }));
 
 vi.mock("../../recoup/contentApi", () => ({

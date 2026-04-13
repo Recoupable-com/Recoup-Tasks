@@ -34,8 +34,8 @@ vi.mock("../../content/downloadImageBuffer", () => ({
     contentType: "image/png",
   }),
 }));
-vi.mock("../../content/detectFace", () => ({
-  detectFace: vi.fn().mockResolvedValue(false),
+vi.mock("../../content/classifyImage", () => ({
+  classifyImage: vi.fn().mockResolvedValue("additional"),
 }));
 vi.mock("../../content/selectAudioClip", () => ({
   selectAudioClip: vi.fn().mockResolvedValue({
