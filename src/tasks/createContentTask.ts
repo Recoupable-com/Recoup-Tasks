@@ -68,9 +68,10 @@ export const createContentTask = schemaTask({
     logStep("Loading template");
     const template = await loadTemplate(payload.template);
 
-    // --- Step 2: Resolve face-guide and classify attached images ---
-    const { faceGuideUrl, additionalImageUrls } = await resolveFaceGuide({
+    // --- Step 2: Resolve face-guide, editorial image, and classify attached images ---
+    const { faceGuideUrl, editorialImageUrl, additionalImageUrls } = await resolveFaceGuide({
       usesFaceGuide: template.usesFaceGuide,
+      usesImageOverlay: template.usesImageOverlay,
       images: payload.images,
       githubRepo: payload.githubRepo,
       artistSlug: payload.artistSlug,
@@ -88,30 +89,39 @@ export const createContentTask = schemaTask({
       payload.githubRepo, payload.artistSlug, fetchGithubFile,
     );
 
-    // --- Step 5: Generate image (API) ---
-    logStep("Generating image via API");
-    const referenceImagePath = pickRandomReferenceImage(template);
-    const instruction = resolveImageInstruction(template);
-    const basePrompt = `${instruction} ${template.imagePrompt}`;
-    const fullPrompt = buildImagePrompt(basePrompt, template.styleGuide);
+    // --- Step 5: Generate image (API) — skip if editorial image attached ---
+    let imageUrl: string;
 
-    const imageRefs: string[] = [];
-    if (faceGuideUrl) imageRefs.push(faceGuideUrl);
-    if (referenceImagePath) imageRefs.push(referenceImagePath);
-    if (!template.usesImageOverlay && additionalImageUrls.length) {
-      imageRefs.push(...additionalImageUrls);
-    }
+    if (editorialImageUrl) {
+      logStep("Using attached editorial image, skipping AI image generation", true, {
+        editorialImageUrl: editorialImageUrl.slice(0, 80),
+      });
+      imageUrl = editorialImageUrl;
+    } else {
+      logStep("Generating image via API");
+      const referenceImagePath = pickRandomReferenceImage(template);
+      const instruction = resolveImageInstruction(template);
+      const basePrompt = `${instruction} ${template.imagePrompt}`;
+      const fullPrompt = buildImagePrompt(basePrompt, template.styleGuide);
 
-    let imageUrl = await generateImage({
-      prompt: fullPrompt,
-      referenceImageUrl: faceGuideUrl ?? undefined,
-      images: imageRefs.length > 0 ? imageRefs : undefined,
-    });
+      const imageRefs: string[] = [];
+      if (faceGuideUrl) imageRefs.push(faceGuideUrl);
+      if (referenceImagePath) imageRefs.push(referenceImagePath);
+      if (!template.usesImageOverlay && additionalImageUrls.length) {
+        imageRefs.push(...additionalImageUrls);
+      }
 
-    // --- Step 6: Upscale image (API, optional) ---
-    if (payload.upscale) {
-      logStep("Upscaling image via API");
-      imageUrl = await upscaleMedia(imageUrl, "image");
+      imageUrl = await generateImage({
+        prompt: fullPrompt,
+        referenceImageUrl: faceGuideUrl ?? undefined,
+        images: imageRefs.length > 0 ? imageRefs : undefined,
+      });
+
+      // --- Step 6: Upscale image (API, optional) ---
+      if (payload.upscale) {
+        logStep("Upscaling image via API");
+        imageUrl = await upscaleMedia(imageUrl, "image");
+      }
     }
 
     // --- Step 7: Generate video (API) ---

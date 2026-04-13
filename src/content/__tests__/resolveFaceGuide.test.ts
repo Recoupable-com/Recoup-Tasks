@@ -17,6 +17,10 @@ vi.mock("../detectFace", () => ({
   detectFace: vi.fn(),
 }));
 
+vi.mock("../detectEditorialImage", () => ({
+  detectEditorialImage: vi.fn(),
+}));
+
 vi.mock("@fal-ai/client", () => ({
   fal: { storage: { upload: vi.fn() } },
 }));
@@ -28,18 +32,19 @@ const { fal } = await import("@fal-ai/client");
 
 describe("resolveFaceGuide", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
   });
 
-  it("returns null faceGuideUrl and empty additionalImageUrls when no images and usesFaceGuide is false", async () => {
+  it("returns null faceGuideUrl, null editorialImageUrl, and empty additionalImageUrls when no images and usesFaceGuide is false", async () => {
     const result = await resolveFaceGuide({
       usesFaceGuide: false,
+      usesImageOverlay: false,
       images: undefined,
       githubRepo: "https://github.com/test/repo",
       artistSlug: "artist",
     });
 
-    expect(result).toEqual({ faceGuideUrl: null, additionalImageUrls: [] });
+    expect(result).toEqual({ faceGuideUrl: null, editorialImageUrl: null, additionalImageUrls: [] });
   });
 
   it("uses face image as faceGuideUrl and non-face images as additionalImageUrls", async () => {
@@ -47,11 +52,11 @@ describe("resolveFaceGuide", () => {
       .mockResolvedValueOnce("https://fal.ai/face.png")
       .mockResolvedValueOnce("https://fal.ai/cover.png");
     vi.mocked(detectFace)
-      .mockResolvedValueOnce(true)
-      .mockResolvedValueOnce(false);
+      .mockResolvedValueOnce(true);
 
     const result = await resolveFaceGuide({
       usesFaceGuide: true,
+      usesImageOverlay: false,
       images: [
         "https://example.com/headshot.png",
         "https://example.com/album-cover.png",
@@ -62,6 +67,7 @@ describe("resolveFaceGuide", () => {
 
     expect(result).toEqual({
       faceGuideUrl: "https://fal.ai/face.png",
+      editorialImageUrl: null,
       additionalImageUrls: ["https://fal.ai/cover.png"],
     });
   });
@@ -74,6 +80,7 @@ describe("resolveFaceGuide", () => {
 
     const result = await resolveFaceGuide({
       usesFaceGuide: true,
+      usesImageOverlay: false,
       images: ["https://example.com/album-cover.png"],
       githubRepo: "https://github.com/test/repo",
       artistSlug: "artist",
@@ -81,6 +88,7 @@ describe("resolveFaceGuide", () => {
 
     expect(result).toEqual({
       faceGuideUrl: "https://fal.ai/github-face.png",
+      editorialImageUrl: null,
       additionalImageUrls: ["https://fal.ai/cover.png"],
     });
   });
@@ -92,6 +100,7 @@ describe("resolveFaceGuide", () => {
 
     const result = await resolveFaceGuide({
       usesFaceGuide: false,
+      usesImageOverlay: false,
       images: ["https://example.com/a.png", "https://example.com/b.png"],
       githubRepo: "https://github.com/test/repo",
       artistSlug: "artist",
@@ -99,6 +108,7 @@ describe("resolveFaceGuide", () => {
 
     expect(result).toEqual({
       faceGuideUrl: null,
+      editorialImageUrl: null,
       additionalImageUrls: ["https://fal.ai/img1.png", "https://fal.ai/img2.png"],
     });
     expect(detectFace).not.toHaveBeenCalled();
@@ -110,6 +120,7 @@ describe("resolveFaceGuide", () => {
 
     const result = await resolveFaceGuide({
       usesFaceGuide: true,
+      usesImageOverlay: false,
       images: undefined,
       githubRepo: "https://github.com/test/repo",
       artistSlug: "artist",
@@ -117,6 +128,7 @@ describe("resolveFaceGuide", () => {
 
     expect(result).toEqual({
       faceGuideUrl: "https://fal.ai/github.png",
+      editorialImageUrl: null,
       additionalImageUrls: [],
     });
   });
@@ -127,6 +139,7 @@ describe("resolveFaceGuide", () => {
     await expect(
       resolveFaceGuide({
         usesFaceGuide: true,
+        usesImageOverlay: false,
         images: undefined,
         githubRepo: "https://github.com/test/repo",
         artistSlug: "artist",
@@ -139,11 +152,11 @@ describe("resolveFaceGuide", () => {
       .mockResolvedValueOnce("https://fal.ai/face1.png")
       .mockResolvedValueOnce("https://fal.ai/face2.png");
     vi.mocked(detectFace)
-      .mockResolvedValueOnce(true)
       .mockResolvedValueOnce(true);
 
     const result = await resolveFaceGuide({
       usesFaceGuide: true,
+      usesImageOverlay: false,
       images: [
         "https://example.com/headshot1.png",
         "https://example.com/headshot2.png",
@@ -154,6 +167,7 @@ describe("resolveFaceGuide", () => {
 
     expect(result).toEqual({
       faceGuideUrl: "https://fal.ai/face1.png",
+      editorialImageUrl: null,
       additionalImageUrls: ["https://fal.ai/face2.png"],
     });
   });
