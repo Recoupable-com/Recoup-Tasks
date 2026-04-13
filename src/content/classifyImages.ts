@@ -8,7 +8,7 @@ import { fetchImageFromUrl } from "./fetchImageFromUrl";
  * For each image:
  *   - If usesFaceGuide and no face guide found yet, runs face detection
  *   - First face image becomes the face guide
- *   - If usesImageOverlay and no editorial image found yet, runs editorial detection
+ *   - If usesEditorialImage and no editorial image found yet, runs editorial detection
  *   - First editorial image becomes the editorial image (used in place of AI-generated image)
  *   - All other images become additional image URLs
  *
@@ -17,11 +17,11 @@ import { fetchImageFromUrl } from "./fetchImageFromUrl";
 export async function classifyImages({
   images,
   usesFaceGuide,
-  usesImageOverlay,
+  usesEditorialImage,
 }: {
   images: string[];
   usesFaceGuide: boolean;
-  usesImageOverlay: boolean;
+  usesEditorialImage: boolean;
 }): Promise<{
   faceGuideUrl: string | null;
   editorialImageUrl: string | null;
@@ -42,7 +42,7 @@ export async function classifyImages({
       }
     }
 
-    if (usesImageOverlay && !editorialImageUrl) {
+    if (usesEditorialImage && !editorialImageUrl) {
       const isEditorial = await detectEditorialImage(imageUrl);
       if (isEditorial) {
         editorialImageUrl = uploadedUrl;

@@ -45,7 +45,7 @@ describe("classifyImages", () => {
         "https://example.com/cover.png",
       ],
       usesFaceGuide: true,
-      usesImageOverlay: true,
+      usesEditorialImage: true,
     });
 
     expect(result).toEqual({
@@ -55,7 +55,7 @@ describe("classifyImages", () => {
     });
   });
 
-  it("does not run editorial detection when usesImageOverlay is false", async () => {
+  it("does not run editorial detection when usesEditorialImage is false", async () => {
     vi.mocked(fetchImageFromUrl)
       .mockResolvedValueOnce("https://fal.ai/face.png")
       .mockResolvedValueOnce("https://fal.ai/img.png");
@@ -67,7 +67,7 @@ describe("classifyImages", () => {
         "https://example.com/img.png",
       ],
       usesFaceGuide: true,
-      usesImageOverlay: false,
+      usesEditorialImage: false,
     });
 
     expect(result).toEqual({
@@ -91,7 +91,7 @@ describe("classifyImages", () => {
         "https://example.com/cover.png",
       ],
       usesFaceGuide: true,
-      usesImageOverlay: true,
+      usesEditorialImage: true,
     });
 
     expect(result).toEqual({
@@ -115,7 +115,7 @@ describe("classifyImages", () => {
         "https://example.com/photo2.png",
       ],
       usesFaceGuide: false,
-      usesImageOverlay: true,
+      usesEditorialImage: true,
     });
 
     expect(result).toEqual({
@@ -138,7 +138,7 @@ describe("classifyImages", () => {
         "https://blob.vercel-storage.com/original2.png",
       ],
       usesFaceGuide: true,
-      usesImageOverlay: true,
+      usesEditorialImage: true,
     });
 
     expect(detectFace).toHaveBeenCalledWith("https://blob.vercel-storage.com/original1.png");
@@ -151,7 +151,7 @@ describe("classifyImages", () => {
     const result = await classifyImages({
       images: [],
       usesFaceGuide: true,
-      usesImageOverlay: true,
+      usesEditorialImage: true,
     });
 
     expect(result).toEqual({

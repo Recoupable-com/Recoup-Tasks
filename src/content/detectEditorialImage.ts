@@ -2,7 +2,7 @@ import { logStep } from "../sandboxes/logStep";
 import { createEditorialDetectionAgent } from "../agents/createEditorialDetectionAgent";
 
 const EDITORIAL_EXAMPLE_URLS = [
-  "https://dxfamqbi5zyezrs5.public.blob.vercel-storage.com/content-templates/artist-release-editorial/references/images/ref-01.png",
+  "https://dxfamqbi5zyezrs5.public.blob.vercel-storage.com/content-attachments/image/1776085791241-Screenshot%202026-04-08%20at%203.27.37%E2%80%AFPM.png",
 ];
 
 /**

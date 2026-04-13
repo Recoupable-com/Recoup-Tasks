@@ -1,5 +1,6 @@
 import { ToolLoopAgent, Output, stepCountIs } from "ai";
 import { z } from "zod";
+import { IMAGE_DETECTION_MODEL } from "./imageDetectionModel";
 
 const faceDetectionSchema = z.object({
   hasFace: z.boolean(),
@@ -27,7 +28,7 @@ Return hasFace: false for everything else.`;
  */
 export function createFaceDetectionAgent() {
   return new ToolLoopAgent({
-    model: "google/gemini-3.1-flash-lite-preview",
+    model: IMAGE_DETECTION_MODEL,
     instructions,
     output: Output.object({ schema: faceDetectionSchema }),
     stopWhen: stepCountIs(1),

@@ -71,7 +71,7 @@ export const createContentTask = schemaTask({
     // --- Step 2: Resolve face-guide, editorial image, and classify attached images ---
     const { faceGuideUrl, editorialImageUrl, additionalImageUrls } = await resolveFaceGuide({
       usesFaceGuide: template.usesFaceGuide,
-      usesImageOverlay: template.usesImageOverlay,
+      usesEditorialImage: template.usesImageOverlay,
       images: payload.images,
       githubRepo: payload.githubRepo,
       artistSlug: payload.artistSlug,

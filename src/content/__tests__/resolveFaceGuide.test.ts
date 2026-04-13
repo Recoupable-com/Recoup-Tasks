@@ -38,7 +38,7 @@ describe("resolveFaceGuide", () => {
   it("returns null faceGuideUrl, null editorialImageUrl, and empty additionalImageUrls when no images and usesFaceGuide is false", async () => {
     const result = await resolveFaceGuide({
       usesFaceGuide: false,
-      usesImageOverlay: false,
+      usesEditorialImage: false,
       images: undefined,
       githubRepo: "https://github.com/test/repo",
       artistSlug: "artist",
@@ -56,7 +56,7 @@ describe("resolveFaceGuide", () => {
 
     const result = await resolveFaceGuide({
       usesFaceGuide: true,
-      usesImageOverlay: false,
+      usesEditorialImage: false,
       images: [
         "https://example.com/headshot.png",
         "https://example.com/album-cover.png",
@@ -80,7 +80,7 @@ describe("resolveFaceGuide", () => {
 
     const result = await resolveFaceGuide({
       usesFaceGuide: true,
-      usesImageOverlay: false,
+      usesEditorialImage: false,
       images: ["https://example.com/album-cover.png"],
       githubRepo: "https://github.com/test/repo",
       artistSlug: "artist",
@@ -100,7 +100,7 @@ describe("resolveFaceGuide", () => {
 
     const result = await resolveFaceGuide({
       usesFaceGuide: false,
-      usesImageOverlay: false,
+      usesEditorialImage: false,
       images: ["https://example.com/a.png", "https://example.com/b.png"],
       githubRepo: "https://github.com/test/repo",
       artistSlug: "artist",
@@ -120,7 +120,7 @@ describe("resolveFaceGuide", () => {
 
     const result = await resolveFaceGuide({
       usesFaceGuide: true,
-      usesImageOverlay: false,
+      usesEditorialImage: false,
       images: undefined,
       githubRepo: "https://github.com/test/repo",
       artistSlug: "artist",
@@ -139,7 +139,7 @@ describe("resolveFaceGuide", () => {
     await expect(
       resolveFaceGuide({
         usesFaceGuide: true,
-        usesImageOverlay: false,
+        usesEditorialImage: false,
         images: undefined,
         githubRepo: "https://github.com/test/repo",
         artistSlug: "artist",
@@ -156,7 +156,7 @@ describe("resolveFaceGuide", () => {
 
     const result = await resolveFaceGuide({
       usesFaceGuide: true,
-      usesImageOverlay: false,
+      usesEditorialImage: false,
       images: [
         "https://example.com/headshot1.png",
         "https://example.com/headshot2.png",

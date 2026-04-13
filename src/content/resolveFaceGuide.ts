@@ -20,19 +20,19 @@ export interface ResolveFaceGuideResult {
  */
 export async function resolveFaceGuide({
   usesFaceGuide,
-  usesImageOverlay,
+  usesEditorialImage,
   images,
   githubRepo,
   artistSlug,
 }: {
   usesFaceGuide: boolean;
-  usesImageOverlay: boolean;
+  usesEditorialImage: boolean;
   images: string[] | undefined;
   githubRepo: string;
   artistSlug: string;
 }): Promise<ResolveFaceGuideResult> {
   const { faceGuideUrl, editorialImageUrl, additionalImageUrls } = images?.length
-    ? await classifyImages({ images, usesFaceGuide, usesImageOverlay })
+    ? await classifyImages({ images, usesFaceGuide, usesEditorialImage })
     : { faceGuideUrl: null, editorialImageUrl: null, additionalImageUrls: [] };
 
   // Fall back to GitHub face-guide if needed
