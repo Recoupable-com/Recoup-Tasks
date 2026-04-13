@@ -8,15 +8,9 @@ import { resolveAudioClip } from "../content/resolveAudioClip";
 import { fetchArtistContext } from "../content/fetchArtistContext";
 import { fetchAudienceContext } from "../content/fetchAudienceContext";
 import { renderFinalVideo } from "../content/renderFinalVideo";
+import { resolveBaseImage } from "../content/resolveBaseImage";
+import { loadTemplate, buildMotionPrompt } from "../content/loadTemplate";
 import {
-  loadTemplate,
-  pickRandomReferenceImage,
-  buildImagePrompt,
-  buildMotionPrompt,
-} from "../content/loadTemplate";
-import { resolveImageInstruction } from "../content/resolveImageInstruction";
-import {
-  generateImage,
   upscaleMedia,
   generateVideo,
   generateCaption,
@@ -89,40 +83,14 @@ export const createContentTask = schemaTask({
       payload.githubRepo, payload.artistSlug, fetchGithubFile,
     );
 
-    // --- Step 5: Generate image (API) — skip if editorial image attached ---
-    let imageUrl: string;
-
-    if (editorialImageUrl) {
-      logStep("Using attached editorial image, skipping AI image generation", true, {
-        editorialImageUrl: editorialImageUrl.slice(0, 80),
-      });
-      imageUrl = editorialImageUrl;
-    } else {
-      logStep("Generating image via API");
-      const referenceImagePath = pickRandomReferenceImage(template);
-      const instruction = resolveImageInstruction(template);
-      const basePrompt = `${instruction} ${template.imagePrompt}`;
-      const fullPrompt = buildImagePrompt(basePrompt, template.styleGuide);
-
-      const imageRefs: string[] = [];
-      if (faceGuideUrl) imageRefs.push(faceGuideUrl);
-      if (referenceImagePath) imageRefs.push(referenceImagePath);
-      if (!template.usesImageOverlay && additionalImageUrls.length) {
-        imageRefs.push(...additionalImageUrls);
-      }
-
-      imageUrl = await generateImage({
-        prompt: fullPrompt,
-        referenceImageUrl: faceGuideUrl ?? undefined,
-        images: imageRefs.length > 0 ? imageRefs : undefined,
-      });
-
-      // --- Step 6: Upscale image (API, optional) ---
-      if (payload.upscale) {
-        logStep("Upscaling image via API");
-        imageUrl = await upscaleMedia(imageUrl, "image");
-      }
-    }
+    // --- Steps 5–6: Resolve base image (editorial → use as-is, otherwise generate + optional upscale) ---
+    const imageUrl = await resolveBaseImage({
+      editorialImageUrl,
+      faceGuideUrl,
+      additionalImageUrls,
+      template,
+      upscale: payload.upscale,
+    });
 
     // --- Step 7: Generate video (API) ---
     const motionPrompt = buildMotionPrompt(template);
