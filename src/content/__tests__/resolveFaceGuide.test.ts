@@ -13,12 +13,8 @@ vi.mock("../fetchGithubFile", () => ({
   fetchGithubFile: vi.fn(),
 }));
 
-vi.mock("../detectFace", () => ({
-  detectFace: vi.fn(),
-}));
-
-vi.mock("../detectEditorialImage", () => ({
-  detectEditorialImage: vi.fn(),
+vi.mock("../classifyImage", () => ({
+  classifyImage: vi.fn(),
 }));
 
 vi.mock("@fal-ai/client", () => ({
@@ -27,7 +23,7 @@ vi.mock("@fal-ai/client", () => ({
 
 const { fetchImageFromUrl } = await import("../fetchImageFromUrl");
 const { fetchGithubFile } = await import("../fetchGithubFile");
-const { detectFace } = await import("../detectFace");
+const { classifyImage } = await import("../classifyImage");
 const { fal } = await import("@fal-ai/client");
 
 describe("resolveFaceGuide", () => {
@@ -51,8 +47,9 @@ describe("resolveFaceGuide", () => {
     vi.mocked(fetchImageFromUrl)
       .mockResolvedValueOnce("https://fal.ai/face.png")
       .mockResolvedValueOnce("https://fal.ai/cover.png");
-    vi.mocked(detectFace)
-      .mockResolvedValueOnce(true);
+    vi.mocked(classifyImage)
+      .mockResolvedValueOnce("face_guide")
+      .mockResolvedValueOnce("additional");
 
     const result = await resolveFaceGuide({
       usesFaceGuide: true,
@@ -74,7 +71,7 @@ describe("resolveFaceGuide", () => {
 
   it("falls back to GitHub face-guide when no images contain a face", async () => {
     vi.mocked(fetchImageFromUrl).mockResolvedValue("https://fal.ai/cover.png");
-    vi.mocked(detectFace).mockResolvedValue(false);
+    vi.mocked(classifyImage).mockResolvedValue("additional");
     vi.mocked(fetchGithubFile).mockResolvedValue(Buffer.from("face-data"));
     vi.mocked(fal.storage.upload).mockResolvedValue("https://fal.ai/github-face.png");
 
@@ -111,7 +108,7 @@ describe("resolveFaceGuide", () => {
       editorialImageUrl: null,
       additionalImageUrls: ["https://fal.ai/img1.png", "https://fal.ai/img2.png"],
     });
-    expect(detectFace).not.toHaveBeenCalled();
+    expect(classifyImage).not.toHaveBeenCalled();
   });
 
   it("fetches face-guide from GitHub when no images provided", async () => {
@@ -151,8 +148,9 @@ describe("resolveFaceGuide", () => {
     vi.mocked(fetchImageFromUrl)
       .mockResolvedValueOnce("https://fal.ai/face1.png")
       .mockResolvedValueOnce("https://fal.ai/face2.png");
-    vi.mocked(detectFace)
-      .mockResolvedValueOnce(true);
+    vi.mocked(classifyImage)
+      .mockResolvedValueOnce("face_guide")
+      .mockResolvedValueOnce("face_guide");
 
     const result = await resolveFaceGuide({
       usesFaceGuide: true,

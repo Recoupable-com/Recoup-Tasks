@@ -1,18 +1,14 @@
-import { detectFace } from "./detectFace";
-import { detectEditorialImage } from "./detectEditorialImage";
+import { classifyImage } from "./classifyImage";
 import { fetchImageFromUrl } from "./fetchImageFromUrl";
 
 /**
- * Uploads and classifies images into face guide, editorial image, and additional image URLs.
+ * Uploads and classifies images using a single-call classifier per image
+ * (face_guide / editorial / additional).
  *
  * For each image:
- *   - If usesFaceGuide and no face guide found yet, runs face detection
- *   - First face image becomes the face guide
- *   - If usesEditorialImage and no editorial image found yet, runs editorial detection
- *   - First editorial image becomes the editorial image (used in place of AI-generated image)
- *   - All other images become additional image URLs
- *
- * @returns The first face image URL (or null), editorial image URL (or null), and remaining additional URLs
+ *   - First face_guide match becomes the face guide (if usesFaceGuide)
+ *   - First editorial match becomes the editorial image (if usesEditorialImage)
+ *   - Everything else — including later duplicates of already-matched kinds — goes to additionalImageUrls
  */
 export async function classifyImages({
   images,
@@ -31,26 +27,19 @@ export async function classifyImages({
   let editorialImageUrl: string | null = null;
   const additionalImageUrls: string[] = [];
 
+  const needsClassification = usesFaceGuide || usesEditorialImage;
+
   for (const imageUrl of images) {
     const uploadedUrl = await fetchImageFromUrl(imageUrl);
+    const kind = needsClassification ? await classifyImage(imageUrl) : "additional";
 
-    if (usesFaceGuide && !faceGuideUrl) {
-      const hasFace = await detectFace(imageUrl);
-      if (hasFace) {
-        faceGuideUrl = uploadedUrl;
-        continue;
-      }
+    if (kind === "face_guide" && usesFaceGuide && !faceGuideUrl) {
+      faceGuideUrl = uploadedUrl;
+    } else if (kind === "editorial" && usesEditorialImage && !editorialImageUrl) {
+      editorialImageUrl = uploadedUrl;
+    } else {
+      additionalImageUrls.push(uploadedUrl);
     }
-
-    if (usesEditorialImage && !editorialImageUrl) {
-      const isEditorial = await detectEditorialImage(imageUrl);
-      if (isEditorial) {
-        editorialImageUrl = uploadedUrl;
-        continue;
-      }
-    }
-
-    additionalImageUrls.push(uploadedUrl);
   }
 
   return { faceGuideUrl, editorialImageUrl, additionalImageUrls };
