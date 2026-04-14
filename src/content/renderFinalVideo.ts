@@ -8,6 +8,7 @@ import { calculateCaptionLayout } from "./calculateCaptionLayout";
 import { stripEmoji } from "./stripEmoji";
 import { downloadOverlayImages } from "./downloadOverlayImages";
 import { downloadMediaToFile } from "./downloadMediaToFile";
+import type { OverlayPosition } from "./overlayPosition";
 import { runFfmpeg } from "./runFfmpeg";
 import { uploadToFalStorage } from "./uploadToFalStorage";
 
@@ -19,6 +20,7 @@ export interface RenderFinalVideoInput {
   captionText: string;
   hasAudio: boolean;
   overlayImageUrls?: string[];
+  overlayPosition?: OverlayPosition;
 }
 
 export interface RenderFinalVideoOutput {
@@ -61,6 +63,7 @@ export async function renderFinalVideo(
       audioDurationSeconds: input.audioDurationSeconds,
       hasAudio: input.hasAudio,
       overlayImagePaths: overlayPaths,
+      overlayPosition: input.overlayPosition,
     });
 
     logStep("Running ffmpeg render", true, {

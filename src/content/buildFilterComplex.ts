@@ -1,11 +1,7 @@
-/** Video frame dimensions */
-const FRAME_WIDTH = 720;
-const FRAME_HEIGHT = 1280;
+import { calculateOverlayCoordinates, type OverlayPosition } from "./overlayPosition";
 
 /** Overlay image size */
 const OVERLAY_SIZE = 150;
-const EDGE_PADDING = 30;
-const OVERLAY_GAP = 20;
 
 /**
  * Builds the ffmpeg filter_complex string for video with overlay images and captions.
@@ -14,14 +10,17 @@ const OVERLAY_GAP = 20;
  *
  * @param overlayCount - Number of overlay image inputs (starting at input index 1)
  * @param captionFilters - Array of drawtext filter strings for captions
+ * @param overlayPosition - Corner to place overlays (default: top-left)
  * @returns The complete filter_complex string
  */
 export function buildFilterComplex({
   overlayCount,
   captionFilters,
+  overlayPosition = "top-left",
 }: {
   overlayCount: number;
   captionFilters: string[];
+  overlayPosition?: OverlayPosition;
 }): string {
   const parts: string[] = [];
 
@@ -34,11 +33,10 @@ export function buildFilterComplex({
     parts.push(`[${inputIdx}:v]scale=${OVERLAY_SIZE}:${OVERLAY_SIZE}[ovr_${i}]`);
   }
 
-  // Chain overlays — stacked vertically from top-left
+  // Chain overlays at the chosen position
   let prevLabel = "video_base";
   for (let i = 0; i < overlayCount; i++) {
-    const x = EDGE_PADDING;
-    const y = EDGE_PADDING + i * (OVERLAY_SIZE + OVERLAY_GAP);
+    const { x, y } = calculateOverlayCoordinates(overlayPosition, i, OVERLAY_SIZE);
     const outLabel = i < overlayCount - 1 ? `ovr_out_${i}` : "ovr_final";
     parts.push(`[${prevLabel}][ovr_${i}]overlay=${x}:${y}[${outLabel}]`);
     prevLabel = outLabel;

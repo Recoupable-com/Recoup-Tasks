@@ -15,6 +15,7 @@ import {
   generateVideo,
 } from "../recoup/contentApi";
 import { resolveCaptionText } from "../content/resolveCaptionText";
+import { resolveOverlayPosition } from "../content/resolveOverlayPosition";
 
 /**
  * Content-creation task — full pipeline that generates a social-ready video.
@@ -92,6 +93,11 @@ export const createContentTask = schemaTask({
       upscale: payload.upscale,
     });
 
+    // --- Step 6b: Resolve overlay position (AI-based, editorial templates only) ---
+    const overlayPosition = template.usesImageOverlay && editorialImageUrl
+      ? await resolveOverlayPosition(editorialImageUrl)
+      : undefined;
+
     // --- Step 7: Generate video (API) ---
     const motionPrompt = buildMotionPrompt(template);
     let audioUrl: string | undefined;
@@ -141,6 +147,7 @@ export const createContentTask = schemaTask({
       captionText,
       hasAudio: payload.lipsync,
       overlayImageUrls: template.usesImageOverlay ? additionalImageUrls : undefined,
+      overlayPosition,
     });
 
     // --- Return result ---
