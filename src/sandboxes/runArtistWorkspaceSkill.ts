@@ -15,7 +15,7 @@ export async function runArtistWorkspaceSkill(
   const result = await runOpenClawAgent(sandbox, {
     label: "Running artist-workspace skill",
     message:
-      "Read the /artist-workspace skill and follow it.\n\nRECOUP_API_KEY and RECOUP_ACCOUNT_ID are available as environment variables.",
+      "Read the /artist-workspace skill and follow it when working across your roster's artist workspaces.\n\nRECOUP_API_KEY and RECOUP_ACCOUNT_ID are available as environment variables.",
     env,
   });
 
