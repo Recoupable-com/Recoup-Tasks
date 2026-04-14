@@ -13,8 +13,8 @@ import { loadTemplate, buildMotionPrompt } from "../content/loadTemplate";
 import {
   upscaleMedia,
   generateVideo,
-  generateCaption,
 } from "../recoup/contentApi";
+import { resolveCaptionText } from "../content/resolveCaptionText";
 
 /**
  * Content-creation task — full pipeline that generates a social-ready video.
@@ -115,26 +115,21 @@ export const createContentTask = schemaTask({
       videoUrl = await upscaleMedia(videoUrl, "video");
     }
 
-    // --- Step 9: Generate caption (API, skipped when "none") ---
-    let captionText = "";
-    if (payload.captionLength !== "none") {
-      logStep("Generating caption via API");
-      const captionTopic = [
-        `Song: "${audioClip.songTitle}"`,
-        audioClip.clipLyrics ? `Lyrics: "${audioClip.clipLyrics}"` : null,
-        audioClip.clipMood ? `Mood: ${audioClip.clipMood}` : null,
-        artistContext ? `Artist: ${artistContext}` : null,
-        audienceContext ? `Audience: ${audienceContext}` : null,
-      ].filter(Boolean).join(". ");
+    // --- Step 9: Resolve caption text (skipped when captionLength === "none") ---
+    logStep("Resolving caption", true, { captionLength: payload.captionLength });
+    const captionTopic = [
+      `Song: "${audioClip.songTitle}"`,
+      audioClip.clipLyrics ? `Lyrics: "${audioClip.clipLyrics}"` : null,
+      audioClip.clipMood ? `Mood: ${audioClip.clipMood}` : null,
+      artistContext ? `Artist: ${artistContext}` : null,
+      audienceContext ? `Audience: ${audienceContext}` : null,
+    ].filter(Boolean).join(". ");
 
-      captionText = await generateCaption({
-        topic: captionTopic,
-        template: payload.template,
-        length: payload.captionLength,
-      });
-    } else {
-      logStep("Skipping caption generation (captionLength=none)");
-    }
+    const captionText = await resolveCaptionText({
+      captionLength: payload.captionLength,
+      topic: captionTopic,
+      template: payload.template,
+    });
 
     // --- Step 10: Final render (ffmpeg) ---
     logStep("Rendering final video (ffmpeg)");
