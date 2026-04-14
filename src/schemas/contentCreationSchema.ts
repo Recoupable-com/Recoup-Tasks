@@ -3,6 +3,9 @@ import { z } from "zod";
 export const CAPTION_LENGTHS = ["none", "short", "medium", "long"] as const;
 export type CaptionLength = (typeof CAPTION_LENGTHS)[number];
 
+export const DSP_VALUES = ["none", "spotify", "apple"] as const;
+export type DspValue = (typeof DSP_VALUES)[number];
+
 export const createContentPayloadSchema = z.object({
   accountId: z.string().min(1, "accountId is required"),
   artistSlug: z.string().min(1, "artistSlug is required"),
@@ -10,6 +13,8 @@ export const createContentPayloadSchema = z.object({
   lipsync: z.boolean().default(false),
   /** Controls caption text length: "none" skips captions, "short" (1-2 lines), "medium" (3-5 lines), "long" (paragraph). */
   captionLength: z.enum(CAPTION_LENGTHS).default("none"),
+  /** Which DSP logo to overlay on the video: "none" (no logo), "spotify", or "apple". */
+  dsp: z.enum(DSP_VALUES).default("none"),
   /** Whether to upscale the image and video for higher quality. Adds ~2 min to pipeline. */
   upscale: z.boolean().default(false),
   /** GitHub repo URL so the task can fetch artist files (face-guide, songs). */
