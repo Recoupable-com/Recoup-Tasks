@@ -13,8 +13,8 @@ import { loadTemplate, buildMotionPrompt } from "../content/loadTemplate";
 import {
   upscaleMedia,
   generateVideo,
-  generateCaption,
 } from "../recoup/contentApi";
+import { resolveCaptionText } from "../content/resolveCaptionText";
 
 /**
  * Content-creation task — full pipeline that generates a social-ready video.
@@ -115,8 +115,8 @@ export const createContentTask = schemaTask({
       videoUrl = await upscaleMedia(videoUrl, "video");
     }
 
-    // --- Step 9: Generate caption (API) ---
-    logStep("Generating caption via API");
+    // --- Step 9: Resolve caption text (skipped when captionLength === "none") ---
+    logStep("Resolving caption", true, { captionLength: payload.captionLength });
     const captionTopic = [
       `Song: "${audioClip.songTitle}"`,
       audioClip.clipLyrics ? `Lyrics: "${audioClip.clipLyrics}"` : null,
@@ -125,10 +125,10 @@ export const createContentTask = schemaTask({
       audienceContext ? `Audience: ${audienceContext}` : null,
     ].filter(Boolean).join(". ");
 
-    const captionText = await generateCaption({
+    const captionText = await resolveCaptionText({
+      captionLength: payload.captionLength,
       topic: captionTopic,
       template: payload.template,
-      length: payload.captionLength,
     });
 
     // --- Step 10: Final render (ffmpeg) ---
