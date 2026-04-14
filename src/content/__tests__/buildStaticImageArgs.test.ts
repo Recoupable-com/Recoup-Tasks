@@ -30,7 +30,7 @@ describe("buildStaticImageArgs", () => {
     const filter = args[filterIdx + 1];
     expect(filter).toContain("crop=ih*9/16:ih");
     expect(filter).toContain("scale=720:1280");
-    expect(filter).toContain("scale=150:150");
+    expect(filter).toContain("scale=250:250");
     expect(filter).toContain("overlay=30:30");
   });
 
@@ -43,7 +43,7 @@ describe("buildStaticImageArgs", () => {
 
     const filter = args[args.indexOf("-filter_complex") + 1];
     expect(filter).toContain("overlay=30:30");
-    expect(filter).toContain("overlay=30:200");
+    expect(filter).toContain("overlay=30:300");
   });
 
   it("handles no overlay images — just crops and scales", () => {

@@ -1,5 +1,5 @@
 /** Overlay image size */
-const OVERLAY_SIZE = 150;
+const OVERLAY_SIZE = 250;
 const EDGE_PADDING = 30;
 const OVERLAY_GAP = 20;
 
