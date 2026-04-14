@@ -2,8 +2,8 @@ import type { Sandbox } from "@vercel/sandbox";
 import { runOpenClawAgent } from "./runOpenClawAgent";
 
 /**
- * Runs the /artist-workspace skill via OpenClaw for each artist
- * folder that exists under orgs/.
+ * Runs the /artist-workspace skill via OpenClaw to set up context
+ * files for artists under orgs/.
  *
  * @param sandbox - The Vercel Sandbox instance
  * @param env - Environment variables for the agent
@@ -15,7 +15,7 @@ export async function runArtistWorkspaceSkill(
   const result = await runOpenClawAgent(sandbox, {
     label: "Running artist-workspace skill",
     message:
-      "Run the /artist-workspace skill for EACH artist folder that exists under orgs/.\n\nRECOUP_API_KEY and RECOUP_ACCOUNT_ID are available as environment variables.",
+      "Read the /artist-workspace skill. Use it to set up context files for the artist folders under orgs/.\n\nRECOUP_API_KEY and RECOUP_ACCOUNT_ID are available as environment variables.",
     env,
   });
 
