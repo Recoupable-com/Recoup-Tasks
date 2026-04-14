@@ -7,6 +7,7 @@ export type ContentRunResult = {
   runId: string;
   status: "completed" | "failed" | "timeout";
   videoUrl?: string;
+  imageUrl?: string;
   captionText?: string;
   error?: string;
 };
@@ -41,6 +42,7 @@ export async function pollContentRuns(
     if (run.status === "COMPLETED") {
       const output = run.output as {
         videoSourceUrl?: string;
+        staticImageUrl?: string;
         captionText?: string;
       } | null;
 
@@ -49,6 +51,7 @@ export async function pollContentRuns(
         runId,
         status: "completed" as const,
         videoUrl: output?.videoSourceUrl,
+        imageUrl: output?.staticImageUrl,
         captionText: output?.captionText,
       };
     }

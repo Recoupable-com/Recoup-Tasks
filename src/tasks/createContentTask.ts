@@ -15,6 +15,7 @@ import {
   generateVideo,
 } from "../recoup/contentApi";
 import { resolveCaptionText } from "../content/resolveCaptionText";
+import { renderStaticImage } from "../content/renderStaticImage";
 
 /**
  * Content-creation task — full pipeline that generates a social-ready video.
@@ -133,6 +134,7 @@ export const createContentTask = schemaTask({
 
     // --- Step 10: Final render (ffmpeg) ---
     logStep("Rendering final video (ffmpeg)");
+    const overlayUrls = template.usesImageOverlay ? additionalImageUrls : undefined;
     const finalVideo = await renderFinalVideo({
       videoUrl,
       songBuffer: audioClip.songBuffer,
@@ -140,8 +142,19 @@ export const createContentTask = schemaTask({
       audioDurationSeconds: audioClip.durationSeconds,
       captionText,
       hasAudio: payload.lipsync,
-      overlayImageUrls: template.usesImageOverlay ? additionalImageUrls : undefined,
+      overlayImageUrls: overlayUrls,
     });
+
+    // --- Step 11: Render static image with overlays (when template uses overlays) ---
+    let staticImageUrl: string | undefined;
+    if (template.usesImageOverlay && overlayUrls && overlayUrls.length > 0) {
+      logStep("Rendering static image with overlays");
+      const staticImage = await renderStaticImage({
+        imageUrl,
+        overlayImageUrls: overlayUrls,
+      });
+      staticImageUrl = staticImage.imageUrl;
+    }
 
     // --- Return result ---
     const result = {
@@ -152,6 +165,7 @@ export const createContentTask = schemaTask({
       lipsync: payload.lipsync,
       videoSourceUrl: finalVideo.videoUrl,
       renderedVideoBytes: finalVideo.sizeBytes,
+      staticImageUrl,
       imageUrl,
       video: null,
       audio: {
