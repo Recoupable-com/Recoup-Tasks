@@ -8,7 +8,7 @@ import { runOpenClawAgent } from "./runOpenClawAgent";
  * @param sandbox - The Vercel Sandbox instance
  * @param env - Environment variables for the agent
  */
-export async function runSetupArtistSkill(
+export async function runArtistWorkspaceSkill(
   sandbox: Sandbox,
   env: Record<string, string>
 ): Promise<void> {

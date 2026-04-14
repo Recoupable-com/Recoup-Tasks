@@ -1,7 +1,7 @@
 import type { Sandbox } from "@vercel/sandbox";
 import { installSkills } from "./installSkills";
 import { runSetupSandboxSkill } from "./runSetupSandboxSkill";
-import { runSetupArtistSkill } from "./runSetupArtistSkill";
+import { runArtistWorkspaceSkill } from "./runArtistWorkspaceSkill";
 import { logStep } from "./logStep";
 /**
  * Ensures the sandbox has the org/artist folder structure set up.
@@ -33,6 +33,6 @@ export async function ensureSetupSandbox(
   logStep("Setup-sandbox complete", false);
 
   logStep("Running artist-workspace skill");
-  await runSetupArtistSkill(sandbox, env);
+  await runArtistWorkspaceSkill(sandbox, env);
   logStep("Artist-workspace complete", false);
 }
