@@ -42,13 +42,15 @@ export async function pollContentRuns(
       const output = run.output as {
         videoSourceUrl?: string;
         captionText?: string;
+        /** ffmpeg-edit tasks return `url` instead of `videoSourceUrl`. */
+        url?: string;
       } | null;
 
       logStep(`Run completed: ${runId}`, false, { runId });
       return {
         runId,
         status: "completed" as const,
-        videoUrl: output?.videoSourceUrl,
+        videoUrl: output?.videoSourceUrl ?? output?.url,
         captionText: output?.captionText,
       };
     }
