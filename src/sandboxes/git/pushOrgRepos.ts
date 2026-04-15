@@ -25,17 +25,6 @@ export async function pushOrgRepos(
   const homeDir = await getSandboxHomeDir(sandbox);
   const workspaceOrgs = `${homeDir}/.openclaw/workspace/orgs`;
 
-  const debugResult = await sandbox.runCommand({
-    cmd: "sh",
-    args: ["-c", `echo "HOME=$HOME CWD=$(pwd)"; ls -la ${workspaceOrgs}/ 2>&1 || echo "DIR_NOT_FOUND"; find ${workspaceOrgs} -maxdepth 2 -name '.git' 2>/dev/null || echo "NO_GIT_ENTRIES"`],
-  });
-  logger.log("pushOrgRepos debug", {
-    homeDir,
-    workspaceOrgs,
-    debug: (await debugResult.stdout()) || "",
-    debugErr: (await debugResult.stderr()) || "",
-  });
-
   const findResult = await sandbox.runCommand({
     cmd: "sh",
     args: [
