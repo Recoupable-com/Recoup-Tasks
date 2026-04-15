@@ -12,6 +12,7 @@ import { ensureOrgRepos } from "../sandboxes/ensureOrgRepos";
 import { ensureSetupSandbox } from "../sandboxes/ensureSetupSandbox";
 import { pushSandboxToGithub } from "../sandboxes/pushSandboxToGithub";
 import { syncOrgRepos } from "../sandboxes/git/syncOrgRepos";
+import { appendNoCommitInstruction } from "../sandboxes/appendNoCommitInstruction";
 import {
   runSandboxCommandPayloadSchema,
   type SandboxResult,
@@ -76,7 +77,7 @@ export const runSandboxCommandTask = schemaTask({
 
       const commandResult = await sandbox.runCommand({
         cmd: command,
-        args: args || [],
+        args: appendNoCommitInstruction(args || []),
         cwd,
         env: getSandboxEnv(accountId),
       });
