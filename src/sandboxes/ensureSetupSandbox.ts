@@ -1,12 +1,12 @@
 import type { Sandbox } from "@vercel/sandbox";
-import { installSkill } from "./installSkill";
+import { installSkills } from "./installSkills";
 import { runSetupSandboxSkill } from "./runSetupSandboxSkill";
-import { runSetupArtistSkill } from "./runSetupArtistSkill";
 import { logStep } from "./logStep";
+
 /**
  * Ensures the sandbox has the org/artist folder structure set up.
- * Installs skills, runs setup-sandbox, then setup-artist for each artist.
- * Idempotent — skips if `orgs/` directory already exists.
+ * Installs skills from recoupable/skills, then runs setup-sandbox.
+ * Skips entirely if artist RECOUP.md files already exist (setup already ran).
  *
  * @param sandbox - The Vercel Sandbox instance
  * @param accountId - The account ID for the sandbox owner
@@ -15,11 +15,18 @@ export async function ensureSetupSandbox(
   sandbox: Sandbox,
   accountId: string
 ): Promise<void> {
-  logStep("Installing skills");
+  const check = await sandbox.runCommand({
+    cmd: "sh",
+    args: ["-c", "ls orgs/*/artists/*/RECOUP.md 2>/dev/null | head -1"],
+  });
 
-  await installSkill(sandbox, "recoupable/setup-sandbox");
-  await installSkill(sandbox, "recoupable/setup-artist");
-  await installSkill(sandbox, "recoupable/release-management");
+  if (check.exitCode === 0 && ((await check.stdout()) || "").trim()) {
+    logStep("Sandbox already set up, skipping", false);
+    return;
+  }
+
+  logStep("Installing skills");
+  await installSkills(sandbox, "recoupable/skills");
 
   if (!process.env.RECOUP_API_KEY) {
     throw new Error("Missing RECOUP_API_KEY environment variable");
@@ -33,8 +40,4 @@ export async function ensureSetupSandbox(
   logStep("Running setup-sandbox skill");
   await runSetupSandboxSkill(sandbox, env);
   logStep("Setup-sandbox complete", false);
-
-  logStep("Running setup-artist skill");
-  await runSetupArtistSkill(sandbox, env);
-  logStep("Setup-artist complete", false);
 }
