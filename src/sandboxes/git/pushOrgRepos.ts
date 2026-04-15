@@ -30,7 +30,7 @@ export async function pushOrgRepos(
     cmd: "sh",
     args: [
       "-c",
-      `find ${workspaceOrgs} -mindepth 1 -maxdepth 1 -type d -exec test -d {}/.git \\; -print 2>/dev/null | xargs -I{} basename {}`,
+      `find ${workspaceOrgs} -mindepth 1 -maxdepth 1 -type d '(' -exec test -d {}/.git ';' -o -exec test -f {}/.git ';' ')' -print 2>/dev/null | xargs -I{} basename {}`,
     ],
   });
 
