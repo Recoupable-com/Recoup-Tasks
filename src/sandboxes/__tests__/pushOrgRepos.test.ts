@@ -192,7 +192,7 @@ describe("pushOrgRepos", () => {
 
     const findCall = sandbox.runCommand.mock.calls.find(
       (call: any[]) =>
-        call[0]?.cmd === "sh" && call[0]?.args?.[1]?.includes("find")
+        call[0]?.cmd === "sh" && call[0]?.args?.[1]?.includes("find") && call[0]?.args?.[1]?.includes("mindepth")
     );
     expect(findCall![0].args[1]).toContain("test -f {}/.git");
   });
