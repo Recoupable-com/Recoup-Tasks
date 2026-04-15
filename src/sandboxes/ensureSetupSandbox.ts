@@ -2,6 +2,7 @@ import type { Sandbox } from "@vercel/sandbox";
 import { installSkills } from "./installSkills";
 import { runSetupSandboxSkill } from "./runSetupSandboxSkill";
 import { logStep } from "./logStep";
+import { getSandboxHomeDir } from "./getSandboxHomeDir";
 
 /**
  * Ensures the sandbox has the org/artist folder structure set up.
@@ -15,9 +16,12 @@ export async function ensureSetupSandbox(
   sandbox: Sandbox,
   accountId: string
 ): Promise<void> {
+  const homeDir = await getSandboxHomeDir(sandbox);
+  const orgsPath = `${homeDir}/.openclaw/workspace/orgs`;
+
   const check = await sandbox.runCommand({
     cmd: "sh",
-    args: ["-c", "ls orgs/*/artists/*/RECOUP.md 2>/dev/null | head -1"],
+    args: ["-c", `ls ${orgsPath}/*/artists/*/RECOUP.md 2>/dev/null | head -1`],
   });
 
   if (check.exitCode === 0 && ((await check.stdout()) || "").trim()) {
