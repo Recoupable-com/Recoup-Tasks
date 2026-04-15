@@ -25,11 +25,12 @@ export async function pushOrgRepos(
   const homeDir = await getSandboxHomeDir(sandbox);
   const workspaceOrgs = `${homeDir}/.openclaw/workspace/orgs`;
 
+  // Find org directories that are git repos
   const findResult = await sandbox.runCommand({
     cmd: "sh",
     args: [
       "-c",
-      `find ${workspaceOrgs} -mindepth 1 -maxdepth 1 -type d '(' -exec test -d {}/.git ';' -o -exec test -f {}/.git ';' ')' -print 2>/dev/null | xargs -I{} basename {}`,
+      `find ${workspaceOrgs} -mindepth 1 -maxdepth 1 -type d -exec test -d {}/.git \\; -print 2>/dev/null | xargs -I{} basename {}`,
     ],
   });
 

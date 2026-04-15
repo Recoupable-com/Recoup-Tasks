@@ -3,16 +3,12 @@ import { logger } from "@trigger.dev/sdk/v3";
 import { getAccountOrgs } from "../recoup/getAccountOrgs";
 import { createOrgGithubRepo } from "../github/createOrgGithubRepo";
 import { sanitizeRepoName } from "../github/sanitizeRepoName";
+import { runOpenClawAgent } from "./runOpenClawAgent";
 import { logStep } from "./logStep";
-import { getSandboxHomeDir } from "./getSandboxHomeDir";
-import { getGitHubAuthPrefix } from "./getGitHubAuthPrefix";
 
 /**
  * Ensures each of the account's organizations has a GitHub repo and
- * is cloned into orgs/ in the OpenClaw workspace.
- *
- * Clones deterministically via sandbox.runCommand — no AI agent delegation.
- * If a directory exists without .git, removes it and clones fresh.
+ * tells OpenClaw to clone them into `orgs/` in the workspace.
  *
  * Must be called AFTER `setupOpenClaw` (so OpenClaw is available) and
  * BEFORE `ensureSetupSandbox` (so skills write into existing org dirs).
@@ -24,9 +20,9 @@ export async function ensureOrgRepos(
   sandbox: Sandbox,
   accountId: string
 ): Promise<void> {
-  const authPrefix = getGitHubAuthPrefix();
+  const githubToken = process.env.GITHUB_TOKEN;
 
-  if (!authPrefix) {
+  if (!githubToken) {
     logger.error("Missing GITHUB_TOKEN for org repos");
     return;
   }
@@ -41,6 +37,7 @@ export async function ensureOrgRepos(
 
   logStep("Setting up org repos");
 
+  // Create GitHub repos for each org and collect URLs
   const orgRepos: Array<{ name: string; url: string }> = [];
 
   for (const org of orgs) {
@@ -68,48 +65,33 @@ export async function ensureOrgRepos(
     return;
   }
 
-  const homeDir = await getSandboxHomeDir(sandbox);
-  const orgsDir = `${homeDir}/.openclaw/workspace/orgs`;
+  // Build the prompt for OpenClaw to clone the repos
+  const repoList = orgRepos
+    .map((r) => `- "${r.name}" → ${r.url}`)
+    .join("\n");
 
-  await sandbox.runCommand({ cmd: "mkdir", args: ["-p", orgsDir] });
+  const message = [
+    "Clone the following GitHub repositories into orgs/ in your workspace.",
+    "Use the GITHUB_TOKEN environment variable for authentication.",
+    "Replace https://github.com/ with https://x-access-token:$GITHUB_TOKEN@github.com/ in the clone URL.",
+    "",
+    "For each repo, check orgs/{name}:",
+    "- If it has a .git directory OR a .git file (submodule gitlink), it's already a git repo — run: git -C orgs/{name} pull origin main",
+    "- If it exists but has neither a .git directory nor a .git file, remove it and clone fresh.",
+    "- If it does not exist, clone the repo.",
+    "",
+    "IMPORTANT: Submodules use a .git file (gitlink), not a .git directory.",
+    "Always check for BOTH: [ -d orgs/{name}/.git ] || [ -f orgs/{name}/.git ]",
+    "",
+    repoList,
+  ].join("\n");
 
-  for (const repo of orgRepos) {
-    const repoDir = `${orgsDir}/${repo.name}`;
-    const authedUrl = repo.url.replace("https://github.com/", authPrefix);
-
-    const gitCheck = await sandbox.runCommand({
-      cmd: "sh",
-      args: ["-c", `test -d ${repoDir}/.git || test -f ${repoDir}/.git`],
-    });
-
-    if (gitCheck.exitCode === 0) {
-      logger.log("Org repo already cloned, pulling latest", { name: repo.name });
-      await sandbox.runCommand({
-        cmd: "git",
-        args: ["-C", repoDir, "pull", "origin", "main"],
-      });
-      continue;
-    }
-
-    // Directory exists but is not a git repo — remove and clone fresh
-    await sandbox.runCommand({
-      cmd: "sh",
-      args: ["-c", `rm -rf ${repoDir}`],
-    });
-
-    logger.log("Cloning org repo", { name: repo.name });
-    const clone = await sandbox.runCommand({
-      cmd: "git",
-      args: ["clone", authedUrl, repoDir],
-    });
-
-    if (clone.exitCode !== 0) {
-      logger.error("Failed to clone org repo", {
-        name: repo.name,
-        stderr: (await clone.stderr()) || "",
-      });
-    }
-  }
+  // GITHUB_TOKEN and RECOUP_API_KEY are injected into openclaw.json
+  // by setupOpenClaw — no need to pass them via env here.
+  await runOpenClawAgent(sandbox, {
+    label: "Cloning org repos",
+    message,
+  });
 
   logStep("Org repo setup complete");
 }

@@ -170,33 +170,6 @@ describe("pushOrgRepos", () => {
     expect(findCall![0].args[1]).not.toContain("~");
   });
 
-  it("detects gitlink files (.git file) not just .git directories", async () => {
-    const sandbox = createMockSandbox();
-
-    sandbox.runCommand.mockImplementation(async (opts: any) => {
-      if (opts.cmd === "sh" && opts.args?.[1]?.includes("find")) {
-        return {
-          exitCode: 0,
-          stdout: async () => "recoup\n",
-          stderr: async () => "",
-        };
-      }
-      const finished = { exitCode: 0, stdout: async () => "", stderr: async () => "" };
-      if (opts.cmd === "openclaw") {
-        return { wait: vi.fn().mockResolvedValue(finished) };
-      }
-      return finished;
-    });
-
-    await pushOrgRepos(sandbox);
-
-    const findCall = sandbox.runCommand.mock.calls.find(
-      (call: any[]) =>
-        call[0]?.cmd === "sh" && call[0]?.args?.[1]?.includes("find") && call[0]?.args?.[1]?.includes("mindepth")
-    );
-    expect(findCall![0].args[1]).toContain("test -f {}/.git");
-  });
-
   it("logs error when OpenClaw fails", async () => {
     const { logger } = await import("@trigger.dev/sdk/v3");
     const sandbox = createMockSandbox();

@@ -19,12 +19,16 @@ vi.mock("../../github/createOrgGithubRepo", () => ({
 const { ensureOrgRepos } = await import("../ensureOrgRepos");
 
 function createMockSandbox() {
-  const runCommand = vi.fn().mockImplementation(() => {
-    return Promise.resolve({
+  const runCommand = vi.fn().mockImplementation((opts: any) => {
+    const finished = {
       exitCode: 0,
-      stdout: async () => "/root",
+      stdout: async () => "",
       stderr: async () => "",
-    });
+    };
+    if (opts?.cmd === "openclaw") {
+      return Promise.resolve({ wait: vi.fn().mockResolvedValue(finished) });
+    }
+    return Promise.resolve(finished);
   });
 
   return { runCommand } as any;
@@ -81,7 +85,7 @@ describe("ensureOrgRepos", () => {
     expect(mockCreateOrgGithubRepo).toHaveBeenCalledWith("Org Two", "org-2");
   });
 
-  it("clones org repos deterministically via git clone", async () => {
+  it("runs an openclaw command to clone org repos into workspace", async () => {
     mockGetAccountOrgs.mockResolvedValueOnce([
       { organizationId: "org-1", organizationName: "Test Org" },
     ]);
@@ -91,24 +95,28 @@ describe("ensureOrgRepos", () => {
     );
 
     const sandbox = createMockSandbox();
-    // git check returns 1 = no .git found, needs clone
-    sandbox.runCommand.mockImplementation((opts: any) => {
-      if (opts?.args?.[1]?.includes("test -d") || opts?.args?.[1]?.includes("test -f")) {
-        return Promise.resolve({ exitCode: 1, stdout: async () => "", stderr: async () => "" });
-      }
-      return Promise.resolve({ exitCode: 0, stdout: async () => "/root", stderr: async () => "" });
-    });
 
     await ensureOrgRepos(sandbox, "account-1");
 
-    const cloneCall = sandbox.runCommand.mock.calls.find(
-      (call: any[]) =>
-        call[0]?.cmd === "git" && call[0]?.args?.[0] === "clone"
+    // Should have called openclaw agent with a message about cloning
+    const openclawCall = sandbox.runCommand.mock.calls.find(
+      (call: any[]) => call[0]?.cmd === "openclaw"
     );
-    expect(cloneCall).toBeDefined();
-    expect(cloneCall![0].args[1]).toContain("org-test-org-org-1");
+    expect(openclawCall).toBeDefined();
+
+    // The openclaw args should include the repo URL
+    const args = openclawCall![0].args;
+    const message = args.find(
+      (a: string, i: number) => args[i - 1] === "--message"
+    );
+    expect(message).toContain("org-test-org-org-1");
+
+    // GITHUB_TOKEN is injected into openclaw.json by setupOpenClaw,
+    // not passed via env on this runCommand call.
+    expect(openclawCall![0].env).toBeUndefined();
   });
 
+  // Should NOT use git submodule add — that's the old approach
   it("does not use git submodule add", async () => {
     mockGetAccountOrgs.mockResolvedValueOnce([
       { organizationId: "org-1", organizationName: "Test Org" },
@@ -130,7 +138,7 @@ describe("ensureOrgRepos", () => {
     expect(submoduleCall).toBeUndefined();
   });
 
-  it("continues when one repo creation fails", async () => {
+  it("continues creating repos when one fails", async () => {
     mockGetAccountOrgs.mockResolvedValueOnce([
       { organizationId: "org-1", organizationName: "Failing Org" },
       { organizationId: "org-2", organizationName: "Working Org" },
@@ -143,25 +151,25 @@ describe("ensureOrgRepos", () => {
       );
 
     const sandbox = createMockSandbox();
-    sandbox.runCommand.mockImplementation((opts: any) => {
-      if (opts?.args?.[1]?.includes("test -d") || opts?.args?.[1]?.includes("test -f")) {
-        return Promise.resolve({ exitCode: 1, stdout: async () => "", stderr: async () => "" });
-      }
-      return Promise.resolve({ exitCode: 0, stdout: async () => "/root", stderr: async () => "" });
-    });
 
     await ensureOrgRepos(sandbox, "account-1");
 
     expect(mockCreateOrgGithubRepo).toHaveBeenCalledTimes(2);
 
-    const cloneCall = sandbox.runCommand.mock.calls.find(
-      (call: any[]) =>
-        call[0]?.cmd === "git" && call[0]?.args?.[0] === "clone"
+    // Openclaw should still be called with the one that succeeded
+    const openclawCall = sandbox.runCommand.mock.calls.find(
+      (call: any[]) => call[0]?.cmd === "openclaw"
     );
-    expect(cloneCall).toBeDefined();
+    expect(openclawCall).toBeDefined();
   });
 
-  it("pulls instead of cloning when .git exists", async () => {
+  /**
+   * Regression: submodules use a .git FILE (gitlink), not a .git DIRECTORY.
+   * If the clone prompt only checks for a .git directory, it treats
+   * submodule dirs as "not a git repo", removes them, and clones fresh —
+   * destroying the submodule registration every re-run.
+   */
+  it("instructs OpenClaw to detect .git files (gitlinks) for submodules", async () => {
     mockGetAccountOrgs.mockResolvedValueOnce([
       { organizationId: "org-1", organizationName: "Test Org" },
     ]);
@@ -171,30 +179,22 @@ describe("ensureOrgRepos", () => {
     );
 
     const sandbox = createMockSandbox();
-    // git check returns 0 = .git found
-    sandbox.runCommand.mockImplementation((opts: any) => {
-      if (opts?.args?.[1]?.includes("test -d") || opts?.args?.[1]?.includes("test -f")) {
-        return Promise.resolve({ exitCode: 0, stdout: async () => "", stderr: async () => "" });
-      }
-      return Promise.resolve({ exitCode: 0, stdout: async () => "/root", stderr: async () => "" });
-    });
 
     await ensureOrgRepos(sandbox, "account-1");
 
-    const pullCall = sandbox.runCommand.mock.calls.find(
-      (call: any[]) =>
-        call[0]?.cmd === "git" && call[0]?.args?.includes("pull")
+    const openclawCall = sandbox.runCommand.mock.calls.find(
+      (call: any[]) => call[0]?.cmd === "openclaw"
     );
-    expect(pullCall).toBeDefined();
+    const args = openclawCall![0].args;
+    const message = args.find(
+      (a: string, i: number) => args[i - 1] === "--message"
+    );
 
-    const cloneCall = sandbox.runCommand.mock.calls.find(
-      (call: any[]) =>
-        call[0]?.cmd === "git" && call[0]?.args?.[0] === "clone"
-    );
-    expect(cloneCall).toBeUndefined();
+    // Message must handle .git as a file (submodule gitlink), not just directory
+    expect(message).toContain(".git file");
   });
 
-  it("skips clone when all repo creations fail", async () => {
+  it("skips openclaw when all repo creations fail", async () => {
     mockGetAccountOrgs.mockResolvedValueOnce([
       { organizationId: "org-1", organizationName: "Failing Org" },
     ]);
@@ -205,10 +205,9 @@ describe("ensureOrgRepos", () => {
 
     await ensureOrgRepos(sandbox, "account-1");
 
-    const cloneCall = sandbox.runCommand.mock.calls.find(
-      (call: any[]) =>
-        call[0]?.cmd === "git" && call[0]?.args?.[0] === "clone"
+    const openclawCall = sandbox.runCommand.mock.calls.find(
+      (call: any[]) => call[0]?.cmd === "openclaw"
     );
-    expect(cloneCall).toBeUndefined();
+    expect(openclawCall).toBeUndefined();
   });
 });
