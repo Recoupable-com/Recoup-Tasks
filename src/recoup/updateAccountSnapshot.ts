@@ -5,24 +5,21 @@ import { NEW_API_BASE_URL, RECOUP_API_KEY } from "../consts";
  * Updates sandbox config for an account via PATCH /api/sandboxes.
  *
  * @param accountId - The account ID to update
- * @param snapshotId - Optional snapshot ID to set
+ * @param _snapshotId - Deprecated, unused. Kept for call-site compat during migration.
  * @param githubRepo - Optional GitHub repo URL to persist
- * @returns The updated snapshot data or undefined on error
+ * @returns The updated data or undefined on error
  */
 export async function updateAccountSnapshot(
   accountId: string,
-  snapshotId?: string,
+  _snapshotId?: string,
   githubRepo?: string
-): Promise<{ success: boolean; snapshotId: string } | undefined> {
+): Promise<{ success: boolean } | undefined> {
   const url = `${NEW_API_BASE_URL}/api/sandboxes`;
 
-  logger.log("Updating account snapshot", { accountId, snapshotId, githubRepo, url });
+  logger.log("Updating account sandbox metadata", { accountId, githubRepo, url });
 
   try {
     const body: Record<string, string> = { account_id: accountId };
-    if (snapshotId) {
-      body.snapshotId = snapshotId;
-    }
     if (githubRepo) {
       body.github_repo = githubRepo;
     }
@@ -38,7 +35,7 @@ export async function updateAccountSnapshot(
 
     if (!response.ok) {
       const errorText = await response.text();
-      logger.error("Failed to update account snapshot", {
+      logger.error("Failed to update account sandbox metadata", {
         status: response.status,
         statusText: response.statusText,
         error: errorText,
@@ -48,16 +45,14 @@ export async function updateAccountSnapshot(
 
     const data = await response.json();
 
-    logger.log("Account snapshot updated successfully", {
+    logger.log("Account sandbox metadata updated successfully", {
       accountId,
-      snapshotId: data.snapshotId,
     });
 
     return data;
   } catch (error) {
-    logger.error("Error updating account snapshot", {
+    logger.error("Error updating account sandbox metadata", {
       accountId,
-      snapshotId,
       error: error instanceof Error ? error.message : String(error),
     });
     return undefined;

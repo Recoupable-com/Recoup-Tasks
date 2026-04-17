@@ -12,13 +12,12 @@ vi.mock("@trigger.dev/sdk/v3", () => ({
   },
 }));
 
-const mockSandboxCreate = vi.fn();
+const mockSandboxGet = vi.fn();
 const mockSandboxStop = vi.fn();
-const mockSandboxSnapshot = vi.fn().mockResolvedValue({ snapshotId: "snap_new" });
 
 vi.mock("@vercel/sandbox", () => ({
   Sandbox: {
-    create: (...args: unknown[]) => mockSandboxCreate(...args),
+    get: (...args: unknown[]) => mockSandboxGet(...args),
   },
 }));
 
@@ -57,28 +56,26 @@ await import("../updatePRTask");
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockSandboxCreate.mockResolvedValue({
-    sandboxId: "sbx-456",
+  mockSandboxGet.mockResolvedValue({
+    name: CODING_AGENT_ACCOUNT_ID,
     stop: mockSandboxStop,
-    snapshot: mockSandboxSnapshot,
   });
 });
 
 describe("updatePRTask", () => {
   const basePayload = {
     feedback: "Make the button blue instead",
-    snapshotId: "snap_old",
     branch: "agent/fix-bug-123",
     repo: "recoupable/api",
     callbackThreadId: "slack:C123:123.456",
   };
 
-  it("resumes sandbox from snapshot", async () => {
+  it("resumes sandbox by name", async () => {
     await mockRun(basePayload);
 
-    expect(mockSandboxCreate).toHaveBeenCalledWith(
+    expect(mockSandboxGet).toHaveBeenCalledWith(
       expect.objectContaining({
-        source: { type: "snapshot", snapshotId: "snap_old" },
+        name: CODING_AGENT_ACCOUNT_ID,
       }),
     );
   });
@@ -112,7 +109,7 @@ describe("updatePRTask", () => {
     );
   });
 
-  it("notifies callback with updated status and new snapshot", async () => {
+  it("notifies callback with updated status", async () => {
     const { notifyCodingAgentCallback } = await import("../../sandboxes/notifyCodingAgentCallback");
 
     await mockRun(basePayload);
@@ -121,7 +118,6 @@ describe("updatePRTask", () => {
       expect.objectContaining({
         threadId: "slack:C123:123.456",
         status: "updated",
-        snapshotId: "snap_new",
         stdout: "done",
         stderr: "",
       }),
@@ -139,18 +135,6 @@ describe("updatePRTask", () => {
     await mockRun(basePayload);
 
     expect(configureGitAuth).toHaveBeenCalledOnce();
-  });
-
-  it("creates sandbox with correct timeout param", async () => {
-    await mockRun(basePayload);
-
-    expect(mockSandboxCreate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        timeout: 30 * 60 * 1000,
-      }),
-    );
-    const callArgs = mockSandboxCreate.mock.calls[0][0];
-    expect(callArgs).not.toHaveProperty("timeoutMs");
   });
 
   it("passes sandbox env to both agent calls", async () => {

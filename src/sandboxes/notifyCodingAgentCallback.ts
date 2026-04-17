@@ -4,7 +4,6 @@ interface CallbackPayload {
   threadId: string;
   status: "pr_created" | "no_changes" | "failed" | "updated";
   branch?: string;
-  snapshotId?: string;
   prs?: { repo: string; number: number; url: string; baseBranch: string }[];
   message?: string;
   stdout?: string;

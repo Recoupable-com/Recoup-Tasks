@@ -23,7 +23,6 @@ describe("notifyCodingAgentCallback", () => {
       threadId: "slack:C123:123",
       status: "pr_created",
       branch: "agent/fix-123",
-      snapshotId: "snap_abc",
       prs: [{ repo: "recoupable/api", number: 42, url: "url", baseBranch: "test" }],
     });
 

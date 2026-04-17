@@ -29,10 +29,7 @@ vi.mock("../../sandboxes/provisionSandbox", () => ({
 }));
 
 vi.mock("../../sandboxes/snapshotAndPersist", () => ({
-  snapshotAndPersist: vi.fn().mockResolvedValue({
-    snapshotId: "snap_abc",
-    expiresAt: new Date("2026-03-12"),
-  }),
+  snapshotAndPersist: vi.fn().mockResolvedValue(undefined),
 }));
 
 const { setupSandboxTask } = await import("../setupSandboxTask");
@@ -79,12 +76,11 @@ describe("setupSandboxTask", () => {
     );
   });
 
-  it("returns snapshotId and githubRepo on success", async () => {
+  it("returns githubRepo on success", async () => {
     const result = await run({ accountId: "acc_1" });
 
     expect(result).toEqual({
       githubRepo: "https://github.com/org/repo",
-      snapshotId: "snap_abc",
     });
   });
 
