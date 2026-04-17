@@ -1,5 +1,6 @@
 import { logger } from "@trigger.dev/sdk/v3";
 import { z } from "zod";
+import { NEW_API_BASE_URL, RECOUP_API_KEY } from "../consts";
 
 const artistSocialsResponseSchema = z.object({
   status: z.literal("success"),
@@ -31,8 +32,6 @@ export type ArtistSocialProfile = z.infer<
   typeof artistSocialsResponseSchema
 >["socials"][number];
 
-const ARTIST_SOCIALS_API_URL = "https://api.recoupable.com/api/artist/socials";
-
 export async function getArtistSocials(
   artistAccountId: string
 ): Promise<ArtistSocialProfile[] | undefined> {
@@ -41,14 +40,19 @@ export async function getArtistSocials(
     return undefined;
   }
 
-  try {
-    const url = new URL(ARTIST_SOCIALS_API_URL);
-    url.searchParams.set("artist_account_id", artistAccountId);
+  if (!RECOUP_API_KEY) {
+    logger.error("RECOUP_API_KEY not configured");
+    return undefined;
+  }
 
-    const response = await fetch(url.toString(), {
+  try {
+    const url = `${NEW_API_BASE_URL}/api/artists/${artistAccountId}/socials`;
+
+    const response = await fetch(url, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
+        "x-api-key": RECOUP_API_KEY,
       },
     });
 
