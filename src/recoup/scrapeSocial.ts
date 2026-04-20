@@ -1,5 +1,6 @@
 import { logger } from "@trigger.dev/sdk/v3";
 import { z } from "zod";
+import { NEW_API_BASE_URL, RECOUP_API_KEY } from "../consts";
 
 const scrapeResponseSchema = z.object({
   runId: z.string().nullable(),
@@ -8,8 +9,6 @@ const scrapeResponseSchema = z.object({
 });
 
 export type ScrapeSocialResponse = z.infer<typeof scrapeResponseSchema>;
-
-const SOCIAL_SCRAPE_API_URL = "https://api.recoupable.com/api/social/scrape";
 
 /**
  * Triggers a social profile scraping job for a given social_id.
@@ -23,15 +22,21 @@ export async function scrapeSocial(
     return undefined;
   }
 
+  if (!RECOUP_API_KEY) {
+    logger.error("RECOUP_API_KEY not configured");
+    return undefined;
+  }
+
+  const url = `${NEW_API_BASE_URL}/api/socials/${socialId}/scrape`;
+
   try {
-    const response = await fetch(SOCIAL_SCRAPE_API_URL, {
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "x-api-key": RECOUP_API_KEY,
       },
-      body: JSON.stringify({
-        social_id: socialId,
-      }),
+      body: JSON.stringify({}),
     });
 
     if (!response.ok) {
