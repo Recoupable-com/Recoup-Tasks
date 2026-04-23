@@ -1,13 +1,12 @@
 import { logger } from "@trigger.dev/sdk/v3";
 import { z } from "zod";
+import { NEW_API_BASE_URL, RECOUP_API_KEY } from "../consts";
 
-// Base schema with shared fields
 const inProgressResponseSchema = z.object({
   status: z.string(),
-  datasetId: z.string(),
+  dataset_id: z.string().nullable(),
 });
 
-// Completed response (base + data field)
 const completedResponseSchema = inProgressResponseSchema.extend({
   data: z.array(z.unknown()),
 });
@@ -16,11 +15,8 @@ type ScraperResponse =
   | z.infer<typeof inProgressResponseSchema>
   | z.infer<typeof completedResponseSchema>;
 
-const APIFY_SCRAPER_API_URL = "https://api.recoupable.com/api/apify/scraper";
-
 /**
- * Checks the status and retrieves results from an Apify scraper run.
- * Returns the response with status and data (if completed).
+ * Polls an Apify run's status and results via GET /api/apify/runs/{runId}.
  */
 export async function getScraperResults(
   runId: string
@@ -30,16 +26,22 @@ export async function getScraperResults(
     return undefined;
   }
 
-  try {
-    const url = new URL(APIFY_SCRAPER_API_URL);
-    url.searchParams.set("runId", runId);
+  if (!RECOUP_API_KEY) {
+    logger.error("RECOUP_API_KEY not configured");
+    return undefined;
+  }
 
-    const response = await fetch(url.toString(), {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+  try {
+    const response = await fetch(
+      `${NEW_API_BASE_URL}/api/apify/runs/${encodeURIComponent(runId)}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": RECOUP_API_KEY,
+        },
+      }
+    );
 
     if (!response.ok) {
       logger.error("Recoup Apify Scraper API error", {
@@ -52,13 +54,11 @@ export async function getScraperResults(
 
     const json = (await response.json()) as unknown;
 
-    // Try to parse as completed first (has data field)
     const completedValidation = completedResponseSchema.safeParse(json);
     if (completedValidation.success) {
       return completedValidation.data;
     }
 
-    // Otherwise parse as in-progress
     const inProgressValidation = inProgressResponseSchema.safeParse(json);
     if (inProgressValidation.success) {
       return inProgressValidation.data;
@@ -80,4 +80,3 @@ export async function getScraperResults(
     return undefined;
   }
 }
-

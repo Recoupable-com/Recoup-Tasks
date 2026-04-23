@@ -37,14 +37,14 @@ export async function pollScraperResults(
       if (result.status === "SUCCEEDED") {
         const completedResult = result as {
           status: string;
-          datasetId: string;
+          dataset_id: string | null;
           data: unknown[];
         };
         return {
           run,
           pollResult: {
             runId: run.runId,
-            datasetId: completedResult.datasetId,
+            datasetId: completedResult.dataset_id ?? run.datasetId,
             status: completedResult.status,
             data: completedResult.data,
           },
@@ -54,7 +54,7 @@ export async function pollScraperResults(
           run,
           pollResult: {
             runId: run.runId,
-            datasetId: result.datasetId,
+            datasetId: result.dataset_id ?? run.datasetId,
             status: result.status,
           },
         };
