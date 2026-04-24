@@ -13,7 +13,7 @@ export async function getProArtists(): Promise<string[] | undefined> {
     return undefined;
   }
 
-  const url = `${NEW_API_BASE_URL}/api/artists/pro`;
+  const url = `${NEW_API_BASE_URL}/api/admins/artists/pro`;
 
   try {
     const response = await fetch(url, {
