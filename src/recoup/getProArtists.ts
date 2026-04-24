@@ -1,19 +1,26 @@
 import { logger } from "@trigger.dev/sdk/v3";
 import { z } from "zod";
+import { NEW_API_BASE_URL, RECOUP_API_KEY } from "../consts";
 
 const proArtistsResponseSchema = z.object({
   status: z.literal("success"),
   artists: z.array(z.string()),
 });
 
-const PRO_ARTISTS_API_URL = "https://api.recoupable.com/api/artists/pro";
-
 export async function getProArtists(): Promise<string[] | undefined> {
+  if (!RECOUP_API_KEY) {
+    logger.error("RECOUP_API_KEY not configured");
+    return undefined;
+  }
+
+  const url = `${NEW_API_BASE_URL}/api/admins/artists/pro`;
+
   try {
-    const response = await fetch(PRO_ARTISTS_API_URL, {
+    const response = await fetch(url, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
+        "x-api-key": RECOUP_API_KEY,
       },
     });
 
