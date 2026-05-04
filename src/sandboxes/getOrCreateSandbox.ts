@@ -28,7 +28,7 @@ export async function getOrCreateSandbox(
   }
 
   const sandbox = await Sandbox.get({
-    sandboxId: created.sandboxId,
+    name: created.sandboxId,
     token,
     teamId,
     projectId,

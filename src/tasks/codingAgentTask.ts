@@ -80,7 +80,7 @@ export const codingAgentTask = schemaTask({
 
       return { branch, snapshotId, prs, stdout: agentResult.stdout, stderr: agentResult.stderr };
     } finally {
-      logStep("Stopping sandbox", false, { sandboxId: sandbox.sandboxId });
+      logStep("Stopping sandbox", false, { sandboxId: sandbox.name });
       await sandbox.stop();
     }
   },

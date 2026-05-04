@@ -8,7 +8,7 @@ vi.mock("@trigger.dev/sdk/v3", () => ({
 vi.mock("@vercel/sandbox", () => ({
   Sandbox: {
     get: vi.fn().mockResolvedValue({
-      sandboxId: "sbx_123",
+      name: "sbx_123",
       status: "running",
     }),
   },
@@ -53,7 +53,7 @@ describe("getOrCreateSandbox", () => {
     await getOrCreateSandbox("acc_1");
 
     expect(Sandbox.get).toHaveBeenCalledWith(
-      expect.objectContaining({ sandboxId: "sbx_123" }),
+      expect.objectContaining({ name: "sbx_123" }),
     );
   });
 
@@ -62,7 +62,7 @@ describe("getOrCreateSandbox", () => {
 
     expect(result.sandboxId).toBe("sbx_123");
     expect(result.sandbox).toEqual(
-      expect.objectContaining({ sandboxId: "sbx_123" }),
+      expect.objectContaining({ name: "sbx_123" }),
     );
   });
 

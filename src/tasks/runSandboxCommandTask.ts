@@ -43,7 +43,7 @@ export const runSandboxCommandTask = schemaTask({
       accountId,
     });
 
-    const sandbox = await Sandbox.get({ sandboxId, token, teamId, projectId });
+    const sandbox = await Sandbox.get({ name: sandboxId, token, teamId, projectId });
 
     logStep("Connected to sandbox");
 

@@ -37,7 +37,7 @@ export const setupSandboxTask = schemaTask({
       );
 
       logStep("Sandbox setup complete", true, {
-        sandboxId: sandbox.sandboxId,
+        sandboxId: sandbox.name,
         githubRepo: githubRepo ?? null,
         snapshotId: snapshotResult.snapshotId,
       });
@@ -47,7 +47,7 @@ export const setupSandboxTask = schemaTask({
         snapshotId: snapshotResult.snapshotId,
       };
     } finally {
-      logStep("Stopping sandbox", false, { sandboxId: sandbox.sandboxId });
+      logStep("Stopping sandbox", false, { sandboxId: sandbox.name });
       await sandbox.stop();
     }
   },
