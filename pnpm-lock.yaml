@@ -15,8 +15,8 @@ importers:
         specifier: 4.3.3
         version: 4.3.3(ai@6.0.143(zod@4.3.6))(typescript@5.9.3)(zod@4.3.6)
       '@vercel/sandbox':
-        specifier: ^1.8.0
-        version: 1.8.0
+        specifier: 2.0.0-beta.11
+        version: 2.0.0-beta.11
       ai:
         specifier: ^6.0.143
         version: 6.0.143(zod@4.3.6)
@@ -865,8 +865,8 @@ packages:
     resolution: {integrity: sha512-UycprH3T6n3jH0k44NHMa7pnFHGu/N05MjojYr+Mc6I7obkoLIJujSWwin1pCvdy/eOxrI/l3uDLQsmcrOb4ug==}
     engines: {node: '>= 20'}
 
-  '@vercel/sandbox@1.8.0':
-    resolution: {integrity: sha512-SbXkg8Fmp8i+I9IdyD4PAAVtxM/KS4ULV4eiEfY/9tab1AF1MPvmEA8/ebvCn7QTWQQ7twwtpJNSPlUVmOBp3w==}
+  '@vercel/sandbox@2.0.0-beta.11':
+    resolution: {integrity: sha512-92B4b3cgUIR9CTGsGlIgy7UIrdyqIqQQom8U8YD10m5lXbjbZrf/tU7Rt+S+Vy0hlI94hKVjPkx7U+fPyBtpNA==}
 
   '@vitest/expect@4.0.18':
     resolution: {integrity: sha512-8sCWUyckXXYvx4opfzVY03EOiYVxyNrHS5QxX3DAIi5dpJAAkyJezHCP77VMX4HKA2LDT/Jpfo8i2r5BE3GnQQ==}
@@ -2949,7 +2949,7 @@ snapshots:
 
   '@vercel/oidc@3.2.0': {}
 
-  '@vercel/sandbox@1.8.0':
+  '@vercel/sandbox@2.0.0-beta.11':
     dependencies:
       '@vercel/oidc': 3.2.0
       async-retry: 1.3.3

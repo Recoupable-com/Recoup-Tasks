@@ -35,7 +35,7 @@ export const updatePRTask = schemaTask({
       timeout: 30 * 60 * 1000,
     });
 
-    logStep("Sandbox resumed", false, { sandboxId: sandbox.sandboxId, snapshotId });
+    logStep("Sandbox resumed", false, { sandboxId: sandbox.name, snapshotId });
 
     try {
       await configureGitAuth(sandbox);
@@ -83,7 +83,7 @@ export const updatePRTask = schemaTask({
 
       return { snapshotId: newSnapshot.snapshotId };
     } finally {
-      logStep("Stopping sandbox", false, { sandboxId: sandbox.sandboxId });
+      logStep("Stopping sandbox", false, { sandboxId: sandbox.name });
       await sandbox.stop();
     }
   },
