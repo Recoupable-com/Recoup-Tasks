@@ -1,6 +1,6 @@
 import { logger } from "@trigger.dev/sdk/v3";
 import { z } from "zod";
-import { NEW_API_BASE_URL } from "../consts";
+import { NEW_API_BASE_URL, RECOUP_API_KEY } from "../consts";
 import { type ChatConfig } from "../schemas/chatSchema";
 
 // Zod schema for validating task response from Recoup Tasks API
@@ -36,6 +36,13 @@ export async function fetchTask(
     return undefined;
   }
 
+  // GET /api/tasks is auth-gated; without a key it returns 401 and the task
+  // would silently abort downstream with a misleading "Missing accountId".
+  if (!RECOUP_API_KEY) {
+    logger.error("Missing RECOUP_API_KEY environment variable", { externalId });
+    return undefined;
+  }
+
   const tasksApiUrl = `${NEW_API_BASE_URL}/api/tasks`;
 
   try {
@@ -43,10 +50,22 @@ export async function fetchTask(
       method: "GET",
       headers: {
         "Content-Type": "application/json",
+        "x-api-key": RECOUP_API_KEY,
       },
     });
 
     if (!response.ok) {
+      // Surface auth failures distinctly so they aren't mistaken for "task not
+      // found" or collapsed into the downstream "Missing accountId" error.
+      if (response.status === 401 || response.status === 403) {
+        logger.error("Recoup Tasks API auth failure", {
+          externalId,
+          status: response.status,
+          statusText: response.statusText,
+        });
+        return undefined;
+      }
+
       logger.error("Recoup Tasks API error", {
         externalId,
         status: response.status,
