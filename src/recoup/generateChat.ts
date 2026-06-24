@@ -10,29 +10,33 @@ type ChatGenerateParams = {
   model?: string;
 };
 
-type ChatGenerateResponse = {
-  text?: string;
-  reasoningText?: string;
-  finishReason?: string;
-  usage?: Record<string, unknown>;
-  roomId?: string;
+/**
+ * `POST /api/chat/runs` is asynchronous (recoupable/chat#1813): it starts a
+ * durable workflow run and returns `{ runId }` with 202. Generation, message
+ * persistence, and side effects (email) all happen server-side after the
+ * response — so this task only kicks the run off.
+ */
+type ChatGenerateAccepted = {
+  runId?: string;
 };
 
 /**
- * Generates a chat response using the Recoup Chat Generate API.
+ * Fire-and-forget kickoff of an async chat-generation run via the Recoup Chat
+ * Generate API. Returns `{ runId }` (for logging/observability only) once the
+ * run has started, or `undefined` if the kickoff itself failed.
  *
  * @param params - Chat generation parameters
- * @returns Promise that resolves to the parsed response, or undefined on error
+ * @returns Promise resolving to `{ runId }`, or undefined on error
  */
 export async function generateChat(
   params: ChatGenerateParams
-): Promise<ChatGenerateResponse | undefined> {
+): Promise<ChatGenerateAccepted | undefined> {
   if (!RECOUP_API_KEY) {
     logger.error("Missing RECOUP_API_KEY environment variable");
     return undefined;
   }
 
-  const apiUrl = `${NEW_API_BASE_URL}/api/chat/generate`;
+  const apiUrl = `${NEW_API_BASE_URL}/api/chat/runs`;
 
   const messages: UIMessage[] = [
     {
@@ -49,9 +53,7 @@ export async function generateChat(
 
   const body: Record<string, unknown> = {
     messages,
-    roomId: params.roomId,
     accountId: params.accountId,
-    excludeTools: ["create_task"],
   };
 
   if (params.artistId) {
@@ -62,9 +64,8 @@ export async function generateChat(
     body.model = params.model;
   }
 
-  logger.log("Calling Recoup Chat API", {
+  logger.log("Kicking off Recoup Chat generation run", {
     url: apiUrl,
-    roomId: params.roomId,
     accountId: params.accountId,
     artistId: params.artistId,
     model: params.model,
@@ -90,18 +91,25 @@ export async function generateChat(
       return undefined;
     }
 
-    const json = (await response.json()) as ChatGenerateResponse;
+    // 202 Accepted → { runId, chatId, sessionId }. We do NOT await generation:
+    // persistence + email happen server-side inside the durable workflow.
+    const json = (await response.json().catch(() => ({}))) as ChatGenerateAccepted;
 
-    logger.log("Recoup Chat API response", {
-      finishReason: json.finishReason,
-      usage: json.usage,
-      reasoningText: json.reasoningText,
-      textPreview: json.text?.slice(0, 500),
+    if (!json.runId) {
+      logger.error("Recoup Chat run-start returned no runId", {
+        status: response.status,
+      });
+      return undefined;
+    }
+
+    logger.log("Recoup Chat generation run started", {
+      runId: json.runId,
+      status: response.status,
     });
 
-    return json;
+    return { runId: json.runId };
   } catch (error) {
-    logger.error("Failed to call Recoup Chat API", { error });
+    logger.error("Failed to kick off Recoup Chat generation run", { error });
     return undefined;
   }
 }
