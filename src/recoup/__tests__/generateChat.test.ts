@@ -29,7 +29,7 @@ describe("generateChat (fire-and-forget)", () => {
     expect(result).toEqual({ runId: "wrun_123" });
 
     const [url, opts] = mockFetch.mock.calls[0];
-    expect(url).toContain("/api/chat/generate");
+    expect(url).toContain("/api/chat/runs");
     expect(opts.headers["x-api-key"]).toBe("test-key");
     const body = JSON.parse(opts.body);
     expect(body.accountId).toBe("acc-1");
@@ -41,6 +41,18 @@ describe("generateChat (fire-and-forget)", () => {
       ok: false,
       status: 500,
       text: async () => "boom",
+    });
+
+    const result = await generateChat({ prompt: "hi", accountId: "acc-1", roomId: "room-1" });
+
+    expect(result).toBeUndefined();
+  });
+
+  it("returns undefined when an ok response carries no runId", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 202,
+      json: async () => ({}),
     });
 
     const result = await generateChat({ prompt: "hi", accountId: "acc-1", roomId: "room-1" });

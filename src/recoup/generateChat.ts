@@ -11,7 +11,7 @@ type ChatGenerateParams = {
 };
 
 /**
- * `POST /api/chat/generate` is asynchronous (recoupable/chat#1813): it starts a
+ * `POST /api/chat/runs` is asynchronous (recoupable/chat#1813): it starts a
  * durable workflow run and returns `{ runId }` with 202. Generation, message
  * persistence, and side effects (email) all happen server-side after the
  * response — so this task only kicks the run off.
@@ -36,7 +36,7 @@ export async function generateChat(
     return undefined;
   }
 
-  const apiUrl = `${NEW_API_BASE_URL}/api/chat/generate`;
+  const apiUrl = `${NEW_API_BASE_URL}/api/chat/runs`;
 
   const messages: UIMessage[] = [
     {
@@ -91,9 +91,16 @@ export async function generateChat(
       return undefined;
     }
 
-    // 202 Accepted → { runId }. We do NOT await generation: persistence + email
-    // happen server-side inside the durable workflow.
+    // 202 Accepted → { runId, chatId, sessionId }. We do NOT await generation:
+    // persistence + email happen server-side inside the durable workflow.
     const json = (await response.json().catch(() => ({}))) as ChatGenerateAccepted;
+
+    if (!json.runId) {
+      logger.error("Recoup Chat run-start returned no runId", {
+        status: response.status,
+      });
+      return undefined;
+    }
 
     logger.log("Recoup Chat generation run started", {
       runId: json.runId,
