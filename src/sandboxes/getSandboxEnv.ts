@@ -1,6 +1,6 @@
 /**
  * Builds the environment variables to inject into sandbox commands.
- * Shared by runSandboxCommandTask and codingAgentTask.
+ * Used by codingAgentTask and updatePRTask.
  */
 export function getSandboxEnv(
   accountId: string
