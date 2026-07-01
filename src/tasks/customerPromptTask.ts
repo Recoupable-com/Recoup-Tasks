@@ -3,6 +3,7 @@ import { getTaskRoomId } from "../chats/getTaskRoomId";
 import { fetchTask } from "../recoup/fetchTask";
 import { generateChat } from "../recoup/generateChat";
 import { chatSchema, type ChatConfig } from "../schemas/chatSchema";
+import { DEFAULT_TASK_MODEL } from "../consts";
 
 type TaskPayload = {
   // Provided automatically by Trigger.dev schedules
@@ -47,7 +48,7 @@ export const customerPromptTask = schedules.task({
 
     const accountId = taskConfig?.accountId;
     const artistId = taskConfig?.artistId;
-    const model = taskConfig?.model;
+    const model = taskConfig?.model ?? DEFAULT_TASK_MODEL;
     const prompt =
       taskConfig?.prompt ??
       "Draft a friendly check-in message for our customers.";
