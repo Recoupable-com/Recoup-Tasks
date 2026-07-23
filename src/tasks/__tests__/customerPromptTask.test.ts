@@ -31,11 +31,11 @@ beforeEach(() => {
 });
 
 describe("customerPromptTask model default", () => {
-  it("defaults the model to anthropic/claude-sonnet-5 when the task config omits it", async () => {
+  it("defaults the model to moonshotai/kimi-k3 when the task config omits it", async () => {
     mockFetchTask.mockResolvedValue({ accountId: "acc-1", artistId: "art-1", prompt: "do a thing" });
     await mockRun(payload);
     expect(mockGenerateChat).toHaveBeenCalledWith(
-      expect.objectContaining({ model: "anthropic/claude-sonnet-5", accountId: "acc-1" }),
+      expect.objectContaining({ model: "moonshotai/kimi-k3", accountId: "acc-1" }),
     );
   });
 
