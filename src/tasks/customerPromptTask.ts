@@ -16,7 +16,7 @@ type TaskPayload = {
 
 export const customerPromptTask = schedules.task({
   id: "customer-prompt-task",
-  run: async (payload: TaskPayload) => {
+  run: async (payload: TaskPayload, params?: { ctx?: { run?: { id?: string } } }) => {
     logger.log("Starting customer prompt task", {
       externalId: payload.externalId,
       timestamp: payload.timestamp,
@@ -77,6 +77,9 @@ export const customerPromptTask = schedules.task({
       roomId,
       artistId,
       model,
+      // Our own Trigger run id — carried to any email this run sends so the
+      // run can be named by its subject (recoupable/chat#1958).
+      triggerRunId: params?.ctx?.run?.id,
     });
   },
 });

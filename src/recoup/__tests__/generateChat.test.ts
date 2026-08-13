@@ -80,3 +80,36 @@ describe("generateChat (fire-and-forget)", () => {
     expect(body.model).toBe("anthropic/claude-haiku-4.5");
   });
 });
+
+describe("trigger run id threading (chat#1958)", () => {
+  it("includes trigger_run_id in the body when provided", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 202,
+      json: async () => ({ runId: "wrun_123" }),
+    });
+
+    await generateChat({
+      prompt: "hi",
+      accountId: "acc-1",
+      roomId: "room-1",
+      triggerRunId: "run_abc123",
+    });
+
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(body.trigger_run_id).toBe("run_abc123");
+  });
+
+  it("omits trigger_run_id when not provided", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 202,
+      json: async () => ({ runId: "wrun_123" }),
+    });
+
+    await generateChat({ prompt: "hi", accountId: "acc-1", roomId: "room-1" });
+
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(body).not.toHaveProperty("trigger_run_id");
+  });
+});
