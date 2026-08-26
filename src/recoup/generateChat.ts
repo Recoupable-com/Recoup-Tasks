@@ -8,6 +8,10 @@ type ChatGenerateParams = {
   roomId: string;
   artistId?: string;
   model?: string;
+  /** Trigger.dev run id of the scheduled task starting this run — carried to
+   * any email the agent sends so the run can be named by its subject
+   * (recoupable/chat#1958). */
+  triggerRunId?: string;
 };
 
 /**
@@ -62,6 +66,10 @@ export async function generateChat(
 
   if (params.model) {
     body.model = params.model;
+  }
+
+  if (params.triggerRunId) {
+    body.trigger_run_id = params.triggerRunId;
   }
 
   logger.log("Kicking off Recoup Chat generation run", {

@@ -47,3 +47,21 @@ describe("customerPromptTask model default", () => {
     );
   });
 });
+
+describe("trigger run id threading (chat#1958)", () => {
+  it("passes its own run id into generateChat so the run can be named by its email", async () => {
+    mockFetchTask.mockResolvedValue({ accountId: "acc-1", artistId: "art-1", prompt: "do a thing" });
+    await mockRun(payload, { ctx: { run: { id: "run_self123" } } });
+    expect(mockGenerateChat).toHaveBeenCalledWith(
+      expect.objectContaining({ triggerRunId: "run_self123" }),
+    );
+  });
+
+  it("omits triggerRunId when ctx is unavailable", async () => {
+    mockFetchTask.mockResolvedValue({ accountId: "acc-1", artistId: "art-1", prompt: "do a thing" });
+    await mockRun(payload);
+    expect(mockGenerateChat).toHaveBeenCalledWith(
+      expect.objectContaining({ triggerRunId: undefined }),
+    );
+  });
+});
