@@ -63,6 +63,13 @@ vi.mock("../../content/renderFinalVideo", () => ({
     sizeBytes: 5000,
   }),
 }));
+vi.mock("../../content/renderStaticImage", () => ({
+  renderStaticImage: vi.fn().mockResolvedValue({
+    imageUrl: "https://fal.ai/storage/static-image.png",
+    mimeType: "image/png",
+    sizeBytes: 12345,
+  }),
+}));
 vi.mock("../../content/loadTemplate", () => ({
   loadTemplate: vi.fn().mockResolvedValue({
     name: "artist-caption-bedroom",
