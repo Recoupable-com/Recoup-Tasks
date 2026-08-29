@@ -29,6 +29,7 @@ export async function setupOpenClaw(
     RECOUP_API_KEY: `${process.env.RECOUP_API_KEY.slice(0, 4)}...`,
     RECOUP_ACCOUNT_ID: accountId,
     GITHUB_TOKEN: githubToken ? "present" : "missing",
+    CHARTMETRIC_BASE_URL: "https://recoup-api.vercel.app/api/chartmetric",
   });
 
   const injectEnv = await sandbox.runCommand({
@@ -43,6 +44,7 @@ export async function setupOpenClaw(
         c.env.RECOUP_API_KEY = '${process.env.RECOUP_API_KEY}';
         c.env.RECOUP_ACCOUNT_ID = '${accountId}';
         ${githubToken ? `c.env.GITHUB_TOKEN = '${githubToken}';` : ""}
+        c.env.CHARTMETRIC_BASE_URL = 'https://recoup-api.vercel.app/api/chartmetric';
         c.tools = c.tools || {};
         c.tools.profile = 'coding';
         c.agents = c.agents || {};
