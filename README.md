@@ -39,6 +39,10 @@ Deploy to production:
 pnpm run deploy:trigger-prod
 ```
 
+## Agent
+
+Sandbox tasks use **[Claude Code](https://claude.ai/code)** as the AI agent. The Claude Code CLI is installed into Vercel Sandboxes and configured to route through the **Vercel AI Gateway** for model access. Prompts are executed via the Claude Code agent, which autonomously performs coding tasks, manages files, and interacts with GitHub.
+
 ## Tasks
 
 | Task | ID | Trigger | Description |
@@ -46,13 +50,13 @@ pnpm run deploy:trigger-prod
 | `customerPromptTask` | `customer-prompt-task` | Dynamic schedule | Runs a customer-configured prompt on a schedule, fetching task config and generating a chat response. |
 | `proArtistSocialProfilesScrape` | `pro-artist-social-profiles-scrape` | Cron (daily midnight ET) | Scrapes and updates social profiles for all pro-tier artists. |
 | `sendPulsesTask` | `send-pulses-task` | Schedule | Generates and sends daily Pulse email digests with artist insights, social stats, and connected-app context. |
-| `runSandboxCommandTask` | `run-sandbox-command` | On-demand (schema) | Connects to a Vercel Sandbox, installs Claude Code with Vercel AI Gateway, runs a prompt via Claude Code, snapshots the result, and pushes to GitHub. |
+| `runSandboxCommandTask` | `run-sandbox-command` | On-demand (schema) | Connects to a Vercel Sandbox, installs the Claude Code CLI with Vercel AI Gateway, runs a prompt via the Claude Code agent, snapshots the result, and pushes to GitHub. |
 
 ## Project Structure
 
 - `src/tasks/` - Task definitions (see table above)
 - `src/recoup/` - Recoup API client functions
-- `src/sandboxes/` - Vercel Sandbox helpers (Claude Code install, config, GitHub push, snapshots)
+- `src/sandboxes/` - Vercel Sandbox helpers (Claude Code CLI install, Claude Code agent config, GitHub push, snapshots)
 - `src/github/` - GitHub repo creation and utilities
 - `src/chats/` - Chat room helpers
 - `src/pulse/` - Pulse email formatting
