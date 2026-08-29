@@ -10,7 +10,7 @@ describe("buildFilterComplex", () => {
     });
 
     expect(result).toContain("[0:v]crop=ih*9/16:ih,scale=720:1280[video_base]");
-    expect(result).toContain("[1:v]scale=150:150[ovr_0]");
+    expect(result).toContain("[1:v]scale=250:250[ovr_0]");
     expect(result).toContain("overlay=30:30");
     expect(result).toContain("[out]");
   });
@@ -22,7 +22,7 @@ describe("buildFilterComplex", () => {
     });
 
     expect(result).toMatch(/overlay=30:30/);
-    expect(result).toMatch(/overlay=30:200/);
+    expect(result).toMatch(/overlay=30:300/);
   });
 
   it("chains multiple overlays correctly", () => {
