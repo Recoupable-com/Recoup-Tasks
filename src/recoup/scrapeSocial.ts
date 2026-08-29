@@ -59,7 +59,23 @@ export async function scrapeSocial(
       return undefined;
     }
 
-    return validation.data;
+    const { runId, datasetId, error: scrapeError } = validation.data;
+
+    if (scrapeError) {
+      logger.warn("Scrape API returned error", { socialId, error: scrapeError });
+      return { runId, datasetId, error: scrapeError };
+    }
+
+    if (!runId || !datasetId) {
+      logger.warn("Scrape API returned null runId or datasetId without error", {
+        socialId,
+        runId,
+        datasetId,
+      });
+      return undefined;
+    }
+
+    return { runId, datasetId };
   } catch (error) {
     logger.error("Failed to scrape social from Recoup API", {
       socialId,
