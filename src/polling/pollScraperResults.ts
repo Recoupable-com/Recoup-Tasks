@@ -1,5 +1,6 @@
-import { logger, wait } from "@trigger.dev/sdk/v3";
+import { wait } from "@trigger.dev/sdk/v3";
 import { getScraperResults } from "../recoup/getScraperResults";
+import { logStep } from "../utils/logStep";
 
 // Base type with shared fields
 type ScrapeRun = {
@@ -12,6 +13,8 @@ export type PollResult = ScrapeRun & {
   data?: unknown[];
 };
 
+const MAX_POLL_RETRIES = 30;
+
 /**
  * Polls each scraper run in parallel until all are completed (SUCCEEDED or FAILED).
  * Returns an array of results for each run.
@@ -23,6 +26,7 @@ export async function pollScraperResults(
   const pendingRuns = new Map<string, ScrapeRun>(
     runs.map((run) => [run.runId, run])
   );
+  const retryCounts = new Map<string, number>();
 
   while (pendingRuns.size > 0) {
     // Poll all pending runs in parallel
@@ -30,7 +34,22 @@ export async function pollScraperResults(
       const result = await getScraperResults(run.runId);
 
       if (!result) {
-        logger.warn("Failed to get scraper result", { runId: run.runId });
+        const retries = (retryCounts.get(run.runId) ?? 0) + 1;
+        retryCounts.set(run.runId, retries);
+
+        if (retries >= MAX_POLL_RETRIES) {
+          logStep("poll-scraper", "Max retries reached, marking as FAILED", { runId: run.runId, retries }, "error");
+          return {
+            run,
+            pollResult: {
+              runId: run.runId,
+              datasetId: run.datasetId,
+              status: "FAILED",
+            },
+          };
+        }
+
+        logStep("poll-scraper", "Failed to get scraper result", { runId: run.runId, retry: retries }, "warn");
         return null;
       }
 
