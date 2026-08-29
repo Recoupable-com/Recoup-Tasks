@@ -43,7 +43,20 @@ export async function runClaudeCodeAgent(
     },
   };
 
-  const command = await sandbox.runCommand(commandOpts as any);
+  let command;
+  try {
+    command = await sandbox.runCommand(commandOpts as any);
+  } catch (error) {
+    logStep(`${label} - sandbox.runCommand failed`, false, {
+      error: error instanceof Error ? error.message : String(error),
+      sandboxId: sandbox.sandboxId,
+      cwd,
+      cmd: "claude",
+      argsLength: args.length,
+      messageLength: message.length,
+    });
+    throw error;
+  }
   const result = await command.wait();
 
   const stdout = (await result.stdout()) || "";
