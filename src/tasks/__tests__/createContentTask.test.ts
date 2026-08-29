@@ -171,6 +171,25 @@ describe("createContentTask", () => {
     expect(result.captionText).toBe("");
   });
 
+  it("includes DSP logo URL in overlay images when dsp is set", async () => {
+    await mockRun({ ...VALID_PAYLOAD, dsp: "spotify" });
+
+    const { renderFinalVideo } = await import("../../content/renderFinalVideo");
+    const callArgs = vi.mocked(renderFinalVideo).mock.calls[0][0] as Record<string, unknown>;
+    const overlayUrls = callArgs.overlayImageUrls as string[];
+    expect(overlayUrls).toBeDefined();
+    expect(overlayUrls.some((url: string) => url.includes("spotify"))).toBe(true);
+  });
+
+  it("does not include DSP logo when dsp is none", async () => {
+    await mockRun({ ...VALID_PAYLOAD, dsp: "none" });
+
+    const { renderFinalVideo } = await import("../../content/renderFinalVideo");
+    const callArgs = vi.mocked(renderFinalVideo).mock.calls[0][0] as Record<string, unknown>;
+    // Template doesn't have usesImageOverlay, so overlayImageUrls should be undefined
+    expect(callArgs.overlayImageUrls).toBeUndefined();
+  });
+
   it("throws when FAL_KEY is missing", async () => {
     delete process.env.FAL_KEY;
     await expect(mockRun(VALID_PAYLOAD)).rejects.toThrow("FAL_KEY");

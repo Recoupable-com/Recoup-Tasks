@@ -15,6 +15,7 @@ import {
   generateVideo,
 } from "../recoup/contentApi";
 import { resolveCaptionText } from "../content/resolveCaptionText";
+import { resolveDspLogoUrl } from "../content/resolveDspLogoUrl";
 
 /**
  * Content-creation task — full pipeline that generates a social-ready video.
@@ -133,6 +134,10 @@ export const createContentTask = schemaTask({
 
     // --- Step 10: Final render (ffmpeg) ---
     logStep("Rendering final video (ffmpeg)");
+    const dspLogoUrl = resolveDspLogoUrl(payload.dsp);
+    const overlayUrls = template.usesImageOverlay
+      ? [...additionalImageUrls, ...(dspLogoUrl ? [dspLogoUrl] : [])]
+      : dspLogoUrl ? [dspLogoUrl] : undefined;
     const finalVideo = await renderFinalVideo({
       videoUrl,
       songBuffer: audioClip.songBuffer,
@@ -140,7 +145,7 @@ export const createContentTask = schemaTask({
       audioDurationSeconds: audioClip.durationSeconds,
       captionText,
       hasAudio: payload.lipsync,
-      overlayImageUrls: template.usesImageOverlay ? additionalImageUrls : undefined,
+      overlayImageUrls: overlayUrls,
     });
 
     // --- Return result ---
