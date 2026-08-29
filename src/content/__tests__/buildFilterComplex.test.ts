@@ -43,4 +43,45 @@ describe("buildFilterComplex", () => {
 
     expect(result).toContain("[out]");
   });
+
+  it("positions overlays in top-right when specified", () => {
+    const result = buildFilterComplex({
+      overlayCount: 1,
+      captionFilters: [],
+      overlayPosition: "top-right",
+    });
+
+    // 720 - 30 - 150 = 540
+    expect(result).toMatch(/overlay=540:30/);
+  });
+
+  it("positions overlays in bottom-left when specified", () => {
+    const result = buildFilterComplex({
+      overlayCount: 1,
+      captionFilters: [],
+      overlayPosition: "bottom-left",
+    });
+
+    // 1280 - 30 - 150 = 1100
+    expect(result).toMatch(/overlay=30:1100/);
+  });
+
+  it("positions overlays in bottom-right when specified", () => {
+    const result = buildFilterComplex({
+      overlayCount: 1,
+      captionFilters: [],
+      overlayPosition: "bottom-right",
+    });
+
+    expect(result).toMatch(/overlay=540:1100/);
+  });
+
+  it("defaults to top-left when no overlayPosition provided", () => {
+    const result = buildFilterComplex({
+      overlayCount: 1,
+      captionFilters: [],
+    });
+
+    expect(result).toMatch(/overlay=30:30/);
+  });
 });

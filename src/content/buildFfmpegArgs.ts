@@ -1,5 +1,6 @@
 import { buildFilterComplex } from "./buildFilterComplex";
 import { escapeDrawtext } from "./escapeDrawtext";
+import type { OverlayPosition } from "./overlayPosition";
 
 /** Video frame dimensions */
 const FRAME_HEIGHT = 1280;
@@ -23,6 +24,7 @@ export function buildFfmpegArgs({
   audioDurationSeconds,
   hasAudio,
   overlayImagePaths,
+  overlayPosition,
 }: {
   videoPath: string;
   audioPath: string;
@@ -32,6 +34,7 @@ export function buildFfmpegArgs({
   audioDurationSeconds: number;
   hasAudio: boolean;
   overlayImagePaths: string[];
+  overlayPosition?: OverlayPosition;
 }): string[] {
   const { lines, fontSize, lineHeight, position } = captionLayout;
 
@@ -85,6 +88,7 @@ export function buildFfmpegArgs({
     const filterComplex = buildFilterComplex({
       overlayCount: overlayImagePaths.length,
       captionFilters,
+      overlayPosition,
     });
 
     args.push("-filter_complex", filterComplex);
