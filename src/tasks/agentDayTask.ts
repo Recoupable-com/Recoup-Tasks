@@ -1,0 +1,206 @@
+import { logger, schedules, wait } from "@trigger.dev/sdk/v3";
+import { codingAgentTask } from "./codingAgentTask";
+import { updatePRTask } from "./updatePRTask";
+import { fetchRecentSubmoduleCommits } from "../github/fetchRecentSubmoduleCommits";
+import { generateFeaturePrompt } from "../ai/generateFeaturePrompt";
+import { waitForPRChecks } from "../github/waitForPRChecks";
+import { fetchPRReviews } from "../github/fetchPRReviews";
+import { assessPRFeedback } from "../ai/assessPRFeedback";
+import { getVercelPreviewUrl } from "../github/getVercelPreviewUrl";
+import { postToSlackChannel } from "../slack/postToSlackChannel";
+import { sendTelegramMessage } from "../telegram/sendTelegramMessage";
+import { logStep } from "../sandboxes/logStep";
+import { getOrCreateSandbox } from "../sandboxes/getOrCreateSandbox";
+import { CODING_AGENT_ACCOUNT_ID } from "../consts";
+
+const AGENT_DAY_SLACK_CHANNEL = "C08HN8RKJHZ";
+const MAX_REVIEW_ITERATIONS = 3;
+const PR_CHECK_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
+
+/**
+ * Scheduled task that runs every Sunday at 10 AM ET and autonomously
+ * implements a new feature end-to-end:
+ *
+ * 1. Gathers recent commits across all submodules
+ * 2. Uses Claude to plan a focused feature based on recent work
+ * 3. Triggers the coding-agent task to implement it and open PRs
+ * 4. Reviews each PR: waits for checks, assesses human feedback, applies fixes
+ * 5. Tests Vercel preview deployments (api/chat repos)
+ * 6. Sends Telegram notification with PR links for human review/merge
+ * 7. Posts a summary to the #dev Slack channel
+ */
+export const agentDayTask = schedules.task({
+  id: "agent-day",
+  cron: { pattern: "0 10 * * 0", timezone: "America/New_York" }, // 10 AM ET every Sunday
+  maxDuration: 60 * 120, // 2 hours
+  run: async (payload) => {
+    logStep("Agent Day task started", true, {
+      timestamp: payload.timestamp,
+      date: new Date(payload.timestamp).toDateString(),
+    });
+
+    // Create a sandbox for AI reasoning (feature planning + feedback assessment)
+    logStep("Creating sandbox for AI reasoning");
+    const { sandbox: aiSandbox } = await getOrCreateSandbox(CODING_AGENT_ACCOUNT_ID);
+
+    try {
+    // Step 1: Gather recent commits to understand what has been built recently
+    logStep("Fetching recent commits from all submodules");
+    const recentCommits = await fetchRecentSubmoduleCommits();
+    logStep("Recent commits fetched", true, { submoduleCount: recentCommits.length });
+
+    // Step 2: Use Claude Code in sandbox to plan the next feature based on recent work
+    logStep("Generating feature prompt from recent commits");
+    const featurePrompt = await generateFeaturePrompt(aiSandbox, recentCommits);
+    logStep("Feature prompt generated", true, { preview: featurePrompt.slice(0, 300) });
+
+    // Step 3 & 4: Trigger the coding agent to implement the feature and open PRs
+    logStep("Triggering coding agent");
+    const codingResult = await codingAgentTask.triggerAndWait({ prompt: featurePrompt });
+
+    if (!codingResult.ok) {
+      logger.error("Coding agent task failed", { error: codingResult.error });
+      await postToSlackChannel(
+        AGENT_DAY_SLACK_CHANNEL,
+        `🤖 *Agent Day — ${new Date(payload.timestamp).toDateString()}*\n\nCoding agent failed. Check Trigger.dev for details.`,
+      );
+      return { success: false, error: "Coding agent failed" };
+    }
+
+    const { branch, snapshotId, prs } = codingResult.output;
+    logStep("Coding agent completed", true, { branch, prCount: prs.length, prs });
+
+    if (prs.length === 0) {
+      await postToSlackChannel(
+        AGENT_DAY_SLACK_CHANNEL,
+        `🤖 *Agent Day — ${new Date(payload.timestamp).toDateString()}*\n\nNo changes were made — the agent found nothing to implement.`,
+      );
+      return { success: true, prs: [], featurePrompt };
+    }
+
+    // Step 5: Review each PR — wait for checks, implement feedback, test preview
+    const reviewedPRs: typeof prs = [];
+    let currentSnapshotId = snapshotId;
+
+    for (const pr of prs) {
+      logStep(`Reviewing PR #${pr.number} in ${pr.repo}`);
+
+      // Step 5a: Wait for all CI checks to complete
+      logStep(`Waiting for checks on PR #${pr.number}`);
+      const checkResult = await waitForPRChecks(pr.repo, pr.number, PR_CHECK_TIMEOUT_MS);
+      logStep(`Checks complete for PR #${pr.number}`, true, {
+        allPassed: checkResult.allPassed,
+        failedChecks: checkResult.failedChecks,
+      });
+
+      let reviewSnapshotId = currentSnapshotId;
+
+      // Step 5b-5c: PR review loop — assess feedback and implement if needed
+      for (let iteration = 0; iteration < MAX_REVIEW_ITERATIONS; iteration++) {
+        logStep(`Review iteration ${iteration + 1} for PR #${pr.number}`);
+
+        const feedback = await fetchPRReviews(pr.repo, pr.number);
+        const assessment = await assessPRFeedback(aiSandbox, pr.repo, featurePrompt, feedback);
+
+        logStep(`Feedback assessed for PR #${pr.number}`, true, {
+          hasActionableFeedback: assessment.hasActionableFeedback,
+          summary: assessment.feedbackSummary,
+        });
+
+        if (!assessment.hasActionableFeedback) {
+          break; // Nothing to address — move on
+        }
+
+        // Step 5c: Apply the feedback via the update-pr task
+        logStep(`Applying feedback for PR #${pr.number}: ${assessment.feedbackSummary}`);
+        const updateResult = await updatePRTask.triggerAndWait({
+          feedback: assessment.implementation,
+          snapshotId: reviewSnapshotId,
+          branch,
+          repo: pr.repo,
+        });
+
+        if (!updateResult.ok) {
+          logger.warn(`Failed to apply feedback for PR #${pr.number}`, {
+            error: updateResult.error,
+          });
+          break;
+        }
+
+        reviewSnapshotId = updateResult.output.snapshotId;
+        currentSnapshotId = reviewSnapshotId;
+
+        // Wait for the new commit to be picked up by CI before re-checking
+        await wait.for({ seconds: 30 });
+      }
+
+      // Step 5d: Test Vercel preview deployment for api and chat repos
+      if (pr.repo === "recoupable/api" || pr.repo === "recoupable/chat") {
+        const previewUrl = await getVercelPreviewUrl(pr.repo, pr.number);
+
+        if (previewUrl) {
+          logStep(`Testing Vercel preview for PR #${pr.number}`, true, { previewUrl });
+          try {
+            const healthRes = await fetch(`${previewUrl}/api/health`, {
+              signal: AbortSignal.timeout(10_000),
+            });
+            logStep(`Preview health check for PR #${pr.number}`, true, {
+              url: `${previewUrl}/api/health`,
+              status: healthRes.status,
+            });
+          } catch (error) {
+            logger.warn(`Preview health check failed for PR #${pr.number}`, { error });
+          }
+        } else {
+          logStep(`No Vercel preview URL found for PR #${pr.number}`);
+        }
+      }
+
+      reviewedPRs.push(pr);
+    }
+
+    // Step 6: Send Telegram notification with PR links for human review/merge
+    const date = new Date(payload.timestamp).toDateString();
+    const prLines = reviewedPRs
+      .map((pr) => `• <a href="${pr.url}">${pr.repo} #${pr.number}</a>`)
+      .join("\n");
+
+    const telegramMessage = [
+      `🤖 <b>Agent Day — ${date}</b>`,
+      ``,
+      `${reviewedPRs.length} PR${reviewedPRs.length !== 1 ? "s" : ""} ready for review:`,
+      prLines,
+      ``,
+      `<b>Feature:</b> ${featurePrompt.slice(0, 280)}${featurePrompt.length > 280 ? "…" : ""}`,
+    ].join("\n");
+
+    await sendTelegramMessage(telegramMessage);
+
+    // Step 7: Post summary to Slack
+    const slackPrLines = reviewedPRs
+      .map((pr) => `• <${pr.url}|${pr.repo} #${pr.number}>`)
+      .join("\n");
+
+    const slackLines = [
+      `🤖 *Agent Day — ${date}*`,
+      ``,
+      `Opened *${reviewedPRs.length}* PR${reviewedPRs.length !== 1 ? "s" : ""} for review:`,
+      slackPrLines || "_(none)_",
+      ``,
+      `*Feature:* ${featurePrompt.slice(0, 280)}${featurePrompt.length > 280 ? "…" : ""}`,
+    ];
+
+    await postToSlackChannel(AGENT_DAY_SLACK_CHANNEL, slackLines.filter(Boolean).join("\n"));
+
+    logStep("Agent Day task completed", true, {
+      reviewedPRs: reviewedPRs.length,
+      totalPRs: prs.length,
+    });
+
+    return { success: true, prs: reviewedPRs, featurePrompt };
+    } finally {
+      logStep("Stopping AI reasoning sandbox", false);
+      await aiSandbox.stop();
+    }
+  },
+});

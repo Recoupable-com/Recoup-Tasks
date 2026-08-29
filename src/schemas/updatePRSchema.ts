@@ -5,7 +5,7 @@ export const updatePRPayloadSchema = z.object({
   snapshotId: z.string().min(1, "snapshotId is required"),
   branch: z.string().min(1, "branch is required"),
   repo: z.string().min(1, "repo is required"),
-  callbackThreadId: z.string().min(1, "callbackThreadId is required"),
+  callbackThreadId: z.string().optional(),
 });
 
 export type UpdatePRPayload = z.infer<typeof updatePRPayloadSchema>;

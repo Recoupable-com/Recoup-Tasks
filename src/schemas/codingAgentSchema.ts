@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const codingAgentPayloadSchema = z.object({
   prompt: z.string().min(1, "prompt is required"),
-  callbackThreadId: z.string().min(1, "callbackThreadId is required"),
+  callbackThreadId: z.string().optional(),
 });
 
 export type CodingAgentPayload = z.infer<typeof codingAgentPayloadSchema>;

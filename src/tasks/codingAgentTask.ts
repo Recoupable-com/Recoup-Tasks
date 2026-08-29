@@ -63,17 +63,19 @@ export const codingAgentTask = schemaTask({
       logStep("Taking snapshot");
       const { snapshotId } = await sandbox.snapshot();
 
-      const callbackPayload = {
-        threadId: callbackThreadId,
-        status: (prs.length > 0 ? "pr_created" : "no_changes") as "pr_created" | "no_changes",
-        branch,
-        snapshotId,
-        prs,
-        stdout: agentResult.stdout,
-        stderr: agentResult.stderr,
-      };
-      logStep("Notifying bot", true, callbackPayload);
-      await notifyCodingAgentCallback(callbackPayload);
+      if (callbackThreadId) {
+        const callbackPayload = {
+          threadId: callbackThreadId,
+          status: (prs.length > 0 ? "pr_created" : "no_changes") as "pr_created" | "no_changes",
+          branch,
+          snapshotId,
+          prs,
+          stdout: agentResult.stdout,
+          stderr: agentResult.stderr,
+        };
+        logStep("Notifying bot", true, callbackPayload);
+        await notifyCodingAgentCallback(callbackPayload);
+      }
 
       metadata.set("currentStep", "Complete");
 
