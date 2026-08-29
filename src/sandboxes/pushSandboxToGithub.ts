@@ -18,7 +18,13 @@ import { pushOrgRepos } from "./git/pushOrgRepos";
 export async function pushSandboxToGithub(
   sandbox: Sandbox
 ): Promise<boolean> {
-  logger.log("Pushing sandbox files to GitHub");
+  // Log which repo we're pushing to by reading the current remote
+  const remoteCheck = await sandbox.runCommand({
+    cmd: "git",
+    args: ["remote", "get-url", "origin"],
+  });
+  const remoteUrl = ((await remoteCheck.stdout()) || "").trim();
+  logger.log("Pushing sandbox files to GitHub", { remoteUrl });
 
   // Configure git user for commits
   if (
@@ -91,6 +97,6 @@ export async function pushSandboxToGithub(
     return false;
   }
 
-  logger.log("Sandbox files pushed to GitHub successfully");
+  logger.log("Sandbox files pushed to GitHub successfully", { remoteUrl });
   return true;
 }
